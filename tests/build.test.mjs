@@ -1,0 +1,86 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { mkdtempSync, mkdirSync, cpSync, readFileSync, writeFileSync, rmSync, readdirSync, symlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { browser, catalog } from './helpers.mjs';
+
+test('ビルドはシートへ接続せず、旧データを除去し、構文エラー時は生成物を保護する', (t) => {
+  const root = mkdtempSync(path.join(tmpdir(), 'gas-portal-build-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  cpSync('src', path.join(root, 'src'), { recursive: true });
+  mkdirSync(path.join(root, 'scripts'));
+  for (const file of ['build.mjs', 'repository-url.mjs', 'portal-html.mjs']) cpSync(`scripts/${file}`, path.join(root, 'scripts', file));
+  symlinkSync(path.resolve('node_modules'), path.join(root, 'node_modules'), 'dir');
+  mkdirSync(path.join(root, 'dist'));
+  writeFileSync(path.join(root, 'dist/CatalogData.js'), 'old-private-data');
+  const build = () => spawnSync(process.execPath, ['scripts/build.mjs'], { cwd: root, encoding: 'utf8' });
+  const first = build();
+  assert.equal(first.status, 0, first.stderr);
+  assert.deepEqual(readdirSync(path.join(root, 'dist')).sort(), [
+    'Catalog.js', 'Client.html', 'Code.js', 'Index.html', 'SheetCatalog.js', 'Styles.html', 'appsscript.json',
+  ]);
+  const html = readFileSync(path.join(root, 'dist/Index.html'), 'utf8');
+  assert.match(html, /class="external-link-icon"/);
+  assert.match(html, /Copyright \(c\) 2026 Lucide Icons and Contributors/);
+  assert.match(html, /Copyright \(c\) 2013-present Cole Bemis/);
+  assert.doesNotMatch(html, /<!-- external-link-icon -->/);
+  assert.doesNotMatch(html, /LOCAL PREVIEW|__preview\/version|class="footer-link repository-link"/);
+  spawnSync('git', ['init', '-q'], { cwd: root });
+  spawnSync('git', ['remote', 'add', 'origin', 'git@github.com:example/portal.git'], { cwd: root });
+  assert.equal(build().status, 0);
+  assert.doesNotMatch(readFileSync(path.join(root, 'dist/Index.html'), 'utf8'), /https:\/\/github.com\/example\/portal/);
+  assert.match(readFileSync(path.join(root, 'dist/Index.html'), 'utf8'), /<!-- portal-repository-link -->/);
+  cpSync('.claspignore' , path.join(root, '.claspignore'));
+  writeFileSync(path.join(root, '.clasp.json'), JSON.stringify({ scriptId: 'test-project', rootDir: 'dist' }));
+  for (const name of ['private.js', 'notes.html', '.secret.json']) {
+    writeFileSync(path.join(root, 'dist', name), '{}');
+  }
+  mkdirSync(path.join(root, 'dist/nested'));
+  writeFileSync(path.join(root, 'dist/nested/Code.js'), '// excluded');
+  const status = spawnSync(process.execPath, [fileURLToPath(import.meta.resolve('@google/clasp')), '--json', 'show-file-status'], {
+    cwd: root, encoding: 'utf8',
+  });
+  assert.equal(status.status, 0, status.stderr);
+  assert.deepEqual(JSON.parse(status.stdout).filesToPush.sort(), [
+    'dist/Catalog.js', 'dist/Client.html', 'dist/Code.js', 'dist/Index.html',
+    'dist/SheetCatalog.js', 'dist/Styles.html', 'dist/appsscript.json',
+  ]);
+  const bundledClient = readFileSync(path.join(root, 'dist/Client.html'), 'utf8');
+  const bundledStyles = readFileSync(path.join(root, 'dist/Styles.html'), 'utf8');
+  assert.doesNotMatch(bundledClient + bundledStyles, /@vite|LOCAL PREVIEW|__preview|demo-address/);
+  assert.match(bundledStyles, /--theme-color/);
+  assert.doesNotMatch(html, /type="module"|browser\/main.js/);
+  const app = browser(() => {}, bundledClient.replace(/^<script>\s*/, '').replace(/\s*<\/script>\s*$/, ''), html);
+  t.after(() => app.dom.window.close());
+  assert.equal(app.requests.length, 1);
+  app.requests[0].success(catalog);
+  assert.equal(app.document.querySelectorAll('#tools > li').length, 2);
+  app.document.querySelector('#view-list').click();
+  assert.equal(app.document.querySelectorAll('#tool-rows > tr').length, 2);
+  app.document.querySelector('#search').value = 'Guide';
+  app.document.querySelector('#search').dispatchEvent(new app.dom.window.Event('input'));
+  assert.equal(app.document.querySelectorAll('#tool-rows > tr').length, 1);
+  app.document.querySelector('input[value="tetsukon"]').click();
+  app.themeRequests[0].success({ ok: true, theme: 'tetsukon' });
+  assert.equal(app.document.documentElement.dataset.theme, 'tetsukon');
+  app.document.querySelector('#reset-portal-settings').click();
+  assert.equal(app.settingsRequests.length, 0);
+  app.document.querySelector('#portal-settings-form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true }));
+  app.settingsRequests[0].success({ ok: true, settings: { PORTAL_NAME: 'Built Portal', PORTAL_ICON: 'B', PORTAL_HEADLINE: 'Built headline', PORTAL_DESCRIPTION: 'Built description' } });
+  assert.equal(app.document.title, 'Built Portal');
+  assert.equal(app.document.querySelector('#page-title').textContent, 'Built headline');
+  const clientSource = path.join(root, 'src/browser/client.js');
+  const validClient = readFileSync(clientSource, 'utf8');
+  writeFileSync(clientSource, 'function broken(');
+  assert.notEqual(build().status, 0);
+  assert.equal(readFileSync(path.join(root, 'dist/Client.html'), 'utf8'), bundledClient);
+  writeFileSync(clientSource, validClient);
+  const output = path.join(root, 'dist/SheetCatalog.js');
+  const before = readFileSync(output, 'utf8');
+  writeFileSync(path.join(root, 'src/server/SheetCatalog.js'), 'function broken(');
+  assert.notEqual(build().status, 0);
+  assert.equal(readFileSync(output, 'utf8'), before);
+});

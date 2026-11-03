@@ -1,0 +1,14 @@
+node_modules/
+dist/
+/assets/
+.portal/
+.clasp.json
+.clasprc.json
+portal.config.json
+client_secret*.json
+.env
+.env.*
+*.tgz
+.DS_Store
+coverage/
+releases/

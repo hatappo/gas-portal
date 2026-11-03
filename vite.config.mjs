@@ -1,0 +1,21 @@
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import { defineConfig } from 'vite';
+import { gasPreview } from './scripts/preview.mjs';
+
+const root = fileURLToPath(new URL('.', import.meta.url));
+const port = Number(process.env.PORT || 4173);
+if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT は 1〜65535 を指定してください。');
+
+export default defineConfig({
+  root: path.join(root, 'src'),
+  publicDir: false,
+  appType: 'mpa',
+  plugins: [gasPreview(root)],
+  server: {
+    host: '127.0.0.1',
+    port,
+    strictPort: true,
+    fs: { allow: [path.join(root, 'src')] },
+  },
+});

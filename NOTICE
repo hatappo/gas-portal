@@ -1,0 +1,7 @@
+gas-portal uses the Lucide External Link icon.
+The icon's complete ISC and MIT copyright/license notices are retained in
+src/assets/external-link.svg, the distributed assets/external-link.svg,
+and the generated HTML that embeds this icon.
+
+Runtime dependencies @google/clasp and Vite are installed separately by npm
+and retain their own licenses. They are not copied into gas-portal's sources.
