@@ -236,7 +236,7 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .table-view a:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 4px; }
 .table-view .related-links a { margin: 0; color: var(--accent); text-decoration: underline; text-decoration-color: var(--line); }
 .table-view .related-links { margin-top: -10px; margin-bottom: -10px; }
-.tool-card h3 { font-size: 16px; font-weight: 600; margin: 20px 0 8px; overflow-wrap: anywhere; }
+.tool-card h3 { display: flex; align-items: flex-start; gap: 10px; font-size: 16px; font-weight: 600; margin: 20px 0 8px; overflow-wrap: anywhere; }
 .tool-description { font-size: 12px; line-height: 1.9; color: var(--muted); margin: 0; overflow-wrap: anywhere; }
 .status { padding: 45px 20px; min-height: 240px; text-align: center; background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; }
 .action-items { min-height: 240px; }
@@ -476,3 +476,11 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .actions-loading { cursor: default; }
 #actions-status:empty { display: none; }
 .action-items-list > .status { margin-top: 16px; }
+
+/* Reserve identical space before, during, and after the decorative image request. */
+.tool-favicon { position: relative; display: inline-flex; flex: 0 0 20px; width: 20px; height: 20px; margin-top: 2px; align-items: center; justify-content: center; color: var(--muted); }
+.tool-favicon-fallback { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: 18px; line-height: 20px; }
+.tool-favicon img { position: absolute; inset: 0; width: 20px; height: 20px; object-fit: contain; opacity: 0; }
+.tool-favicon.is-loaded img { opacity: 1; }
+.tool-favicon.is-loaded .tool-favicon-fallback { visibility: hidden; }
+.table-view .tool-name-link { display: inline-flex; align-items: flex-start; gap: 10px; }

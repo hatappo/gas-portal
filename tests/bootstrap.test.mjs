@@ -28,7 +28,7 @@ test('Embed JSON without allowing spreadsheet text to close script elements or c
   t.after(() => app.dom.window.close());
   assert.equal(app.requests.length, 0);
   assert.match(app.document.getElementById('tools').textContent, /window.injected/);
-  assert.equal(app.document.querySelectorAll('img').length, 0);
+  assert.equal(app.document.querySelectorAll('img:not(.tool-favicon img), [onerror]').length, 0);
   assert.equal(app.dom.window.injected, undefined);
 });
 

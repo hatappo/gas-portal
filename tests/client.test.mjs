@@ -179,11 +179,11 @@ test("Render names, descriptions, tags, and warnings as text in both views", (t)
     tools: [{ ...catalog.tools[0], name: payload, description: payload, tags: [payload] }],
     issues: [{ row: 3, message: payload }],
   });
-  assert.equal(document.querySelectorAll('img').length, 0);
+  assert.equal(document.querySelectorAll('img:not(.tool-favicon img), [onerror]').length, 0);
   assert.equal(dom.window.attacked, undefined);
   assert.ok(document.body.textContent.includes(payload));
   document.querySelector('#view-list').click();
-  assert.equal(document.querySelectorAll('img').length, 0);
+  assert.equal(document.querySelectorAll('img:not(.tool-favicon img), [onerror]').length, 0);
   assert.equal(dom.window.attacked, undefined);
   assert.ok(document.querySelector('#tool-rows').textContent.includes(payload));
 });
@@ -231,7 +231,7 @@ test("Render multiple related links as independent safe links in both views", (t
       assert.match(link.textContent, /新しいタブ/);
     });
     assert.equal(document.querySelectorAll(`${container} .related-links`).length, 1);
-    assert.equal(document.querySelectorAll('img').length, 0);
+    assert.equal(document.querySelectorAll('img:not(.tool-favicon img), [onerror]').length, 0);
     assert.equal(document.querySelector(`${container} a`).href, entry().url);
     assert.doesNotMatch(document.querySelector(container).textContent, /↗/);
     for (const link of document.querySelectorAll(`${container} a`)) {
@@ -451,4 +451,80 @@ test('Use only the refresh spinner during initial loading, refresh, and retry af
   assert.equal(refresh.getAttribute('aria-busy'), 'false');
   assert.equal(status.hidden, false);
   assert.match(status.textContent, /表示する項目がありません/);
+});
+
+test('Tool favicons share hostname-only URLs across cards and lists without exposing URL details', (t) => {
+  const { dom, document, requests } = browser();
+  t.after(() => dom.window.close());
+  requests[0].success({ ...catalog, tools: [{ ...catalog.tools[0],
+    url: 'https://GitHub.com:443/company/private?token=secret#fragment',
+    relatedLinks: [{ url: 'https://example.org/private', label: 'Related' }],
+  }] });
+  const image = document.querySelector('#tools .tool-favicon img');
+  assert.equal(image.src, 'https://www.google.com/s2/favicons?domain=github.com&sz=64');
+  assert.equal(image.loading, 'lazy');
+  assert.equal(image.decoding, 'async');
+  assert.equal(image.referrerPolicy, 'no-referrer');
+  assert.equal(image.alt, '');
+  assert.equal(image.width, 20);
+  assert.equal(image.height, 20);
+  assert.equal(image.parentElement.getAttribute('aria-hidden'), 'true');
+  assert.equal(document.querySelectorAll('#tools img').length, 1);
+  Object.defineProperties(image, { naturalWidth: { value: 64 }, naturalHeight: { value: 64 } });
+  image.dispatchEvent(new dom.window.Event('load'));
+  assert.equal(image.parentElement.classList.contains('is-loaded'), true);
+  document.querySelector('#view-list').click();
+  assert.equal(document.querySelector('#tool-rows img').src, image.src);
+  assert.equal(document.querySelectorAll('#tool-rows img').length, 1);
+  assert.equal(document.querySelector('#tool-rows a').target, '_blank');
+});
+
+test('Tool favicons retain their reserved fallback on failure and do not delay the catalog', (t) => {
+  const { dom, document, requests } = browser();
+  t.after(() => dom.window.close());
+  requests[0].success(catalog);
+  assert.equal(document.querySelector('#directory').getAttribute('aria-busy'), 'false');
+  assert.equal(document.querySelector('#search').disabled, false);
+  const frame = document.querySelector('#tools .tool-favicon');
+  frame.querySelector('img').dispatchEvent(new dom.window.Event('error'));
+  assert.equal(frame.querySelector('img'), null);
+  assert.equal(frame.querySelector('.tool-favicon-fallback').textContent, '🌐');
+  assert.equal(frame.classList.contains('is-loaded'), false);
+  assert.equal(document.querySelectorAll('#tools .tool-card').length, 2);
+});
+
+test('Tool favicons never send local hosts or IP addresses to the image service', (t) => {
+  const { dom, document, requests } = browser();
+  t.after(() => dom.window.close());
+  const urls = ['https://localhost:3000', 'https://intranet', 'https://127.0.0.1',
+    'https://10.0.0.1', 'https://8.8.8.8', 'https://2130706433', 'https://[::1]',
+    'https://[2001:db8::1]', 'https://office.local', 'https://private.internal',
+    'https://router.home.arpa', 'https://app.localhost.', 'https://app.lan',
+    'https://app.home', 'https://app.test', 'https://app.invalid', 'https://app.onion'];
+  requests[0].success({ ...catalog, tools: urls.map((url, i) => ({ ...catalog.tools[0], id: String(i), url })) });
+  assert.equal(document.querySelectorAll('#tools .tool-favicon').length, urls.length);
+  assert.equal(document.querySelectorAll('#tools img').length, 0);
+  document.querySelector('#view-list').click();
+  assert.equal(document.querySelectorAll('#tool-rows .tool-favicon').length, urls.length);
+  assert.equal(document.querySelectorAll('#tool-rows img').length, 0);
+});
+
+
+test('Use the globe emoji for undersized images in both views and retain adequate site icons', (t) => {
+  const { dom, document, requests } = browser();
+  t.after(() => dom.window.close());
+  requests[0].success(catalog);
+  for (const size of [16, 20, 64]) {
+    for (const view of ['cards', 'list']) {
+      document.querySelector('#view-' + view).click();
+      const frame = document.querySelector((view === 'cards' ? '#tools' : '#tool-rows') + ' .tool-favicon');
+      const image = frame.querySelector('img');
+      Object.defineProperties(image, { naturalWidth: { value: size }, naturalHeight: { value: size } });
+      image.dispatchEvent(new dom.window.Event('load'));
+      assert.equal(frame.querySelector('.tool-favicon-fallback').textContent, '🌐');
+      assert.equal(frame.classList.contains('is-loaded'), size >= 20);
+      assert.equal(frame.contains(image), size >= 20);
+      assert.equal(frame.getAttribute('aria-hidden'), 'true');
+    }
+  }
 });
