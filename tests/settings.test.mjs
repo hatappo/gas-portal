@@ -182,3 +182,28 @@ test('Hide optional intro elements after saving and restore them only after savi
   assert.equal(document.querySelector('#page-title').hidden, false);
   assert.equal(document.querySelector('.intro-copy').hidden, false);
 });
+
+test('Normalize lowercase ASCII icons on save and read without altering non-Latin characters', () => {
+  const userProperties = { PORTAL_ICON: 'p' };
+  const { context } = server({ userProperties });
+  assert.equal(context.getPortalContent_(userProperties).icon, 'P');
+  assert.equal(userProperties.PORTAL_ICON, 'p', 'Reading does not rewrite storage');
+  for (const [input, expected] of [[' a ', 'A'], ['z', 'Z'], ['P', 'P'], ['あ', 'あ'], ['か\u3099', 'が'], ['ハ\u309a', 'パ'], ['ア', 'ア'], ['漢', '漢'], ['ß', 'ß'], ['😀', '😀'], ['', 'P']]) {
+    const response = context.savePortalSettings(values({ PORTAL_ICON: input }));
+    assert.equal(response.ok, true);
+    assert.equal(response.settings.PORTAL_ICON, expected);
+    assert.equal(userProperties.PORTAL_ICON, expected);
+    assert.equal(context.getPortalContent_(userProperties).icon, expected);
+  }
+});
+
+test('Show the normalized icon returned by a successful save in the form and header', (t) => {
+  const { dom, document, settingsRequests } = browser();
+  t.after(() => dom.window.close());
+  document.querySelector('#setting-icon').value = 't';
+  document.querySelector('#portal-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+  const request = settingsRequests.at(-1);
+  request.success(plain(server().context.savePortalSettings(request.settings)));
+  assert.equal(document.querySelector('#setting-icon').value, 'T');
+  assert.equal(document.querySelector('.brand-mark').textContent, 'T');
+});

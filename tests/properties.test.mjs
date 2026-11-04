@@ -65,7 +65,7 @@ test("Release the initialization lock after storage failures", () => {
 test('Render an unconfigured portal without consulting Script Properties', () => {
   const userProperties = {};
   let scriptReads = 0;
-  const output = { setTitle() { return this; }, addMetaTag() { return this; } };
+  const output = { setTitle() { return this; }, setFaviconUrl() { return this; }, addMetaTag() { return this; } };
   const template = { evaluate: () => output };
   const { context, calls } = server({
     PropertiesService: {

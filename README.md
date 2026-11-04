@@ -134,6 +134,16 @@ git push origin vVERSION
 
 Commit the release's source and workflow changes before tagging. Existing releases are not overwritten. Publish a new version whenever package contents change. The local `v0.1.0` tag predates this distribution workflow, so use a new version for the first release through it.
 
+## Favicon hosting
+
+The GAS page uses a public PNG selected from its saved theme and icon letter. The assets are hosted at `https://hatappo.github.io/gas-portal/favicons/<theme>/<character>.png`. A–Z retain their letter filenames; hiragana and katakana use lowercase Unicode code point filenames, such as `u3042.png` for あ. Supported kana include voiced and semi-voiced letters, small kana, historical ゐ/ゑ and ヰ/ヱ, iteration marks, and ー. Combining dakuten and handakuten are composed before validating the one-character setting. Other characters, including kanji and emoji, remain unchanged in the portal header and use the shared `favicons/fallback.png`: the 玄 glyph from [Kouzan Brush Font Sousho](https://opentype.jp/kouzansousho.htm) by Aoyagi Kouzan in iron indigo on a transparent background. It is identical for all themes; explicitly selecting `P` still uses the normal letter icon. Automatic theme mode uses the Tsuyukusa favicon because the initial GAS response cannot read the browser color preference. Reload the page after changing the theme or letter to update the browser tab icon; the browser may also cache the image.
+
+Run `npm run build:favicons` to generate 2,070 letter PNGs plus one shared fallback (2,071 total), all at 64 × 64, and a gallery in `site/`. Colors come from the existing theme CSS; letter outlines use the bundled development dependencies Libre Baskerville (A–Z) and Shippori Mincho (kana). The unchanged fallback glyph outline lives in `src/assets/favicon-fallback.svg` and is rasterized during the build. The font publisher permits commercial and logo use; the original font binary is not bundled. See NOTICE for provenance. No system fonts or rendering service are required, and generated files are not committed or included in the GAS package.
+
+For the upstream repository, select **Settings → Pages → Build and deployment → Source: GitHub Actions** once. After merging the workflow into `main`, the **Favicon assets** workflow builds and publishes only `site/`. It can also be run manually on `main`. The public endpoint must be published before deployed portals can load these favicons. Forks continue to use the upstream image URLs; the publishing job is restricted to the upstream repository.
+
+The browser requests the selected public theme/letter image from GitHub Pages. No tokens, spreadsheet contents, or other settings are included. If image hosting is unavailable, the portal still works, but its tab icon may be missing. Kanji favicons would need additional generated assets or a separately operated image endpoint.
+
 ## Contributing
 
 Write documentation, code comments, CLI messages, test names, and commit messages in English. Use Conventional Commits, for example `feat(i18n): add language selection`. Existing Git history is not rewritten solely to translate commit messages.

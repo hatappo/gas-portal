@@ -225,7 +225,7 @@ test('Save cache duration separately, group preferences under display settings, 
 
 
 test('Embed the same cached catalog during doGet without an additional Sheets call', () => {
-  const output = { setTitle() { return this; }, addMetaTag() { return this; } };
+  const output = { setTitle() { return this; }, setFaviconUrl() { return this; }, addMetaTag() { return this; } };
   const template = { evaluate: () => output };
   const { context, calls } = cachedServer({ HtmlService: { createTemplateFromFile: () => template }, ScriptApp: { getScriptId: () => 'test' } });
   context.doGet();
@@ -257,7 +257,7 @@ test('Cache first-sheet resolution, normalize URL keys, and resolve tab reorderi
 });
 
 test('Discard pre-hidden caches and exclude hidden entries from RPC, HTML bootstrap, and new cache entries', () => {
-  const output = { setTitle() { return this; }, addMetaTag() { return this; } };
+  const output = { setTitle() { return this; }, setFaviconUrl() { return this; }, addMetaTag() { return this; } };
   const template = { evaluate: () => output };
   const fixture = cachedServer({ HtmlService: { createTemplateFromFile: () => template }, ScriptApp: { getScriptId: () => 'test' } });
   const { context, values, cache, entries, writes } = fixture;

@@ -8,6 +8,7 @@ function doGet() {
   template.projectUrl = 'https://script.google.com/home/projects/' + encodeURIComponent(ScriptApp.getScriptId()) + '/edit';
   return template.evaluate()
     .setTitle(portal.name)
+    .setFaviconUrl(getPortalFaviconUrl_(template.theme, portal.icon))
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
@@ -79,13 +80,32 @@ function getPortalContent_(properties) {
     languagePreference,
     cacheSeconds: String(normalizeCatalogCacheTtl_(properties.CATALOG_CACHE_SECONDS)),
     defaultsJson: JSON.stringify(defaults),
-    icon: Array.from(properties.PORTAL_ICON?.trim() || defaults.PORTAL_ICON)[0],
+    icon: Array.from(normalizePortalIcon_(properties.PORTAL_ICON?.trim() || defaults.PORTAL_ICON))[0],
     brandLead: split < 0 ? name : name.slice(0, split),
     brandRest: split < 0 ? '' : name.slice(split),
     headline: content('PORTAL_HEADLINE'),
     description: content('PORTAL_DESCRIPTION'),
     spreadsheetUrl: /^[\w-]+$/.test(spreadsheetId) ? 'https://docs.google.com/spreadsheets/d/' + spreadsheetId + '/edit' : '',
   };
+}
+
+/** Compose combining marks and uppercase ASCII; preserve other single-character icons. @param {string} icon */
+function normalizePortalIcon_(icon) {
+  return icon.normalize('NFC').replace(/[a-z]/g, (letter) => letter.toUpperCase());
+}
+
+/** Public static assets contain no user settings beyond the selected theme and letter.
+ * Auto uses the light default because doGet cannot read the browser's color preference.
+ * @param {string} theme @param {string} icon
+ */
+function getPortalFaviconUrl_(theme, icon) {
+  const color = theme !== 'auto' && isPortalTheme_(theme) ? theme : 'tsuyukusa';
+  const normalized = normalizePortalIcon_(icon);
+  const supported = /^[A-Z\u3041-\u3096\u309d-\u309e\u30a1-\u30fa\u30fc-\u30fe]$/.test(normalized);
+  if (!supported) return 'https://hatappo.github.io/gas-portal/favicons/fallback.png';
+  const letter = normalized;
+  const filename = /^[A-Z]$/.test(letter) ? letter : 'u' + letter.charCodeAt(0).toString(16);
+  return 'https://hatappo.github.io/gas-portal/favicons/' + color + '/' + filename + '.png';
 }
 
 /** Supported display properties and their defaults. */
@@ -177,7 +197,7 @@ function validatePortalSettings_(input, language = 'en') {
   for (const [key, fallback] of Object.entries(defaults)) {
     const value = values[key];
     if (typeof value !== 'string') throw new Error(PortalI18n.t("Enter display settings as text."));
-    const trimmed = value.trim();
+    const trimmed = key === 'PORTAL_ICON' ? normalizePortalIcon_(value.trim()) : value.trim();
     if (Array.from(trimmed).length > limits[key]) throw new Error(PortalI18n.t('{key} must contain at most {limit} characters.', 'ja', { key, limit: limits[key] }));
     settings[key] = key === 'PORTAL_HEADLINE' || key === 'PORTAL_DESCRIPTION' ? trimmed : trimmed || fallback;
   }

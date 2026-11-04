@@ -80,7 +80,7 @@ test('Show embedded failures and malformed data safely, retain settings access, 
 });
 
 test('Keep rendering the HTML shell when the initial spreadsheet read fails', () => {
-  const output = { setTitle() { return this; }, addMetaTag() { return this; } };
+  const output = { setTitle() { return this; }, setFaviconUrl() { return this; }, addMetaTag() { return this; } };
   const template = { evaluate: () => output };
   const { context } = server({ values: [], HtmlService: { createTemplateFromFile: () => template }, ScriptApp: { getScriptId: () => 'test' } });
   assert.equal(context.doGet(), output);

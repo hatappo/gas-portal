@@ -17,7 +17,7 @@ test("Map legacy Shikon values to Kuri without rewriting storage until save", ()
 test("Persist themes in User Properties without changing Script Properties", () => {
   const userProperties = {};
   const properties = { PORTAL_NAME: 'Example', PORTAL_THEME: 'not-used' };
-  const template = { evaluate: () => ({ setTitle() { return this; }, addMetaTag() { return this; } }) };
+  const template = { evaluate: () => ({ setTitle() { return this; }, setFaviconUrl() { return this; }, addMetaTag() { return this; } }) };
   const { context } = server({ userProperties, properties,
     HtmlService: { createTemplateFromFile: () => template }, ScriptApp: { getScriptId: () => 'test' },
   });

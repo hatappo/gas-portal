@@ -61,7 +61,7 @@ test("Restore and save themes without mixing concurrent response handlers", (t) 
 });
 
 test("Save, restore, and reset display settings while preserving the theme", (t) => {
-  const settings = { PORTAL_NAME: 'Local Portal', PORTAL_ICON: 'L', PORTAL_HEADLINE: 'Local headline', PORTAL_DESCRIPTION: 'Local description' };
+  const settings = { PORTAL_NAME: 'Local Portal', PORTAL_ICON: 'l', PORTAL_HEADLINE: 'Local headline', PORTAL_DESCRIPTION: 'Local description' };
   const storage = { 'portal-preview-settings': JSON.stringify(settings), 'portal-preview-theme': 'kuri' };
   const dom = new JSDOM(renderPreview(source, process.cwd()));
   t.after(() => dom.window.close());
@@ -71,10 +71,13 @@ test("Save, restore, and reset display settings while preserving the theme", (t)
   });
   vm.runInContext(dom.window.document.querySelector('script:not([src]):not([type="application/json"])').textContent, context);
   assert.equal(dom.window.document.querySelector('#setting-name').value, 'Local Portal');
+  assert.equal(dom.window.document.querySelector('#setting-icon').value, 'L');
   const run = vm.runInContext('google.script.run', context);
   let result;
   run.withSuccessHandler((value) => { result = value; }).savePortalSettings({ ...settings, PORTAL_NAME: 'Updated' });
   assert.equal(result.settings.PORTAL_NAME, 'Updated');
+  assert.equal(result.settings.PORTAL_ICON, 'L');
+  assert.equal(JSON.parse(storage['portal-preview-settings']).PORTAL_ICON, 'L');
   assert.equal(JSON.parse(storage['portal-preview-settings']).PORTAL_NAME, 'Updated');
   run.withSuccessHandler((value) => { result = value; }).resetPortalSettings();
   assert.equal(result.settings.PORTAL_NAME, 'My Portal');
