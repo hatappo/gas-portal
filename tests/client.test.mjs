@@ -92,7 +92,7 @@ test("Search tags without showing labels for tools that have no tags", (t) => {
   assert.equal(document.querySelectorAll('#tools a').length, 1);
 });
 
-test("Disable controls while loading or after failure and offer a browser reload", (t) => {
+test("Disable controls while loading or after failure and offer a forced refresh", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   assert.equal(document.querySelector('#search').disabled, true);
@@ -103,7 +103,7 @@ test("Disable controls while loading or after failure and offer a browser reload
   assert.equal(document.querySelector('#reload'), null);
   assert.equal(document.querySelectorAll('#tool-rows tr').length, 0);
   assert.equal(document.querySelector('#table-view').hidden, true);
-  assert.match(document.querySelector('#status-description').textContent, /ブラウザでページを再読み込み/);
+  assert.match(document.querySelector('#status-description').textContent, /最新データを取得/);
 });
 
 test("Replace loading state with tools that open in new tabs", (t) => {
@@ -159,7 +159,7 @@ test("Show transport and server failures and recover after reopening", (t) => {
     fail(requests[0]);
     assert.match(document.querySelector('#status-title').textContent, /取得できません/);
     assert.doesNotMatch(document.body.textContent, /private-id/);
-    assert.match(document.querySelector('#status-description').textContent, /ブラウザ/);
+    assert.match(document.querySelector('#status-description').textContent, /最新データを取得/);
   }
   const fresh = browser();
   t.after(() => fresh.dom.window.close());
@@ -205,7 +205,7 @@ test("Ignore successful responses that arrive after timeout", (t) => {
   requests[0].success(catalog);
   assert.equal(document.querySelectorAll('#tools a').length, 0);
   assert.match(document.querySelector('#status-title').textContent, /取得できません/);
-  assert.match(document.querySelector('#status-description').textContent, /ブラウザ/);
+  assert.match(document.querySelector('#status-description').textContent, /最新データを取得/);
 });
 
 test("Render multiple related links as independent safe links in both views", (t) => {

@@ -3,10 +3,14 @@ import { readFileSync } from 'node:fs';
 /** Escape text like GAS output tags so it cannot execute as HTML. */
 export function withPreviewContent(html, portal, theme = 'auto') {
   const escapes = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-  return html.replace('<?= theme ?>', () => theme.replace(/[&<>"']/g, (character) => escapes[character]))
+  return html
+    .replace('<? if (!portal.headline && !portal.description) { ?>hidden<? } ?>', !portal.headline && !portal.description ? 'hidden' : '')
+    .replace('<? if (!portal.headline) { ?>hidden<? } ?>', !portal.headline ? 'hidden' : '')
+    .replace('<? if (!portal.description) { ?>hidden<? } ?>', !portal.description ? 'hidden' : '')
+    .replace('<?= theme ?>', () => theme.replace(/[&<>"']/g, (character) => escapes[character]))
     .replace(/<\? if \(portal\.spreadsheetUrl\) \{ \?>([\s\S]*?)<\? \} \?>/g,
     (_, content) => portal.spreadsheetUrl ? content : '')
-    .replace(/<\?= portal\.(languagePreference|language|name|brandLead|brandRest|headline|description|spreadsheetUrl|icon|defaultsJson) \?>/g,
+    .replace(/<\?= portal\.(cacheSeconds|languagePreference|language|name|brandLead|brandRest|headline|description|spreadsheetUrl|icon|defaultsJson) \?>/g,
     (_, key) => portal[key].replace(/[&<>"']/g, (character) => escapes[character]));
 }
 

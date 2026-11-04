@@ -8,22 +8,24 @@ test("Read the configured sheet regardless of position and preserve the RPC shap
     properties: { SPREADSHEET_ID: ' test-id ', SHEET_NAME: "仕事's リンク" },
     sheetProperties: [{ title: 'Other', index: 0 }, { title: "仕事's リンク", index: 1 }],
   });
-  assert.deepEqual(plain(context.getCatalog()), {
+  const { cache, ...response } = plain(context.getCatalog());
+  assert.equal(cache.hit, false);
+  assert.ok(cache.fetchedAt > 0);
+  assert.deepEqual(response, {
     ok: true, tools: [{ ...entry(), category: 'その他' }], issues: [],
   });
   assert.deepEqual(plain(calls), [
-    ['get', 'test-id', { fields: 'sheets(properties(title))' }],
     ['values', 'test-id', "'仕事''s リンク'", { valueRenderOption: 'FORMATTED_VALUE' }],
   ]);
 });
 
-test("Reload spreadsheet data on every request", () => {
+test("Reload spreadsheet data when cache service is unavailable", () => {
   const values = sheetRows([entry()]);
   const { context, calls } = server({ values });
   assert.equal(context.getCatalog().tools[0].name, entry().name);
   values[1][1] = '変更後';
   assert.equal(context.getCatalog().tools[0].name, '変更後');
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 2);
 });
 
 test("Report missing services, sheets, and headers safely", () => {
@@ -81,7 +83,8 @@ test("Generate the editor URL from the current project and set the page title", 
     assert.equal(template.projectUrl, `https://script.google.com/home/projects/${scriptId}/edit`);
     assert.equal(title, 'My Portal');
     assert.equal(template.portal.spreadsheetUrl, 'https://docs.google.com/spreadsheets/d/test-spreadsheet-id/edit');
-    assert.equal(calls.length, 0, 'Rendering the page must not read the spreadsheet');
+    assert.equal(calls.length, 1, 'A cold page embeds the catalog with a single values request');
+    assert.equal(JSON.parse(template.initialCatalogJson).ok, true);
   }
 });
 
@@ -96,7 +99,7 @@ test("Generate spreadsheet links only for valid configured IDs", () => {
   }
 });
 
-test("Read display properties, apply defaults for blank values, and reflect subsequent changes", () => {
+test("Read display properties, apply defaults for missing fields, and reflect subsequent changes", () => {
   const userProperties = {};
   let title;
   const output = { setTitle(value) { title = value; return this; }, addMetaTag() { return this; } };
@@ -125,6 +128,6 @@ test("Read display properties, apply defaults for blank values, and reflect subs
   assert.equal(title, '仕事場');
   assert.equal(template.portal.brandLead, title);
   assert.equal(template.portal.brandRest, '');
-  assert.equal(template.portal.headline, 'One place to start your workday.');
-  assert.equal(template.portal.description, 'Keep your work tools, service links, and daily to-dos in one place.');
+  assert.equal(template.portal.headline, '');
+  assert.equal(template.portal.description, '');
 });

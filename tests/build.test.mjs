@@ -26,7 +26,10 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   assert.match(html, /class="external-link-icon"/);
   assert.match(html, /Copyright \(c\) 2026 Lucide Icons and Contributors/);
   assert.match(html, /Copyright \(c\) 2013-present Cole Bemis/);
-  assert.doesNotMatch(html, /<!-- external-link-icon -->/);
+  for (const icon of ['external-link', 'refresh-cw', 'layout-grid', 'list']) {
+    assert.match(html, new RegExp(`class="${icon}-icon"`));
+    assert.doesNotMatch(html, new RegExp(`<!-- ${icon}-icon -->`));
+  }
   assert.doesNotMatch(html, /LOCAL PREVIEW|__preview\/version|class="footer-link repository-link"/);
   spawnSync('git', ['init', '-q'], { cwd: root });
   spawnSync('git', ['remote', 'add', 'origin', 'git@github.com:example/portal.git'], { cwd: root });
@@ -53,11 +56,17 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   assert.doesNotMatch(bundledClient + bundledStyles, /@vite|LOCAL PREVIEW|__preview|demo-address/);
   assert.match(bundledStyles, /--theme-color/);
   assert.doesNotMatch(html, /type="module"|browser\/main.js/);
-  const app = browser(() => {}, bundledClient.replace(/^<script>\s*/, '').replace(/\s*<\/script>\s*$/, ''), html);
+  const app = browser((window) => { window.document.getElementById('initial-catalog').textContent = JSON.stringify(catalog); }, bundledClient.replace(/^<script>\s*/, '').replace(/\s*<\/script>\s*$/, ''), html);
   t.after(() => app.dom.window.close());
-  assert.equal(app.requests.length, 1);
-  app.requests[0].success(catalog);
+  assert.equal(app.requests.length, 0, 'The built client renders embedded data without an initial RPC');
   assert.equal(app.document.querySelectorAll('#tools > li').length, 2);
+  for (const [id, label] of [['view-cards', 'Cards'], ['view-list', 'List']]) {
+    const button = app.document.getElementById(id);
+    assert.equal(button.title, label);
+    assert.equal(button.getAttribute('aria-label'), label);
+    assert.equal(button.textContent.trim(), '');
+    assert.equal(button.querySelector('svg').getAttribute('aria-hidden'), 'true');
+  }
   app.document.querySelector('#view-list').click();
   assert.equal(app.document.querySelectorAll('#tool-rows > tr').length, 2);
   app.document.querySelector('#search').value = 'Guide';

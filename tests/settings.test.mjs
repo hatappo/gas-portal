@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { readFileSync } from 'node:fs';
+import { JSDOM } from 'jsdom';
+import { withPreviewContent } from '../scripts/preview-project.mjs';
 import { browser, server, plain } from './helpers.mjs';
 
 const values = (overrides = {}) => ({ PORTAL_NAME: 'Fumi Portal', PORTAL_ICON: 'F', PORTAL_HEADLINE: '今日の仕事', PORTAL_DESCRIPTION: 'リンクとタスク', ...overrides });
@@ -122,4 +125,60 @@ test("Ignore late settings responses after timeout and request a reload", (t) =>
   assert.equal(document.title, 'My Portal');
   assert.equal(document.querySelector('#portal-settings-fields').disabled, false);
   assert.match(document.querySelector('#portal-settings-status').textContent, /再読み込み/);
+});
+
+
+test('Persist empty intro text, preserve it during initialization, and hide it before client startup', (t) => {
+  const userProperties = {};
+  const { context } = server({ userProperties });
+  const result = context.savePortalSettings(values({ PORTAL_HEADLINE: '  ', PORTAL_DESCRIPTION: '\n' }));
+  assert.equal(result.settings.PORTAL_HEADLINE, '');
+  assert.equal(result.settings.PORTAL_DESCRIPTION, '');
+  context.initializeProperties();
+  const content = context.getPortalContent_(userProperties);
+  assert.equal(content.headline, '');
+  assert.equal(content.description, '');
+  const html = withPreviewContent(readFileSync('src/Index.html', 'utf8'), content).replace(/<\?[\s\S]*?\?>/g, '');
+  const dom = new JSDOM(html);
+  t.after(() => dom.window.close());
+  assert.equal(dom.window.document.querySelector('.intro').hidden, true);
+  assert.equal(dom.window.document.querySelector('#page-title').hidden, true);
+  assert.equal(dom.window.document.querySelector('.intro-copy').hidden, true);
+  assert.equal(context.getPortalContent_({}).headline, 'One place to start your workday.');
+});
+
+test('Hide optional intro elements after saving and restore them only after saving defaults', (t) => {
+  const { dom, document, settingsRequests, languageRequests } = browser();
+  t.after(() => dom.window.close());
+  const save = (headline, description) => {
+    document.querySelector('#setting-headline').value = headline;
+    document.querySelector('#setting-description').value = description;
+    document.querySelector('#portal-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+    const request = settingsRequests.at(-1);
+    request.success({ ok: true, settings: request.settings });
+  };
+  const intro = document.querySelector('.intro');
+  save('', 'Description only');
+  assert.equal(intro.hidden, false);
+  assert.equal(document.querySelector('#page-title').hidden, true);
+  assert.equal(document.querySelector('.intro-copy').hidden, false);
+  assert.equal(intro.hasAttribute('aria-labelledby'), false);
+  save('Headline only', '');
+  assert.equal(document.querySelector('#page-title').hidden, false);
+  assert.equal(document.querySelector('.intro-copy').hidden, true);
+  assert.equal(intro.getAttribute('aria-labelledby'), 'page-title');
+  save('', '');
+  assert.equal(intro.hidden, true);
+  const language = document.querySelector('#portal-language');
+  language.value = 'en';
+  language.dispatchEvent(new dom.window.Event('change'));
+  languageRequests.at(-1).success({ ok: true, language: 'en' });
+  assert.equal(document.querySelector('#setting-headline').value, '');
+  assert.equal(intro.hidden, true);
+  document.querySelector('#reset-portal-settings').click();
+  assert.equal(intro.hidden, true, 'Reset affects only form fields until saved');
+  save(document.querySelector('#setting-headline').value, document.querySelector('#setting-description').value);
+  assert.equal(intro.hidden, false);
+  assert.equal(document.querySelector('#page-title').hidden, false);
+  assert.equal(document.querySelector('.intro-copy').hidden, false);
 });

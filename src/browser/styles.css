@@ -169,9 +169,11 @@ button, a, input { -webkit-tap-highlight-color: transparent; }
 .external-link-icon { width: 15px; height: 15px; flex-shrink: 0; }
 main { width: 100%; max-width: 1040px; flex: 1; margin: 0 auto; padding: 0 40px 60px; }
 .intro { padding: 48px 0 36px; }
+.intro[hidden] + .portal-tabs { margin-top: 24px; }
 .preview-label { margin: 0; margin-inline-start: auto; max-width: 46%; text-align: end; color: var(--accent); font-family: "Avenir Next", Avenir, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: .18em; }
 .preview-label span { white-space: nowrap; }
 h1 { margin: 0; font-size: clamp(25px, 3.5vw, 36px); line-height: 1.6; font-weight: 600; letter-spacing: .045em; overflow-wrap: anywhere; }
+#page-title[hidden] + .intro-copy { margin-top: 0; }
 .intro-copy { margin: 14px 0 0; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
 .portal-tabs { display: flex; gap: 24px; margin-bottom: 28px; border-bottom: 1px solid var(--line); }
 .portal-tabs button { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; min-height: 48px; margin-bottom: -1px; padding: 10px 0 14px; border: 0; border-bottom: 2px solid transparent; color: var(--muted); background: transparent; font-size: 15px; font-weight: 600; text-align: left; }
@@ -191,10 +193,11 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .segmented-control button { min-height: 44px; padding: 8px 16px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 12px; white-space: nowrap; }
 .segmented-control button:hover { background: var(--hover); }
 .segmented-control button[aria-pressed="true"] { color: var(--accent); background: var(--surface); box-shadow: 0 1px 3px #26384418; font-weight: 600; }
-.view-switch span { margin-right: 4px; }
-.tag-filter { padding: 8px 0 22px; }
-.tag-heading { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; font-size: 12px; font-weight: 600; }
-.tags { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 8px; }
+.segmented-control.view-switch button { display: inline-flex; align-items: center; justify-content: center; width: 44px; padding: 0; }
+.view-switch svg { width: 18px; height: 18px; }
+.tag-filter { display: flex; align-items: flex-start; gap: 12px; padding: 0 0 22px; }
+.tag-heading { flex-shrink: 0; display: flex; align-items: center; min-height: 44px; font-size: 12px; font-weight: 600; }
+.tags { display: flex; flex: 1; min-width: 0; flex-wrap: wrap; gap: 6px; }
 .tag-button { min-height: 44px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 24px; background: transparent; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
 .tag-button:hover { background: var(--hover); }
 .tag-button[aria-pressed="true"] { background: var(--theme-color); border-color: var(--theme-color); color: var(--on-theme); }
@@ -309,7 +312,9 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
   .theme-preview { padding: 12px; }
 }
 
-.portal-settings-form { margin-bottom: 36px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+.display-settings { margin-bottom: 36px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+.portal-settings-form { margin: 0; }
+.display-settings > :last-child { margin-bottom: 0; }
 .portal-settings-form fieldset { padding: 0; margin: 24px 0 0; border: 0; min-width: 0; }
 .settings-fields-row { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 20px; }
 .settings-field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; color: var(--muted); font-size: 12px; }
@@ -325,10 +330,10 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .settings-form-status { min-height: 24px; margin: 12px 0 0; color: var(--accent); font-size: 12px; }
 @media (max-width: 600px) { .settings-fields-row { grid-template-columns: minmax(0, 1fr) 80px; gap: 12px; } }
 
-.language-settings { margin-bottom: 28px; }
-.language-settings .settings-field { max-width: 280px; }
-.language-settings select { min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); }
-.language-settings p { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+.language-settings, .cache-settings { margin: 28px 0; }
+.language-settings .settings-field, .cache-settings .settings-field { max-width: 280px; }
+.language-settings select, .cache-settings select { min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); }
+.language-settings p, .cache-settings p { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
 #language-status:empty { display: none; }
 
 /* Accent colors from https://www.colordic.org/w; companion shades preserve text contrast. */
@@ -399,3 +404,12 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .theme-auto-swatches i { width: 24px; height: 32px; background: var(--paper); border: 1px solid var(--line); }
 .theme-auto-swatches i:first-child { border-radius: 16px 0 0 16px; }
 .theme-auto-swatches i:last-child { border-radius: 0 16px 16px 0; }
+
+.refresh-catalog { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 6px; min-width: 44px; min-height: 44px; margin-inline-start: auto; padding: 8px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; white-space: nowrap; cursor: pointer; }
+.refresh-catalog:is(:hover, :focus-visible):not(:disabled) { background: var(--surface-soft); color: var(--accent); }
+.refresh-catalog:disabled { cursor: wait; opacity: .55; }
+.refresh-catalog svg { width: 18px; height: 18px; }
+.catalog-freshness { color: inherit; font-size: 11px; }
+@media (max-width: 1100px) { .directory-toolbar { flex-wrap: wrap; } .search-box { flex-basis: 100%; } .filter-toolbar { width: 100%; justify-content: flex-start; } }
+
+.settings-help { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 0 0 20px; }

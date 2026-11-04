@@ -33,6 +33,7 @@ export function renderPreview(html, root, options = {}) {
   // Use optional environment variables only for footer links; do not contact Sheets.
   const portal = context.getPortalContent_({}, { SPREADSHEET_ID: options.spreadsheetId ?? process.env.SPREADSHEET_ID ?? '' });
   return withPreviewContent(withPreviewProject(withPortalAssets(html, root), options.configPath ?? path.join(root, '.clasp.json')), portal)
+    .replace('<?!= initialCatalogJson ?>', () => context.serializeCatalog_(catalog))
     .replace('<!-- preview-label -->', '<p class="preview-label"><span>LOCAL PREVIEW</span> · <span data-i18n="Mock data">Mock data</span></p>')
     .replace('<script type="module" src="/browser/main.js"></script>', () => `<script>
       ${i18n}
@@ -55,6 +56,10 @@ export function renderPreview(html, root, options = {}) {
           });
         }
       } catch { /* Use HTML defaults when stored values are invalid or browser storage is unavailable. */ }
+      const normalizeCatalogCacheTtl_ = ${context.normalizeCatalogCacheTtl_.toString()};
+      let previewCacheSeconds = 21600;
+      try { previewCacheSeconds = normalizeCatalogCacheTtl_(localStorage.getItem('portal-preview-cache-seconds')); } catch { /* Use defaults. */ }
+      if (typeof document !== 'undefined') document.getElementById('catalog-cache-seconds').dataset.savedValue = String(previewCacheSeconds);
       const demo = ${serialize(demo)};
       const catalog = ${serialize(catalog)};
       const scenario = new URLSearchParams(location.search).get('state');
@@ -64,6 +69,30 @@ export function renderPreview(html, root, options = {}) {
         const theme = storedTheme === 'shikon' ? 'kuri' : storedTheme;
         if (Array.from(document.querySelectorAll('input[name="portal-theme"]')).some(input => input.value === theme)) document.documentElement.dataset.theme = theme;
       } catch { /* Use defaults when the browser denies storage access. */ }
+      function readPreviewCatalog(forceRefresh = false) {
+        if (scenario === 'error') return {ok:false, error:PortalI18n.t('Select Fetch latest to try again. If the problem persists, check the GAS settings.')};
+        if (scenario === 'empty') return {ok:true, tools:[], issues:[]};
+        if (scenario === 'invalid') return {ok:true, tools:[], issues:[{row:2, message:PortalI18n.t('Enter a valid HTTPS URL in url.')}]};
+        if (scenario === 'config') return {ok:false, error:PortalI18n.t('The first row must contain id, name, and url columns. Also check for duplicate column names.')};
+        let cached;
+        try {
+          const value = JSON.parse(localStorage.getItem('portal-preview-catalog') || 'null');
+          if (!forceRefresh && previewCacheSeconds > 0 && Number.isFinite(value?.fetchedAt) && Date.now() - value.fetchedAt >= 0 && Date.now() - value.fetchedAt < previewCacheSeconds * 1000) cached = value;
+        } catch { /* Storage is optional in previews too. */ }
+        if (forceRefresh || previewCacheSeconds === 0) {
+          try { localStorage.removeItem('portal-preview-catalog'); } catch { /* Ignore unavailable storage. */ }
+        }
+        const fetchedAt = cached?.fetchedAt || Date.now();
+        if (!cached && previewCacheSeconds > 0) {
+          try { localStorage.setItem('portal-preview-catalog', JSON.stringify({fetchedAt, seconds:previewCacheSeconds})); } catch { /* Still return mock data. */ }
+        }
+        return {...catalog, cache:{hit:Boolean(cached), fetchedAt}};
+      }
+      // Production embeds data during doGet; preview simulates this without an initial RPC.
+      if (typeof document !== 'undefined') {
+        const initial = document.getElementById('initial-catalog');
+        if (initial) initial.textContent = JSON.stringify(readPreviewCatalog());
+      }
       const google = {script: {run: {
         withSuccessHandler(fn) {return {...this, success: fn};},
         withFailureHandler(fn) {return {...this, failure: fn};},
@@ -90,12 +119,17 @@ export function renderPreview(html, root, options = {}) {
             this.success({ok:true, theme});
           } catch { this.failure(); }
         }, 200);},
-        getCatalog() {setTimeout(() => {
+        saveCatalogCacheTtl(seconds) {setTimeout(() => {
+          if (typeof seconds !== 'number' || ![0, 300, 3600, 21600].includes(seconds)) return this.success({ok:false});
+          try {
+            localStorage.setItem('portal-preview-cache-seconds', String(seconds));
+            previewCacheSeconds = seconds;
+            this.success({ok:true, seconds});
+          } catch { this.failure(); }
+        }, 200);},
+        getCatalog(forceRefresh = false) {setTimeout(() => {
           if (scenario === 'error') return this.failure();
-          if (scenario === 'empty') return this.success({ok:true, tools:[], issues:[]});
-          if (scenario === 'invalid') return this.success({ok:true, tools:[], issues:[{row:2, message:PortalI18n.t('Enter a valid HTTPS URL in url.')}]});
-          if (scenario === 'config') return this.success({ok:false, error:PortalI18n.t('The first row must contain id, name, and url columns. Also check for duplicate column names.')});
-          this.success(catalog);
+          this.success(readPreviewCatalog(forceRefresh));
         }, 350);}
       }}};
     </script>\n<script type="module" src="/browser/main.js"></script>`);
@@ -116,7 +150,7 @@ export function gasPreview(root) {
       const configPath = path.join(root, '.clasp.json');
       server.watcher.add(configPath);
       server.watcher.on('change', (file) => {
-        if (file === configPath || file.startsWith(path.join(root, 'src/server/')) || file === path.join(root, 'src/assets/external-link.svg')) {
+        if (file === configPath || file.startsWith(path.join(root, 'src/server/')) || file.startsWith(path.join(root, 'src/assets/'))) {
           server.ws.send({ type: 'full-reload' });
         }
       });

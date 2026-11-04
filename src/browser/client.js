@@ -10,6 +10,9 @@
     return node;
   }
   const search = /** @type {HTMLInputElement} */ (element('search'));
+  const refresh = /** @type {HTMLButtonElement} */ (element('refresh-catalog'));
+  /** @type {{hit: boolean, fetchedAt: number} | undefined} */
+  let freshness;
   const reset = /** @type {HTMLButtonElement} */ (element('reset'));
   /** @type {CatalogTool[]} */
   let tools = [];
@@ -260,6 +263,7 @@
 
   /** @param {boolean} value */
   function setLoading(value) {
+    refresh.disabled = value;
     setControlsDisabled(value);
     element('directory').setAttribute('aria-busy', String(value));
   }
@@ -289,10 +293,13 @@
   function showError(message = undefined) {
     setLoading(false);
     setControlsDisabled(true);
+    catalogReady = false;
+    freshness = undefined;
+    renderFreshness();
     tools = [];
     issues = [];
     clearResults();
-    showStatus(t("Could not load the tool list"), (message ? PortalI18n.translate(message, document.documentElement.lang) : '') || t("Reload the page in your browser. If the problem persists, check the GAS settings."));
+    showStatus(t("Could not load the tool list"), (message ? PortalI18n.translate(message, document.documentElement.lang) : '') || t("Select Fetch latest to try again. If the problem persists, check the GAS settings."));
   }
 
   /** @param {CatalogTool} tool */
@@ -317,7 +324,43 @@
     }
   }
 
-  function loadCatalog() {
+  function renderFreshness() {
+    const target = element('catalog-freshness');
+    target.hidden = !freshness;
+    if (!freshness) { target.textContent = ''; return; }
+    const time = new Date(freshness.fetchedAt).toLocaleTimeString(document.documentElement.lang, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    target.textContent = t(freshness.hit ? 'Cached · Retrieved {time}' : 'Retrieved {time}', { time });
+  }
+
+  /** Use the same validation and rendering for embedded data and refresh responses. @param {CatalogResponse} response */
+  function receiveCatalog(response) {
+    if (response && !response.ok && typeof response.error === 'string') {
+      showError(response.error);
+      return;
+    }
+    if (!response || !response.ok || !Array.isArray(response.tools) ||
+        !Array.isArray(response.issues) || !response.tools.every(safeTool)) {
+      showError();
+      return;
+    }
+    catalogReady = true;
+    freshness = response.cache && typeof response.cache.hit === 'boolean' && Number.isFinite(response.cache.fetchedAt) && response.cache.fetchedAt > 0 ? response.cache : undefined;
+    renderFreshness();
+    tools = response.tools;
+    issues = response.issues;
+    const availableTags = new Set(tools.flatMap((tool) => tool.tags));
+    selectedTags = new Set([...selectedTags].filter((tag) => availableTags.has(tag)));
+    setLoading(false);
+    renderTags();
+    renderWarnings();
+    renderTools();
+  }
+
+  /** @param {boolean} [forceRefresh] */
+  function loadCatalog(forceRefresh = false) {
+    catalogReady = false;
+    freshness = undefined;
+    renderFreshness();
     setLoading(true);
     const current = ++generation;
     clearResults();
@@ -336,30 +379,14 @@
       google.script.run.withSuccessHandler((/** @type {CatalogResponse} */ response) => {
         window.clearTimeout(timeout);
         if (current !== generation) return;
-        if (response && !response.ok && typeof response.error === 'string') {
-          showError(response.error);
-          return;
-        }
-        if (!response || !response.ok || !Array.isArray(response.tools) ||
-            !Array.isArray(response.issues) || !response.tools.every(safeTool)) {
-          showError();
-          return;
-        }
-        catalogReady = true;
-        tools = response.tools;
-        issues = response.issues;
-        const availableTags = new Set(tools.flatMap((tool) => tool.tags));
-        selectedTags = new Set([...selectedTags].filter((tag) => availableTags.has(tag)));
-        setLoading(false);
-        renderTags();
-        renderWarnings();
-        renderTools();
-      }).withFailureHandler(failure).getCatalog();
+        receiveCatalog(response);
+      }).withFailureHandler(failure).getCatalog(forceRefresh);
     } catch {
       failure();
     }
   }
 
+  refresh.addEventListener('click', () => { if (!refresh.disabled) loadCatalog(true); });
   search.addEventListener('input', renderTools);
   /** @type {('all' | 'internal' | 'external')[]} */
   const scopes = ['all', 'internal', 'external'];
@@ -385,10 +412,18 @@
     search.focus();
   });
   document.addEventListener('portal:languagechange', () => {
+    renderFreshness();
     if (!catalogReady) return;
     renderTags();
     renderWarnings();
     renderTools();
   });
-  loadCatalog();
+  const initial = document.getElementById('initial-catalog')?.textContent?.trim();
+  if (initial) {
+    try { receiveCatalog(JSON.parse(initial)); }
+    catch { showError(); }
+  } else {
+    // Retain compatibility with older HTML and development fixtures without embedded data.
+    loadCatalog();
+  }
 })();

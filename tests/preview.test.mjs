@@ -22,7 +22,7 @@ test("Resolve GAS templates and include the mock and Vite module entry", (t) => 
 test("Simulate success, empty, invalid, configuration, and transport states offline", (t) => {
   const dom = new JSDOM(renderPreview(source, process.cwd()));
   t.after(() => dom.window.close());
-  const mock = dom.window.document.querySelector('script:not([src])').textContent;
+  const mock = dom.window.document.querySelector('script:not([src]):not([type="application/json"])').textContent;
   for (const scenario of ['', 'empty', 'invalid', 'config', 'error']) {
     let result;
     let failed = false;
@@ -47,7 +47,7 @@ test("Restore and save themes without mixing concurrent response handlers", (t) 
     localStorage: { getItem: () => stored, setItem(key, value) { assert.equal(key, 'portal-preview-theme'); stored = value; } },
     setTimeout(fn) { pending.push(fn); },
   });
-  vm.runInContext(dom.window.document.querySelector('script:not([src])').textContent, context);
+  vm.runInContext(dom.window.document.querySelector('script:not([src]):not([type="application/json"])').textContent, context);
   assert.equal(dom.window.document.documentElement.dataset.theme, 'kuri');
   const run = vm.runInContext('google.script.run', context);
   let catalog;
@@ -69,7 +69,7 @@ test("Save, restore, and reset display settings while preserving the theme", (t)
     document: dom.window.document, URLSearchParams, location: { search: '' }, setTimeout(fn) { fn(); },
     localStorage: { getItem: (key) => storage[key], setItem: (key, value) => { storage[key] = value; } },
   });
-  vm.runInContext(dom.window.document.querySelector('script:not([src])').textContent, context);
+  vm.runInContext(dom.window.document.querySelector('script:not([src]):not([type="application/json"])').textContent, context);
   assert.equal(dom.window.document.querySelector('#setting-name').value, 'Local Portal');
   const run = vm.runInContext('google.script.run', context);
   let result;
@@ -79,4 +79,34 @@ test("Save, restore, and reset display settings while preserving the theme", (t)
   run.withSuccessHandler((value) => { result = value; }).resetPortalSettings();
   assert.equal(result.settings.PORTAL_NAME, 'My Portal');
   assert.equal(storage['portal-preview-theme'], 'kuri');
+});
+
+
+test('Preview cache settings persist, cached loads restore, and forced refresh always bypasses them', (t) => {
+  const storage = {};
+  const create = () => {
+    const dom = new JSDOM(renderPreview(source, process.cwd()));
+    t.after(() => dom.window.close());
+    const context = vm.createContext({
+      document: dom.window.document, URLSearchParams, location: { search: '' }, setTimeout(fn) { fn(); },
+      localStorage: { getItem: (key) => storage[key], setItem: (key, value) => { storage[key] = value; }, removeItem: (key) => { delete storage[key]; } },
+    });
+    vm.runInContext(dom.window.document.querySelector('script:not([src]):not([type="application/json"])').textContent, context);
+    return { document: dom.window.document, run: vm.runInContext('google.script.run', context) };
+  };
+  const initial = create();
+  assert.equal(initial.document.querySelector('#catalog-cache-seconds').dataset.savedValue, '21600');
+  let result;
+  const load = (run, force) => { run.withSuccessHandler((value) => { result = value; }).getCatalog(force); return result; };
+  assert.equal(JSON.parse(initial.document.getElementById('initial-catalog').textContent).cache.hit, false);
+  assert.equal(load(initial.run).cache.hit, true);
+  initial.run.withSuccessHandler((value) => { result = value; }).saveCatalogCacheTtl(21600);
+  assert.equal(result.ok, true);
+  const restored = create();
+  assert.equal(restored.document.querySelector('#catalog-cache-seconds').dataset.savedValue, '21600');
+  assert.equal(load(restored.run).cache.hit, true);
+  assert.equal(load(restored.run, true).cache.hit, false);
+  restored.run.withSuccessHandler(() => {}).saveCatalogCacheTtl(0);
+  assert.equal(load(restored.run).cache.hit, false);
+  assert.equal(load(restored.run).cache.hit, false);
 });

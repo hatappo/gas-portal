@@ -2,6 +2,18 @@
 globalThis.PortalI18n = (() => {
   /** @type {Record<string, string>} */
   const messages = {
+  "Fetch latest": "最新データを取得",
+  "Fetch latest from spreadsheet": "キャッシュを使わずシートから最新データを取得",
+  "Select Fetch latest to try again. If the problem persists, check the GAS settings.": "「最新データを取得」から再試行してください。改善しない場合は GAS の設定を確認してください。",
+  "Catalog cache duration": "一覧のキャッシュ時間",
+  "Disabled": "無効",
+  "5 minutes": "5分",
+  "1 hour": "1時間",
+  "6 hours (default)": "6時間（既定）",
+  "Reuse the list to load faster. Fetch latest always reads the spreadsheet. Changes are saved automatically and apply to the next load.": "一覧を再利用して読み込みを速くします。「最新データを取得」は毎回シートを読み直します。設定は自動保存され、次の読み込みから反映されます。",
+  "Could not save cache settings. Please try again.": "キャッシュ設定を保存できませんでした。もう一度お試しください。",
+  "Cached · Retrieved {time}": "キャッシュ · {time} 取得",
+  "Retrieved {time}": "{time} 取得",
   "Skip to main content": "メインコンテンツへ",
   "Portal sections": "ポータルのセクション",
   "Settings": "設定",
@@ -30,6 +42,7 @@ globalThis.PortalI18n = (() => {
   "Portal name": "ポータル名",
   "Icon": "アイコン",
   "1 character": "1文字",
+  "Leave the headline or description blank to hide it. Leave both blank to give more space to your content.": "見出し・説明文は空欄にすると非表示になります。両方を空欄にすると、その分コンテンツを広く表示できます。",
   "Headline": "見出し",
   "Description text": "説明文",
   "Save changes": "変更を保存",

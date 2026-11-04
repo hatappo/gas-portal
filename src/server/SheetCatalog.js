@@ -1,17 +1,93 @@
-/** Read the sheet configured in Script Properties, without writes or caching. @returns {Catalog} */
-function readSheetCatalog_() {
+/** Validate the configured source before using the API or cache. */
+function getSheetSource_() {
   const properties = PropertiesService.getScriptProperties().getProperties();
   const id = (properties.SPREADSHEET_ID || '').trim();
   const name = (properties.SHEET_NAME || '').trim();
   if (!/^[\w-]+$/.test(id)) throw new Error('SPREADSHEET_NOT_CONFIGURED');
   if (!name) throw new Error('SHEET_NAME_NOT_CONFIGURED');
+  return { id, name };
+}
+
+/** Read values directly; request sheet metadata only to diagnose a failed read.
+ * @param {{id: string, name: string}} [source] @returns {Catalog}
+ */
+function readSheetCatalog_(source = getSheetSource_()) {
   if (typeof Sheets === 'undefined' || !Sheets?.Spreadsheets?.Values) throw new Error('SHEETS_SERVICE_DISABLED');
-  const spreadsheet = Sheets.Spreadsheets.get(id, { fields: 'sheets(properties(title))' });
-  if (!spreadsheet.sheets?.some((sheet) => sheet.properties?.title === name)) throw new Error('SHEET_NOT_FOUND');
+  const { id, name } = source;
   // Always quote sheet names to handle apostrophes and named-range collisions.
   const range = "'" + name.replace(/'/g, "''") + "'";
-  const response = Sheets.Spreadsheets.Values.get(id, range, { valueRenderOption: 'FORMATTED_VALUE' });
-  return parseSheetCatalog_(response.values || []);
+  let response;
+  let missingSheet = false;
+  try {
+    response = Sheets.Spreadsheets.Values.get(id, range, { valueRenderOption: 'FORMATTED_VALUE' });
+  } catch (error) {
+    let spreadsheet;
+    try { spreadsheet = Sheets.Spreadsheets.get(id, { fields: 'sheets(properties(title))' }); }
+    catch { throw error; }
+    if (spreadsheet.sheets?.some((sheet) => sheet.properties?.title === name)) throw error;
+    missingSheet = true;
+  }
+  if (missingSheet) throw new Error('SHEET_NOT_FOUND');
+  return parseSheetCatalog_(response?.values || []);
+}
+
+/** Cache only validated catalog fields, never unused sheet columns or API errors.
+ * @param {boolean} forceRefresh
+ * @returns {Catalog & {cache: {hit: boolean, fetchedAt: number}}}
+ */
+function readCachedSheetCatalog_(forceRefresh) {
+  const source = getSheetSource_();
+  const ttl = normalizeCatalogCacheTtl_(PropertiesService.getUserProperties().getProperty('CATALOG_CACHE_SECONDS'));
+  /** @type {GoogleAppsScript.Cache.Cache | null} */
+  let cache = null;
+  let key = '';
+  try {
+    // Version the key whenever cached catalog semantics change. Include the source, sharing one entry across duration choices.
+    const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, JSON.stringify([source.id, source.name]), Utilities.Charset.UTF_8);
+    key = 'catalog-v1:' + digest.map((byte) => (byte & 255).toString(16).padStart(2, '0')).join('');
+    cache = CacheService.getUserCache();
+  } catch { /* Cache availability must never prevent a live read. */ }
+
+  const cached = () => {
+    if (!cache || ttl === 0) return null;
+    try {
+      const text = cache.get(key);
+      if (!text) return null;
+      const value = JSON.parse(text);
+      const age = Date.now() - value.fetchedAt;
+      if (!Array.isArray(value.tools) || !Array.isArray(value.issues) || !Number.isFinite(value.fetchedAt) || age < 0 || age >= ttl * 1000) return null;
+      return { tools: value.tools, issues: value.issues, cache: { hit: true, fetchedAt: value.fetchedAt } };
+    } catch { return null; }
+  };
+  /** @param {boolean} writeCache */
+  const fresh = (writeCache) => {
+    const catalog = readSheetCatalog_(source);
+    const fetchedAt = Date.now();
+    if (writeCache && cache && ttl > 0) {
+      try {
+        const text = JSON.stringify({ ...catalog, fetchedAt });
+        if (Utilities.newBlob(text).getBytes().length <= 100000) cache.put(key, text, ttl);
+      } catch { /* Return fresh results even when storage fails or exceeds the cache limit. */ }
+    }
+    return { ...catalog, cache: { hit: false, fetchedAt } };
+  };
+  if (!cache) return fresh(false);
+  if (!forceRefresh) {
+    const hit = cached();
+    if (hit) return hit;
+  }
+  // Serialize cache fills and forced refreshes so an earlier read cannot overwrite newer data.
+  const lock = LockService.getUserLock();
+  try { lock.waitLock(10000); }
+  catch { return fresh(false); }
+  try {
+    if (!forceRefresh) {
+      const hit = cached();
+      if (hit) return hit;
+    }
+    try { cache.remove(key); } catch { /* A forced read still bypasses the cache. */ }
+    return fresh(true);
+  } finally { lock.releaseLock(); }
 }
 
 /** Use the first row as headers and map TSV-compatible columns into the catalog. @param {unknown[][]} rows @returns {Catalog} */
