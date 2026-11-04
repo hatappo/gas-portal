@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja" data-theme="<?= theme ?>">
+<html lang="<?= portal.language ?>" data-language-preference="<?= portal.languagePreference ?>" data-theme="<?= theme ?>">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,38 +7,38 @@
     <!-- gas-styles -->
   </head>
   <body>
-    <a class="skip-link" href="#main">メインコンテンツへ</a>
+    <a class="skip-link" href="#main"><span data-i18n="Skip to main content">Skip to main content</span></a>
     <header class="site-header">
       <div class="brand">
         <span class="brand-mark" aria-hidden="true"><?= portal.icon ?></span>
         <span class="brand-name"><?= portal.brandLead ?><span><?= portal.brandRest ?></span></span>
       </div>
+      <!-- preview-label -->
     </header>
     <main id="main">
       <section class="intro" aria-labelledby="page-title">
-        <!-- preview-label -->
         <h1 id="page-title"><?= portal.headline ?></h1>
         <p class="intro-copy"><?= portal.description ?></p>
       </section>
-      <div class="portal-tabs" role="tablist" aria-label="ポータルのセクション">
+      <div class="portal-tabs" role="tablist" aria-label="Portal sections" data-i18n-aria-label="Portal sections">
         <button type="button" id="tab-tools" role="tab" aria-selected="true" aria-controls="directory" tabindex="0">Tools &amp; Links<span id="count" class="count" aria-live="polite"></span></button>
         <button type="button" id="tab-actions" role="tab" aria-selected="false" aria-controls="actions-panel" tabindex="-1">Action Items</button>
-        <button type="button" id="tab-settings" class="settings-tab" role="tab" aria-label="設定" title="設定" aria-selected="false" aria-controls="settings-panel" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3 1-1h4l1 1 .4 2 1.6 1.1 2-.6 1.4 1.4 1 1.7-.5 1.8-1.5 1.4v2l1.5 1.4.5 1.8-1 1.7-1.4 1.4-2-.6-1.6 1.1-.4 2-1 1h-4l-1-1-.4-2L7 18.9l-2 .6-1.4-1.4-1-1.7.5-1.8L4.6 13v-2L3.1 9.6l-.5-1.8 1-1.7L5 4.7l2 .6L8.6 4Z" transform="translate(0 1) scale(1 .92)"/><circle cx="12" cy="12" r="3.2"/></svg></button>
+        <button type="button" id="tab-settings" class="settings-tab" role="tab" aria-label="Settings" data-i18n-aria-label="Settings" title="Settings" data-i18n-title="Settings" aria-selected="false" aria-controls="settings-panel" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3 1-1h4l1 1 .4 2 1.6 1.1 2-.6 1.4 1.4 1 1.7-.5 1.8-1.5 1.4v2l1.5 1.4.5 1.8-1 1.7-1.4 1.4-2-.6-1.6 1.1-.4 2-1 1h-4l-1-1-.4-2L7 18.9l-2 .6-1.4-1.4-1-1.7.5-1.8L4.6 13v-2L3.1 9.6l-.5-1.8 1-1.7L5 4.7l2 .6L8.6 4Z" transform="translate(0 1) scale(1 .92)"/><circle cx="12" cy="12" r="3.2"/></svg></button>
       </div>
       <section class="directory" role="tabpanel" aria-labelledby="tab-tools" aria-busy="true" id="directory" tabindex="0">
         <div class="directory-toolbar">
           <div class="search-box">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
-            <label class="visually-hidden" for="search">ツール名・説明・タグを検索</label>
-            <input type="search" id="search" placeholder="ツール名・説明・タグで検索" autocomplete="off" disabled>
+            <label class="visually-hidden" for="search"><span data-i18n="Search tools by name, description, or tags">Search tools by name, description, or tags</span></label>
+            <input type="search" id="search" placeholder="Search by name, description, or tags" data-i18n-placeholder="Search by name, description, or tags" autocomplete="off" disabled>
           </div>
           <div class="filter-toolbar">
-            <div id="scopes" class="segmented-control" role="group" aria-label="ツールの区分">
-              <button id="scope-all" type="button" aria-pressed="true" disabled>すべて</button>
-              <button id="scope-internal" type="button" aria-pressed="false" disabled>社内</button>
-              <button id="scope-external" type="button" aria-pressed="false" disabled>社外</button>
+            <div id="scopes" class="segmented-control" role="group" aria-label="Tool scope" data-i18n-aria-label="Tool scope">
+              <button id="scope-all" type="button" aria-pressed="true" disabled><span data-i18n="All">All</span></button>
+              <button id="scope-internal" type="button" aria-pressed="false" disabled><span data-i18n="Internal">Internal</span></button>
+              <button id="scope-external" type="button" aria-pressed="false" disabled><span data-i18n="External">External</span></button>
             </div>
-            <div class="segmented-control view-switch" role="group" aria-label="表示形式">
+            <div class="segmented-control view-switch" role="group" aria-label="View mode" data-i18n-aria-label="View mode">
               <button id="view-cards" type="button" aria-pressed="true" disabled><span aria-hidden="true">▦</span> Cards</button>
               <button id="view-list" type="button" aria-pressed="false" disabled><span aria-hidden="true">☰</span> List</button>
             </div>
@@ -46,107 +46,132 @@
         </div>
         <div id="tag-filter" class="tag-filter" hidden>
           <div class="tag-heading">Tags</div>
-          <div id="tags" class="tags" role="group" aria-label="タグで絞り込む"></div>
+          <div id="tags" class="tags" role="group" aria-label="Filter by tags" data-i18n-aria-label="Filter by tags"></div>
         </div>
-        <aside id="warnings" class="warnings" aria-label="データの確認事項" hidden>
+        <aside id="warnings" class="warnings" aria-label="Data issues" data-i18n-aria-label="Data issues" hidden>
           <details><summary id="warning-summary"></summary><ul id="warning-list"></ul></details>
         </aside>
         <div id="results">
-          <ul id="tools" class="tools" aria-label="ツール一覧"></ul>
-          <div id="table-view" class="table-view" role="region" aria-label="ツール一覧の表（狭い画面では横スクロール）" tabindex="0" hidden>
+          <ul id="tools" class="tools" aria-label="Tools" data-i18n-aria-label="Tools"></ul>
+          <div id="table-view" class="table-view" role="region" aria-label="Tools table (scroll horizontally on narrow screens)" data-i18n-aria-label="Tools table (scroll horizontally on narrow screens)" tabindex="0" hidden>
             <table>
-              <caption class="visually-hidden">ツール一覧</caption>
-              <thead><tr><th scope="col">ツール</th><th scope="col">説明</th><th scope="col">区分</th><th scope="col">Tags</th><th scope="col">関連リンク</th></tr></thead>
+              <caption class="visually-hidden"><span data-i18n="Tools">Tools</span></caption>
+              <thead><tr><th scope="col"><span data-i18n="Tool">Tool</span></th><th scope="col"><span data-i18n="Description">Description</span></th><th scope="col"><span data-i18n="Scope">Scope</span></th><th scope="col">Tags</th><th scope="col"><span data-i18n="Related links">Related links</span></th></tr></thead>
               <tbody id="tool-rows"></tbody>
             </table>
           </div>
           <div id="status" class="status" role="status" aria-live="polite">
-            <h3 id="status-title">読み込み中です</h3>
-            <p id="status-description">ツールの一覧を取得しています。</p>
-            <button id="reset" class="reset-button" type="button" hidden>絞り込みを解除</button>
+            <h3 id="status-title">Loading…</h3>
+            <p id="status-description">Fetching the tool list.</p>
+            <button id="reset" class="reset-button" type="button" hidden><span data-i18n="Clear filters">Clear filters</span></button>
           </div>
         </div>
-        <noscript><p>ツール一覧を表示するには JavaScript を有効にしてください。</p></noscript>
+        <noscript><p><span data-i18n="Enable JavaScript to display the tool list.">Enable JavaScript to display the tool list.</span></p></noscript>
       </section>
       <section class="action-items" role="tabpanel" aria-labelledby="tab-actions" id="actions-panel" tabindex="0" hidden>
         <ul id="action-items" class="action-items-list" aria-label="Action Items"></ul>
       </section>
       <section id="settings-panel" class="settings-panel" role="tabpanel" aria-labelledby="tab-settings" tabindex="0" hidden>
+        <div class="language-settings">
+          <label class="settings-field" for="portal-language"><span data-i18n="Language">Language</span>
+            <select id="portal-language" aria-describedby="language-help language-status"><option value="auto" data-i18n="Automatic (browser)">Automatic (browser)</option><option value="ja" lang="ja">日本語</option><option value="en" lang="en">English</option></select>
+          </label>
+          <p id="language-help" data-i18n="Automatic uses your browser language, with English as the fallback. Custom text and spreadsheet data keep their original language.">Automatic uses your browser language, with English as the fallback. Custom text and spreadsheet data keep their original language.</p>
+          <p id="language-status" role="status" aria-live="polite"></p>
+        </div>
         <form id="portal-settings-form" class="portal-settings-form" data-defaults="<?= portal.defaultsJson ?>">
-          <div class="settings-heading"><h2>表示設定</h2><p>自分の仕事に合わせて、ポータルの名前や文言を変更できます。</p></div>
+          <div class="settings-heading"><h2><span data-i18n="Display settings">Display settings</span></h2><p><span data-i18n="Customize the portal name and text for your work.">Customize the portal name and text for your work.</span></p></div>
           <fieldset id="portal-settings-fields">
-            <legend class="visually-hidden">ポータルの表示設定</legend>
+            <legend class="visually-hidden"><span data-i18n="Portal display settings">Portal display settings</span></legend>
             <div class="settings-fields-row">
-              <label class="settings-field">ポータル名<input id="setting-name" name="PORTAL_NAME" maxlength="80" value="<?= portal.name ?>" autocomplete="off"></label>
-              <label class="settings-field settings-icon-field">アイコン<input id="setting-icon" name="PORTAL_ICON" maxlength="2" value="<?= portal.icon ?>" autocomplete="off" aria-describedby="icon-help"><span id="icon-help">1文字</span></label>
+              <label class="settings-field"><span data-i18n="Portal name">Portal name</span><input id="setting-name" name="PORTAL_NAME" maxlength="80" value="<?= portal.name ?>" autocomplete="off"></label>
+              <label class="settings-field settings-icon-field"><span data-i18n="Icon">Icon</span><input id="setting-icon" name="PORTAL_ICON" maxlength="2" value="<?= portal.icon ?>" autocomplete="off" aria-describedby="icon-help"><span id="icon-help"><span data-i18n="1 character">1 character</span></span></label>
             </div>
-            <label class="settings-field">見出し<input id="setting-headline" name="PORTAL_HEADLINE" maxlength="160" value="<?= portal.headline ?>" autocomplete="off"></label>
-            <label class="settings-field">説明文<textarea id="setting-description" name="PORTAL_DESCRIPTION" maxlength="500" rows="3"><?= portal.description ?></textarea></label>
-            <div class="settings-form-actions"><button type="submit" class="settings-save">変更を保存</button><button type="button" id="reset-portal-settings" class="settings-reset">既定値に戻す</button></div>
+            <label class="settings-field"><span data-i18n="Headline">Headline</span><input id="setting-headline" name="PORTAL_HEADLINE" maxlength="160" value="<?= portal.headline ?>" autocomplete="off"></label>
+            <label class="settings-field"><span data-i18n="Description text">Description text</span><textarea id="setting-description" name="PORTAL_DESCRIPTION" maxlength="500" rows="3"><?= portal.description ?></textarea></label>
+            <div class="settings-form-actions"><button type="submit" class="settings-save"><span data-i18n="Save changes">Save changes</span></button><button type="button" id="reset-portal-settings" class="settings-reset"><span data-i18n="Restore defaults">Restore defaults</span></button></div>
           </fieldset>
           <p id="portal-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
         </form>
-        <div class="settings-heading"><div><h2>カラーテーマ</h2><p>使いやすい色合いを選んでください。設定は自動的に保存されます。</p></div></div>
+        <div class="settings-heading"><div><h2><span data-i18n="Color theme">Color theme</span></h2><p><span data-i18n="Choose a color theme. Your selection is saved automatically.">Choose a color theme. Your selection is saved automatically.</span></p></div></div>
         <div class="theme-save-status" role="status" aria-live="polite" id="theme-status"></div>
+        <label class="theme-choice theme-auto">
+          <input class="visually-hidden" type="radio" name="portal-theme" value="auto" aria-label="Automatic theme" data-i18n-aria-label="Automatic theme">
+          <span class="theme-auto-swatches" aria-hidden="true"><i data-theme="tsuyukusa"></i><i data-theme="tetsukon"></i></span>
+          <span class="theme-auto-copy"><strong data-i18n="Automatic theme">Automatic theme</strong><span data-i18n="Follow your device: Tsuyukusa in light mode, Tetsukon in dark mode.">Follow your device: Tsuyukusa in light mode, Tetsukon in dark mode.</span></span>
+          <span class="theme-check" aria-hidden="true">✓</span>
+        </label>
         <fieldset class="theme-group"><legend>Light</legend><div class="theme-grid">
           <label class="theme-choice">
-            <input class="visually-hidden" type="radio" name="portal-theme" value="tsuyukusa" aria-label="露草色（Light）">
+            <input class="visually-hidden" type="radio" name="portal-theme" value="tsuyukusa" aria-label="Tsuyukusa (Light)" data-i18n-aria-label="Tsuyukusa (Light)">
             <span class="theme-preview" data-theme="tsuyukusa" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-            <span class="theme-label"><span>露草色</span><span class="theme-check" aria-hidden="true">✓</span></span>
-            <span class="theme-reading">TSUYUKUSA</span><span class="theme-caption">澄んだ青 · デフォルト</span>
+            <span class="theme-label"><span><span data-i18n="Tsuyukusa · 露草色">Tsuyukusa · 露草色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
+            <span class="theme-reading">TSUYUKUSA</span><span class="theme-caption"><span data-i18n="Clear blue · Default">Clear blue · Default</span></span>
           </label>
           <label class="theme-choice">
-            <input class="visually-hidden" type="radio" name="portal-theme" value="sakura" aria-label="桜色（Light）">
+            <input class="visually-hidden" type="radio" name="portal-theme" value="sakura" aria-label="Sakura (Light)" data-i18n-aria-label="Sakura (Light)">
             <span class="theme-preview" data-theme="sakura" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-            <span class="theme-label"><span>桜色</span><span class="theme-check" aria-hidden="true">✓</span></span>
-            <span class="theme-reading">SAKURA</span><span class="theme-caption">やわらかな紅</span>
+            <span class="theme-label"><span><span data-i18n="Sakura · 桜色">Sakura · 桜色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
+            <span class="theme-reading">SAKURA</span><span class="theme-caption"><span data-i18n="Soft pink">Soft pink</span></span>
           </label>
           <label class="theme-choice">
-            <input class="visually-hidden" type="radio" name="portal-theme" value="wakatake" aria-label="若竹色（Light）">
+            <input class="visually-hidden" type="radio" name="portal-theme" value="wakatake" aria-label="Wakatake (Light)" data-i18n-aria-label="Wakatake (Light)">
             <span class="theme-preview" data-theme="wakatake" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-            <span class="theme-label"><span>若竹色</span><span class="theme-check" aria-hidden="true">✓</span></span>
-            <span class="theme-reading">WAKATAKE</span><span class="theme-caption">みずみずしい緑</span>
+            <span class="theme-label"><span><span data-i18n="Wakatake · 若竹色">Wakatake · 若竹色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
+            <span class="theme-reading">WAKATAKE</span><span class="theme-caption"><span data-i18n="Fresh green">Fresh green</span></span>
           </label>
           <label class="theme-choice">
-            <input class="visually-hidden" type="radio" name="portal-theme" value="yamabuki" aria-label="山吹色（Light）">
+            <input class="visually-hidden" type="radio" name="portal-theme" value="yamabuki" aria-label="Yamabuki (Light)" data-i18n-aria-label="Yamabuki (Light)">
             <span class="theme-preview" data-theme="yamabuki" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-            <span class="theme-label"><span>山吹色</span><span class="theme-check" aria-hidden="true">✓</span></span>
-            <span class="theme-reading">YAMABUKI</span><span class="theme-caption">あたたかな黄金</span>
+            <span class="theme-label"><span><span data-i18n="Yamabuki · 山吹色">Yamabuki · 山吹色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
+            <span class="theme-reading">YAMABUKI</span><span class="theme-caption"><span data-i18n="Warm gold">Warm gold</span></span>
+          </label>
+          <label class="theme-choice">
+            <input class="visually-hidden" type="radio" name="portal-theme" value="ginnezu" aria-label="Ginnezu (Light)" data-i18n-aria-label="Ginnezu (Light)">
+            <span class="theme-preview" data-theme="ginnezu" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
+            <span class="theme-label"><span data-i18n="Ginnezu · 銀鼠">Ginnezu · 銀鼠</span><span class="theme-check" aria-hidden="true">✓</span></span>
+            <span class="theme-reading">GINNEZU</span><span class="theme-caption" data-i18n="Quiet silver and white">Quiet silver and white</span>
           </label>
         </div></fieldset>
         <fieldset class="theme-group"><legend>Dark</legend><div class="theme-grid">
           <label class="theme-choice">
-            <input class="visually-hidden" type="radio" name="portal-theme" value="tetsukon" aria-label="鉄紺（Dark）">
+            <input class="visually-hidden" type="radio" name="portal-theme" value="tetsukon" aria-label="Tetsukon (Dark)" data-i18n-aria-label="Tetsukon (Dark)">
             <span class="theme-preview" data-theme="tetsukon" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-            <span class="theme-label"><span>鉄紺</span><span class="theme-check" aria-hidden="true">✓</span></span>
-            <span class="theme-reading">TETSUKON</span><span class="theme-caption">深い青の静けさ</span>
+            <span class="theme-label"><span><span data-i18n="Tetsukon · 鉄紺">Tetsukon · 鉄紺</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
+            <span class="theme-reading">TETSUKON</span><span class="theme-caption"><span data-i18n="Quiet deep blue">Quiet deep blue</span></span>
           </label>
           <label class="theme-choice">
-            <input class="visually-hidden" type="radio" name="portal-theme" value="sumi" aria-label="墨色（Dark）">
+            <input class="visually-hidden" type="radio" name="portal-theme" value="sumi" aria-label="Sumi (Dark)" data-i18n-aria-label="Sumi (Dark)">
             <span class="theme-preview" data-theme="sumi" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-            <span class="theme-label"><span>墨色</span><span class="theme-check" aria-hidden="true">✓</span></span>
-            <span class="theme-reading">SUMI</span><span class="theme-caption">落ち着いた無彩色</span>
+            <span class="theme-label"><span><span data-i18n="Sumi · 墨色">Sumi · 墨色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
+            <span class="theme-reading">SUMI</span><span class="theme-caption"><span data-i18n="Calm neutrals">Calm neutrals</span></span>
           </label>
           <label class="theme-choice">
-            <input class="visually-hidden" type="radio" name="portal-theme" value="kuri" aria-label="栗色（Dark）">
+            <input class="visually-hidden" type="radio" name="portal-theme" value="kuri" aria-label="Kuri (Dark)" data-i18n-aria-label="Kuri (Dark)">
             <span class="theme-preview" data-theme="kuri" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-            <span class="theme-label"><span>栗色</span><span class="theme-check" aria-hidden="true">✓</span></span>
-            <span class="theme-reading">KURI</span><span class="theme-caption">渋みのある赤茶</span>
+            <span class="theme-label"><span><span data-i18n="Kuri · 栗色">Kuri · 栗色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
+            <span class="theme-reading">KURI</span><span class="theme-caption"><span data-i18n="Muted reddish brown">Muted reddish brown</span></span>
           </label>
           <label class="theme-choice">
-            <input class="visually-hidden" type="radio" name="portal-theme" value="fukamidori" aria-label="深緑（Dark）">
+            <input class="visually-hidden" type="radio" name="portal-theme" value="fukamidori" aria-label="Fukamidori (Dark)" data-i18n-aria-label="Fukamidori (Dark)">
             <span class="theme-preview" data-theme="fukamidori" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-            <span class="theme-label"><span>深緑</span><span class="theme-check" aria-hidden="true">✓</span></span>
-            <span class="theme-reading">FUKAMIDORI</span><span class="theme-caption">穏やかな森の緑</span>
+            <span class="theme-label"><span><span data-i18n="Fukamidori · 深緑">Fukamidori · 深緑</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
+            <span class="theme-reading">FUKAMIDORI</span><span class="theme-caption"><span data-i18n="Peaceful forest green">Peaceful forest green</span></span>
+          </label>
+          <label class="theme-choice">
+            <input class="visually-hidden" type="radio" name="portal-theme" value="daidai" aria-label="Daidai (Dark)" data-i18n-aria-label="Daidai (Dark)">
+            <span class="theme-preview" data-theme="daidai" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
+            <span class="theme-label"><span data-i18n="Daidai · 橙色">Daidai · 橙色</span><span class="theme-check" aria-hidden="true">✓</span></span>
+            <span class="theme-reading">DAIDAI</span><span class="theme-caption" data-i18n="Warm orange after dark">Warm orange after dark</span>
           </label>
         </div></fieldset>
       </section>
     </main>
     <footer class="site-footer">
-      <nav aria-label="管理リンク">
-        <a class="footer-link project-link" href="<?= projectUrl ?>" target="_blank" rel="noopener noreferrer">GAS <!-- external-link-icon --><span class="visually-hidden">（新しいタブで開きます）</span></a>
+      <nav aria-label="Management links" data-i18n-aria-label="Management links">
+        <a class="footer-link project-link" href="<?= projectUrl ?>" target="_blank" rel="noopener noreferrer">GAS <!-- external-link-icon --><span class="visually-hidden"><span data-i18n="(opens in a new tab)">(opens in a new tab)</span></span></a>
         <? if (portal.spreadsheetUrl) { ?>
-        <a class="footer-link spreadsheet-link" href="<?= portal.spreadsheetUrl ?>" target="_blank" rel="noopener noreferrer">Spreadsheet <!-- external-link-icon --><span class="visually-hidden">（新しいタブで開きます）</span></a>
+        <a class="footer-link spreadsheet-link" href="<?= portal.spreadsheetUrl ?>" target="_blank" rel="noopener noreferrer">Spreadsheet <!-- external-link-icon --><span class="visually-hidden"><span data-i18n="(opens in a new tab)">(opens in a new tab)</span></span></a>
         <? } ?>
         <!-- repository-link -->
       </nav>

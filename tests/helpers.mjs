@@ -35,6 +35,7 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
     } },
     ...overrides,
   });
+  vm.runInContext(readFileSync('src/shared/i18n.js', 'utf8'), context);
   for (const name of ['Catalog', 'SheetCatalog', 'Code']) {
     vm.runInContext(readFileSync(`src/server/${name}.js`, 'utf8'), context);
   }
@@ -43,25 +44,28 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
 
 export const plain = (value) => JSON.parse(JSON.stringify(value));
 
-export function browser(setupWindow = () => {}, client = ['client', 'theme', 'settings'].map((file) => readFileSync(`src/browser/${file}.js`, 'utf8')).join('\n'), source = readFileSync('src/Index.html', 'utf8')) {
-  const html = withPreviewContent(source, server().context.getPortalContent_({}))
+export function browser(setupWindow = () => {}, client = ['language', 'client', 'theme', 'settings'].map((file) => readFileSync(`src/browser/${file}.js`, 'utf8')).join('\n'), source = readFileSync('src/Index.html', 'utf8')) {
+  const html = withPreviewContent(source, server().context.getPortalContent_({ PORTAL_LANGUAGE: 'ja' }))
     .replace(/<\?[\s\S]*?\?>/g, '');
   const dom = new JSDOM(html, { runScripts: 'outside-only', url: 'https://example.com' });
   const requests = [];
+  const languageRequests = [];
   const themeRequests = [];
   const settingsRequests = [];
   const runner = {
     withSuccessHandler(handler) { this.success = handler; return this; },
     withFailureHandler(handler) { this.failure = handler; return this; },
     getCatalog() { requests.push({ success: this.success, failure: this.failure }); },
-    savePortalSettings(settings) { settingsRequests.push({ settings, success: this.success, failure: this.failure }); },
+    savePortalSettings(settings, browserLanguage) { settingsRequests.push({ settings, browserLanguage, success: this.success, failure: this.failure }); },
     resetPortalSettings() { settingsRequests.push({ reset: true, success: this.success, failure: this.failure }); },
+    saveLanguage(language) { languageRequests.push({ language, success: this.success, failure: this.failure }); },
     saveTheme(theme) { themeRequests.push({ theme, success: this.success, failure: this.failure }); },
   };
   dom.window.google = { script: { run: runner } };
   setupWindow(dom.window);
+  dom.window.eval(readFileSync('src/shared/i18n.js', 'utf8'));
   dom.window.eval(client);
-  return { dom, document: dom.window.document, requests, themeRequests, settingsRequests };
+  return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests };
 }
 
 export const catalog = {

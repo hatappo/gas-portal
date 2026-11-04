@@ -4,7 +4,7 @@ import { browser, server, plain } from './helpers.mjs';
 
 const values = (overrides = {}) => ({ PORTAL_NAME: 'Fumi Portal', PORTAL_ICON: 'F', PORTAL_HEADLINE: '今日の仕事', PORTAL_DESCRIPTION: 'リンクとタスク', ...overrides });
 
-test('初回表示で旧文言だけを移行し、既存の空値を保持し、その後は旧設定を参照しない', () => {
+test("Migrate legacy display settings once while preserving existing empty values", () => {
   const properties = { PORTAL_NAME: 'Old Portal', PORTAL_HEADLINE: 'Old headline', SPREADSHEET_ID: 'private-id' };
   const userProperties = { PORTAL_HEADLINE: '', PORTAL_THEME: 'kuri', OTHER: 'keep' };
   const { context } = server({ properties, userProperties });
@@ -19,7 +19,7 @@ test('初回表示で旧文言だけを移行し、既存の空値を保持し�
   assert.equal(userProperties.OTHER, 'keep');
 });
 
-test('保存・リセットは表示設定 4 項目だけに適用し、再移行で古い値を復活させない', () => {
+test("Save and reset only four display fields without reviving legacy values", () => {
   const properties = { PORTAL_NAME: 'Old Portal', SPREADSHEET_ID: 'sheet', SHEET_NAME: 'Tools' };
   const userProperties = { PORTAL_THEME: 'sakura', OTHER: 'keep' };
   const { context } = server({ properties, userProperties });
@@ -35,7 +35,7 @@ test('保存・リセットは表示設定 4 項目だけに適用し、再移�
   assert.deepEqual(properties, { PORTAL_NAME: 'Old Portal', SPREADSHEET_ID: 'sheet', SHEET_NAME: 'Tools' });
 });
 
-test('表示設定の空白は既定値へ、HTML はテキストとして保存し、余計なキー・型・長さを拒否する', () => {
+test("Default blank settings, preserve text, and reject extra keys, invalid types, or excessive length", () => {
   const userProperties = {};
   const { context } = server({ userProperties });
   const result = context.savePortalSettings(values({ PORTAL_NAME: '  ', PORTAL_ICON: '😀', PORTAL_HEADLINE: '<b>test</b>' }));
@@ -50,7 +50,7 @@ test('表示設定の空白は既定値へ、HTML はテキストとして保存
   }
 });
 
-test('保存失敗の詳細を返さず、ロックを解放する', () => {
+test("Release the lock and hide storage failure details", () => {
   let released = false;
   const { context, logs } = server({
     PropertiesService: { getUserProperties: () => ({ setProperties() { throw new Error('private-detail'); } }) },
@@ -62,14 +62,14 @@ test('保存失敗の詳細を返さず、ロックを解放する', () => {
   assert.doesNotMatch(JSON.stringify([result, logs]), /private-detail/);
 });
 
-test('フォームを保存するとタイトル・ブランド・見出しが安全なテキストで更新される', (t) => {
+test("Apply saved names and display content safely as text", (t) => {
   const { dom, document, settingsRequests } = browser();
   t.after(() => dom.window.close());
   const settings = values({ PORTAL_NAME: '<img src=x> Portal', PORTAL_HEADLINE: '<b>headline</b>', PORTAL_DESCRIPTION: '</textarea><script>alert(1)</script>' });
   for (const [key, value] of Object.entries(settings)) document.querySelector(`[name="${key}"]`).value = value;
   document.querySelector('#portal-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
   assert.deepEqual(plain(settingsRequests[0].settings), settings);
-  assert.equal(document.title, 'My Portal', '保存完了までは現在の表示を維持する');
+  assert.equal(document.title, 'My Portal', 'Keep the current display until saving succeeds');
   assert.equal(document.querySelector('#portal-settings-fields').disabled, true);
   settingsRequests[0].success({ ok: true, settings });
   assert.equal(document.title, settings.PORTAL_NAME);
@@ -80,7 +80,7 @@ test('フォームを保存するとタイトル・ブランド・見出しが�
   assert.equal(document.querySelector('#portal-settings-fields').disabled, false);
 });
 
-test('既定値に戻す操作は入力欄だけを変更し、明示的な保存で初めて反映する', (t) => {
+test("Reset only form values until the user explicitly saves", (t) => {
   const { dom, document, settingsRequests } = browser((window) => {
     window.document.documentElement.dataset.theme = 'kuri';
     for (const [key, value] of Object.entries(values())) window.document.querySelector(`[name="${key}"]`).value = value;
@@ -88,9 +88,9 @@ test('既定値に戻す操作は入力欄だけを変更し、明示的な保�
   t.after(() => dom.window.close());
   document.querySelector('#setting-name').value = 'unsaved';
   document.querySelector('#reset-portal-settings').click();
-  const defaults = plain(server().context.getPortalPropertyDefaults_());
+  const defaults = plain(server().context.getPortalPropertyDefaults_('ja'));
   for (const [key, value] of Object.entries(defaults)) assert.equal(document.querySelector(`[name="${key}"]`).value, value);
-  assert.equal(settingsRequests.length, 0, 'リセットだけではサーバーに書き込まない');
+  assert.equal(settingsRequests.length, 0, 'Resetting the form must not write to the server');
   assert.equal(document.title, 'Fumi Portal');
   assert.equal(document.querySelector('#page-title').textContent, '今日の仕事');
   assert.equal(document.querySelector('.brand-mark').textContent, 'F');
@@ -109,7 +109,7 @@ test('既定値に戻す操作は入力欄だけを変更し、明示的な保�
   assert.equal(document.documentElement.dataset.theme, 'kuri');
 });
 
-test('タイムアウト後に届いた表示設定の応答は反映せず再読み込みを案内する', (t) => {
+test("Ignore late settings responses after timeout and request a reload", (t) => {
   let timeout;
   const { dom, document, settingsRequests } = browser((window) => {
     const original = window.setTimeout.bind(window);

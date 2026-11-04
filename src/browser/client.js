@@ -1,5 +1,7 @@
 (() => {
   'use strict';
+  /** @param {string} key @param {Record<string, string | number>} [values] */
+  const t = (key, values = {}) => PortalI18n.t(key, document.documentElement.lang, values);
 
   /** @param {string} id @returns {HTMLElement} */
   function element(id) {
@@ -20,6 +22,7 @@
   /** @type {'cards' | 'list'} */
   let view = 'cards';
   let generation = 0;
+  let catalogReady = false;
   let resultSignature = '';
   /** @type {Animation | undefined} */
   let resultAnimation;
@@ -42,7 +45,7 @@
     ], { duration: 220, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
   }
 
-  /** 同じ検索結果では再生せず、連続入力時も待たずに最新の表示へ切り替える。 @param {string} signature */
+  /** Skip unchanged results and show the latest input without waiting for earlier animations. @param {string} signature */
   function animateResults(signature) {
     if (signature === resultSignature) return;
     resultSignature = signature;
@@ -111,7 +114,7 @@
         if (value === null) selectedTags.clear();
         else if (selectedTags.has(value)) selectedTags.delete(value);
         else selectedTags.add(value);
-        // 押したボタンを作り直さず、キーボードフォーカスを保持する。
+        // Keep the clicked button in place to preserve keyboard focus.
         container.querySelectorAll('button').forEach((item, index) => {
           item.setAttribute('aria-pressed', String(index === 0 ? selectedTags.size === 0 : selectedTags.has(tags[index - 1])));
         });
@@ -119,7 +122,7 @@
       });
       container.append(button);
     };
-    addButton('すべて', null);
+    addButton(t("All"), null);
     tags.forEach((tag) => addButton(tag, tag));
   }
 
@@ -133,7 +136,7 @@
   function scopeBadge(tool) {
     const badge = document.createElement('span');
     badge.className = 'scope-badge scope-' + tool.scope;
-    badge.textContent = tool.scope === 'internal' ? '社内' : '社外';
+    badge.textContent = tool.scope === 'internal' ? t("Internal") : t("External");
     return badge;
   }
 
@@ -159,7 +162,7 @@
     link.rel = 'noopener noreferrer';
     const newTab = document.createElement('span');
     newTab.className = 'visually-hidden';
-    newTab.textContent = '（新しいタブで開きます）';
+    newTab.textContent = t("(opens in a new tab)");
     link.append(newTab);
     return link;
   }
@@ -168,7 +171,7 @@
   function relatedLinks(tool) {
     const list = document.createElement('ul');
     list.className = 'related-links';
-    list.setAttribute('aria-label', tool.name + 'の関連リンク');
+    list.setAttribute('aria-label', t('Related links for {name}', { name: tool.name }));
     (tool.relatedLinks || []).forEach((related) => {
       const item = document.createElement('li');
       const link = toolLink(related);
@@ -221,12 +224,12 @@
 
   function renderWarnings() {
     element('warnings').hidden = issues.length === 0;
-    element('warning-summary').textContent = `${issues.length} 件の登録データを表示できませんでした。スプレッドシートを確認してください。`;
+    element('warning-summary').textContent = t('Entries not displayed: {count}. Check the spreadsheet.', { count: issues.length });
     const list = element('warning-list');
     list.replaceChildren();
     issues.forEach((issue) => {
       const item = document.createElement('li');
-      item.textContent = `${issue.row} 行目：${issue.message}`;
+      item.textContent = t('Row {row}: {message}', { row: issue.row, message: PortalI18n.translate(issue.message, document.documentElement.lang) });
       list.append(item);
     });
   }
@@ -247,10 +250,10 @@
     visible.forEach((tool) => view === 'cards' ? list.append(card(tool)) : rows.append(tableRow(tool)));
     element('status').hidden = visible.length > 0;
     if (tools.length === 0) {
-      showStatus(issues.length ? '表示できるツールがありません' : 'ツールがまだ登録されていません',
-        issues.length ? '上の確認事項に沿ってスプレッドシートを修正してください。' : 'スプレッドシートに登録すると、ここにツールが表示されます。');
+      showStatus(issues.length ? t("No tools can be displayed") : t("No tools have been added yet"),
+        issues.length ? t("Fix the spreadsheet using the issues listed above.") : t("Add tools to the spreadsheet to display them here."));
     } else if (visible.length === 0) {
-      showStatus('ツールが見つかりません', 'キーワード・区分・タグを変えてお試しください。', true);
+      showStatus(t("No matching tools"), t("Try a different keyword, scope, or tag."), true);
     }
     animateResults(JSON.stringify([view, visible.map((tool) => tool.id)]));
   }
@@ -289,7 +292,7 @@
     tools = [];
     issues = [];
     clearResults();
-    showStatus('一覧を取得できませんでした', message || 'ブラウザでページを再読み込みしてください。解決しない場合は GAS の設定を確認してください。');
+    showStatus(t("Could not load the tool list"), (message ? PortalI18n.translate(message, document.documentElement.lang) : '') || t("Reload the page in your browser. If the problem persists, check the GAS settings."));
   }
 
   /** @param {CatalogTool} tool */
@@ -318,8 +321,8 @@
     setLoading(true);
     const current = ++generation;
     clearResults();
-    showStatus('読み込み中です', 'ツールの一覧を取得しています。');
-    // 長時間の待機を終え、タイムアウト後に届く応答では画面を更新しない。
+    showStatus(t("Loading…"), t("Fetching the tool list."));
+    // Stop waiting after the timeout and ignore late responses.
     const timeout = window.setTimeout(() => {
       if (current !== generation) return;
       generation += 1;
@@ -342,6 +345,7 @@
           showError();
           return;
         }
+        catalogReady = true;
         tools = response.tools;
         issues = response.issues;
         const availableTags = new Set(tools.flatMap((tool) => tool.tags));
@@ -379,6 +383,12 @@
     renderTags();
     renderTools();
     search.focus();
+  });
+  document.addEventListener('portal:languagechange', () => {
+    if (!catalogReady) return;
+    renderTags();
+    renderWarnings();
+    renderTools();
   });
   loadCatalog();
 })();

@@ -1,7 +1,7 @@
 {
   "name": "gas-portal",
   "version": "0.1.0",
-  "description": "A personal Google Apps Script portal, distributed with a multi-account deployment CLI.",
+  "description": "A personal work portal built with Google Apps Script.",
   "type": "module",
   "packageManager": "npm@12.2.1",
   "engines": {
@@ -49,5 +49,13 @@
   "dependencies": {
     "@google/clasp": "3.4.1",
     "vite": "8.3.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hatappo/gas-portal.git"
+  },
+  "homepage": "https://github.com/hatappo/gas-portal#readme",
+  "bugs": {
+    "url": "https://github.com/hatappo/gas-portal/issues"
   }
 }

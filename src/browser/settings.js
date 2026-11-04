@@ -1,5 +1,7 @@
 (() => {
   'use strict';
+  /** @param {string} key @param {Record<string, string | number>} [values] */
+  const t = (key, values = {}) => PortalI18n.t(key, document.documentElement.lang, values);
   const form = /** @type {HTMLFormElement} */ (document.getElementById('portal-settings-form'));
   const fields = /** @type {HTMLFieldSetElement} */ (document.getElementById('portal-settings-fields'));
   const status = /** @type {HTMLElement} */ (document.getElementById('portal-settings-status'));
@@ -40,46 +42,62 @@
     if (fields.disabled) return;
     const current = ++generation;
     fields.disabled = true;
-    status.textContent = '保存中…';
+    status.textContent = t("Saving…");
     status.setAttribute('aria-busy', 'true');
     const finish = () => { fields.disabled = false; status.setAttribute('aria-busy', 'false'); };
     const timeout = window.setTimeout(() => {
       if (current !== generation) return;
       generation++;
       finish();
-      status.textContent = '保存を確認できませんでした。ページを再読み込みして確認してください。';
+      status.textContent = t("Could not confirm the save. Reload the page to check.");
     }, 15000);
     const failure = () => {
       window.clearTimeout(timeout);
       if (current !== generation) return;
       finish();
-      status.textContent = '保存できませんでした。入力内容は保持しています。もう一度お試しください。';
+      status.textContent = t("Could not save. Your input has been kept. Please try again.");
     };
     try {
       const runner = google.script.run.withSuccessHandler((/** @type {PortalSettingsResponse} */ response) => {
         if (current !== generation) return;
         if (!response?.ok) {
           failure();
-          if (response && typeof response.error === 'string') status.textContent = response.error;
+          if (response && typeof response.error === 'string') status.textContent = PortalI18n.translate(response.error, document.documentElement.lang);
           return;
         }
         if (!response.settings || !keys.every((key) => typeof response.settings[key] === 'string')) { failure(); return; }
         window.clearTimeout(timeout);
         apply(response.settings);
         finish();
-        status.textContent = '保存しました';
+        status.textContent = t("Saved");
       }).withFailureHandler(failure);
-      runner.savePortalSettings(readForm());
+      runner.savePortalSettings(readForm(), document.documentElement.lang);
     } catch { failure(); }
   }
 
-  // 初期値は本番の HTML またはローカルのモックが埋め込む。
+  // Initial values come from production HTML or the local mock.
+  function localizeDefaults() {
+    const defaults = /** @type {PortalSettings} */ (JSON.parse(form.dataset.defaults || '{}'));
+    for (const key of ['PORTAL_HEADLINE', 'PORTAL_DESCRIPTION']) {
+      const field = /** @type {'PORTAL_HEADLINE' | 'PORTAL_DESCRIPTION'} */ (key);
+      const previous = defaults[field];
+      const translated = PortalI18n.translate(previous, document.documentElement.lang);
+      const presets = ['ja', 'en'].map((language) => PortalI18n.translate(previous, language));
+      if (presets.includes(inputs[field].value)) inputs[field].value = translated;
+      const target = document.querySelector(field === 'PORTAL_HEADLINE' ? '#page-title' : '.intro-copy');
+      if (target && presets.includes(target.textContent || '')) target.textContent = translated;
+      defaults[field] = translated;
+    }
+    form.dataset.defaults = JSON.stringify(defaults);
+  }
+  localizeDefaults();
   apply(readForm());
+  document.addEventListener('portal:languagechange', localizeDefaults);
   form.addEventListener('submit', (event) => { event.preventDefault(); save(); });
   document.getElementById('reset-portal-settings')?.addEventListener('click', () => {
     if (fields.disabled) return;
     const defaults = /** @type {PortalSettings} */ (JSON.parse(form.dataset.defaults || '{}'));
     keys.forEach((key) => { inputs[key].value = defaults[key]; });
-    status.textContent = '入力欄を既定値に戻しました。反映するには「変更を保存」を押してください。';
+    status.textContent = t("The fields have been reset. Select “Save changes” to apply them.");
   });
 })();

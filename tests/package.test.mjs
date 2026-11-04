@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { GAS_FILES } from '../lib/config.mjs';
 
-test('npm 配布物は完成済み資産と CLI だけを含み、現場設定・ソース・認証情報を含めない', (t) => {
+test("Packages contain compiled assets and CLI without source, configuration, or credentials", (t) => {
   const cache = mkdtempSync(path.join(tmpdir(), 'gas-portal-pack-cache-'));
   t.after(() => rmSync(cache, { recursive: true, force: true }));
   const result = JSON.parse(execFileSync('npm', ['pack', '--dry-run', '--json', '--ignore-scripts', '--cache', cache], { encoding: 'utf8' }));

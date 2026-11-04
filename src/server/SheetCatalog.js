@@ -1,4 +1,4 @@
-/** スクリプトプロパティで指定されたシートを読む。書き込み・キャッシュは行わない。 @returns {Catalog} */
+/** Read the sheet configured in Script Properties, without writes or caching. @returns {Catalog} */
 function readSheetCatalog_() {
   const properties = PropertiesService.getScriptProperties().getProperties();
   const id = (properties.SPREADSHEET_ID || '').trim();
@@ -8,13 +8,13 @@ function readSheetCatalog_() {
   if (typeof Sheets === 'undefined' || !Sheets?.Spreadsheets?.Values) throw new Error('SHEETS_SERVICE_DISABLED');
   const spreadsheet = Sheets.Spreadsheets.get(id, { fields: 'sheets(properties(title))' });
   if (!spreadsheet.sheets?.some((sheet) => sheet.properties?.title === name)) throw new Error('SHEET_NOT_FOUND');
-  // シート名を常に引用し、アポストロフィや名前付き範囲との衝突に対応する。
+  // Always quote sheet names to handle apostrophes and named-range collisions.
   const range = "'" + name.replace(/'/g, "''") + "'";
   const response = Sheets.Spreadsheets.Values.get(id, range, { valueRenderOption: 'FORMATTED_VALUE' });
   return parseSheetCatalog_(response.values || []);
 }
 
-/** 1 行目をヘッダとして、TSV と同じ列を既存のカタログへ変換する。 @param {unknown[][]} rows @returns {Catalog} */
+/** Use the first row as headers and map TSV-compatible columns into the catalog. @param {unknown[][]} rows @returns {Catalog} */
 function parseSheetCatalog_(rows) {
   const headers = (rows[0] || []).map((value) => String(value ?? '').trim());
   const named = headers.filter(Boolean);
@@ -29,7 +29,7 @@ function parseSheetCatalog_(rows) {
   /** @type {number[]} */
   const sourceRows = [];
   rows.slice(1).forEach((row, index) => {
-    // API の末尾空セル省略と、表中の空行に対応する。
+    // Handle omitted trailing cells and blank spreadsheet rows.
     if (row.every((cell) => String(cell ?? '').trim() === '')) return;
     /** @param {string} name */
     const cell = (name) => String(row[headers.indexOf(name)] ?? '');
@@ -38,7 +38,7 @@ function parseSheetCatalog_(rows) {
       scope: /** @type {CatalogEntry['scope']} */ (cell('scope')),
       tags: cell('tags').split(/[,、\n\r]+/),
       relatedLinks: cell('relatedLinks').split(/\r\n?|\n/).map((line) => line.trim()).filter(Boolean).map((line) => {
-        // 最初の空白で URL とラベルを区切る。ラベル内のスペースは保持する。
+        // Split URL and label at the first whitespace; preserve spaces within labels.
         const match = /^(\S+)[ \t]+(.+)$/.exec(line);
         return match ? { url: match[1], label: match[2].trim() } : { url: line, label: '' };
       }),
@@ -49,7 +49,7 @@ function parseSheetCatalog_(rows) {
   catalog.issues.forEach((issue) => {
     issue.row = sourceRows[issue.row - 1];
     if (issue.message.startsWith('relatedLinks')) {
-      issue.message = 'relatedLinks は 1 行に「HTTPS URL 半角スペース ラベル」の形式で入力してください。';
+      issue.message = PortalI18n.t("Each relatedLinks line must contain an HTTPS URL, a space, and a label.");
     }
   });
   return catalog;

@@ -9,18 +9,18 @@ const help = `gas-portal ${packageInfo.version}
 Usage: portal <command> [options]
 
   init [--script-id ID] [--auth-profile NAME] [--deployment-id ID]
-                   設定・npm scripts・.gitignore を作成（既存値は保持）
-  login            現場の Google アカウントでログイン
-  status           認証プロフィールと認証状態を確認
-  build            .portal/dist に GAS 用コードを生成（通信なし）
+                   Create configuration, npm scripts, and .gitignore (preserve existing values)
+  login            Sign in with this environment's Google account
+  status           Check the authentication profile and status
+  build            Generate GAS code in .portal/dist (offline)
   preview [--port NUMBER]
-                   架空データのローカルプレビュー（既定: 4173）
-  push             build 後に GAS へアップロード（デプロイしない）
-  deployments      対象 GAS のデプロイ一覧
+                   Preview mock data locally (default port: 4173)
+  push             Build and upload to GAS (without deploying)
+  deployments      List deployments for the target GAS project
   deploy [--deployment-id ID] [--description TEXT]
-                   GAS 側の最新コードで既存デプロイを更新（push なし）
+                   Update an existing deployment from code saved in GAS (without pushing)
 
-初期化は GAS エディタで initializeProperties を実行してください。
+To initialize properties, run initializeProperties in the GAS editor.
 `;
 
 export async function main(args = process.argv.slice(2), root = process.cwd()) {
@@ -33,17 +33,17 @@ export async function main(args = process.argv.slice(2), root = process.cwd()) {
     deploy: { 'deployment-id': { type: 'string' }, description: { type: 'string', short: 'd' } },
     build: {}, push: {}, login: {}, status: {}, deployments: {},
   };
-  if (!Object.hasOwn(definitions, command)) throw new Error(`未対応のコマンド: ${command}\nportal --help を参照してください。`);
+  if (!Object.hasOwn(definitions, command)) throw new Error(`Unknown command: ${command}\nSee portal --help.`);
   const { values } = parseArgs({ args: rest, options: definitions[command], allowPositionals: false });
   if (command === 'init') {
     init(root, { scriptId: values['script-id'], authProfile: values['auth-profile'], deploymentId: values['deployment-id'] });
-    console.log('設定を準備しました。portal.config.json の scriptId・authProfile を確認して npm install を実行してください。既存設定は保持しています。');
+    console.log('Configuration is ready. Check scriptId and authProfile in portal.config.json, then run npm install. Existing values were preserved.');
   } else if (command === 'build') {
     const result = build(root);
     console.log(`${result.output}: gas-portal ${result.version} / ${result.files.length} files`);
   } else if (command === 'preview') {
     const port = Number(values.port ?? process.env.PORT ?? 4173);
-    if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('port は 1〜65535 を指定してください。');
+    if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('port must be an integer between 1 and 65535.');
     const previewRoot = buildPreview(root);
     const { createServer } = await import('vite');
     const server = await createServer({ configFile: false, root: previewRoot, publicDir: false, appType: 'mpa',
@@ -51,7 +51,7 @@ export async function main(args = process.argv.slice(2), root = process.cwd()) {
     });
     try { await server.listen(); } catch (error) { await server.close(); throw error; }
     server.printUrls();
-    console.log('架空データのみを表示します。Google や本番プロパティには接続しません。');
+    console.log('Showing mock data only. No connection to Google or production properties.');
     const shutdown = async () => { await server.close(); process.exit(0); };
     process.once('SIGINT', shutdown);
     process.once('SIGTERM', shutdown);

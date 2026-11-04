@@ -1,16 +1,16 @@
 import { readFileSync } from 'node:fs';
 
-/** GAS の通常の出力タグと同じく、文言を HTML として実行させない。 */
-export function withPreviewContent(html, portal, theme = 'tsuyukusa') {
+/** Escape text like GAS output tags so it cannot execute as HTML. */
+export function withPreviewContent(html, portal, theme = 'auto') {
   const escapes = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
   return html.replace('<?= theme ?>', () => theme.replace(/[&<>"']/g, (character) => escapes[character]))
     .replace(/<\? if \(portal\.spreadsheetUrl\) \{ \?>([\s\S]*?)<\? \} \?>/g,
     (_, content) => portal.spreadsheetUrl ? content : '')
-    .replace(/<\?= portal\.(name|brandLead|brandRest|headline|description|spreadsheetUrl|icon|defaultsJson) \?>/g,
+    .replace(/<\?= portal\.(languagePreference|language|name|brandLead|brandRest|headline|description|spreadsheetUrl|icon|defaultsJson) \?>/g,
     (_, key) => portal[key].replace(/[&<>"']/g, (character) => escapes[character]));
 }
 
-/** ローカル限定。接続先が未設定ならリンクを隠し、認証情報は読み込まない。 */
+/** Local only: hide the link when no project is configured; never read credentials. */
 export function withPreviewProject(html, configUrl = new URL('../.clasp.json', import.meta.url)) {
   let scriptId;
   try {
@@ -19,7 +19,7 @@ export function withPreviewProject(html, configUrl = new URL('../.clasp.json', i
     if (error.code !== 'ENOENT') throw error;
   }
   if (scriptId !== undefined && (typeof scriptId !== 'string' || !/^[\w-]+$/.test(scriptId))) {
-    throw new Error('.clasp.json の scriptId が不正です。');
+    throw new Error('Invalid scriptId in .clasp.json.');
   }
   const attribute = scriptId ? `href="https://script.google.com/home/projects/${scriptId}/edit"` : 'hidden';
   return html.replace('href="<?= projectUrl ?>"', attribute);

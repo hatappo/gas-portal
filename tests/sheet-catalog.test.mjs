@@ -4,7 +4,7 @@ import { plain, server } from './helpers.mjs';
 
 const parse = (rows) => plain(server().context.parseSheetCatalog_(rows));
 
-test('TSV の列を読み、カンマ・読点・改行のタグと複数の関連リンクを扱う', () => {
+test("Parse headers, tag separators, and multiple related links", () => {
   const result = parse([
     ['name', 'url', 'id', 'tags', 'scope', 'relatedLinks', 'メモ'],
     ['ツール', 'https://script.google.com/macros/s/test/exec', 'a', '業務,資料、業務\n経理', '社外',
@@ -19,7 +19,7 @@ test('TSV の列を読み、カンマ・読点・改行のタグと複数の関�
   assert.doesNotMatch(JSON.stringify(result), /private/);
 });
 
-test('空行を飛ばしてシートの実際の行番号を返し、重複 ID を全件除外する', () => {
+test("Skip blank rows, preserve sheet row numbers, and exclude all duplicate IDs", () => {
   const result = parse([
     ['id', 'name', 'url'], ['same', '一つ目', 'https://example.com'], [],
     ['same', '二つ目', 'https://example.com'], ['bad', '不正', 'javascript:alert(1)'],
@@ -29,7 +29,7 @@ test('空行を飛ばしてシートの実際の行番号を返し、重複 ID �
   assert.deepEqual(result.tools.map((tool) => tool.id), ['a', 'b']);
 });
 
-test('任意列・末尾セルの省略とヘッダのみの表に対応する', () => {
+test("Handle missing optional columns, trailing cells, and header-only sheets", () => {
   const headers = ['id', 'name', 'url', 'relatedLinks'];
   assert.deepEqual(parse([headers]), { tools: [], issues: [] });
   const tool = parse([headers, [1, '数値 ID', 'https://example.com']]).tools[0];
@@ -40,13 +40,13 @@ test('任意列・末尾セルの省略とヘッダのみの表に対応する',
   assert.deepEqual(tool.relatedLinks, []);
 });
 
-test('列名不足・重複は表全体の設定エラーにする', () => {
+test("Reject missing or duplicate column names as configuration errors", () => {
   for (const headers of [[], ['id', 'name'], ['id', 'name', 'url', ' id ']]) {
     assert.throws(() => parse([headers]), /INVALID_.*HEADERS/);
   }
 });
 
-test('URL やラベルの欠落・危険な関連 URL は行の不備にする', () => {
+test("Report missing labels and unsafe related URLs as row issues", () => {
   const result = parse([
     ['id', 'name', 'url', 'relatedLinks'],
     ['a', 'A', 'https://example.com', '使い方'],
@@ -58,7 +58,7 @@ test('URL やラベルの欠落・危険な関連 URL は行の不備にする',
   assert.match(result.issues[0].message, /半角スペース/);
 });
 
-test('セル内の空行・CRLF・複数スペースに対応し、ラベル内の空白や URL のクエリを保持する', () => {
+test("Handle CRLF, blank lines, and whitespace without changing labels or queries", () => {
   const result = parse([
     ['id', 'name', 'url', 'relatedLinks'],
     ['a', 'A', 'https://example.com', ' \r\n https://example.com/?x=1&y=2#top   Google Drive - ファイル共有 \r\n\r\nhttps://example.com/source\tソース コード\r'],
@@ -70,7 +70,7 @@ test('セル内の空行・CRLF・複数スペースに対応し、ラベル内�
   ]);
 });
 
-test('旧列だけの場合は移行を案内し、新列があれば旧列を無視する', () => {
+test("Require migration for legacy-only columns and ignore them when the new column exists", () => {
   const headers = ['id', 'name', 'url', 'relatedLink1Label', 'relatedLink1Url'];
   assert.throws(() => parse([headers]), /LEGACY_RELATED_HEADERS/);
   const result = parse([[...headers, 'relatedLinks'],

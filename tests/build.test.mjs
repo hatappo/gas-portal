@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { browser, catalog } from './helpers.mjs';
 
-test('ビルドはシートへ接続せず、旧データを除去し、構文エラー時は生成物を保護する', (t) => {
+test("Build stays offline, removes stale data, and preserves output after syntax errors", (t) => {
   const root = mkdtempSync(path.join(tmpdir(), 'gas-portal-build-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   cpSync('src', path.join(root, 'src'), { recursive: true });

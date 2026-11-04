@@ -1,37 +1,33 @@
 # gas-portal
 
-Google Apps Script で動く個人用ポータルと、現場ごとの構築・プレビュー・デプロイを行う CLI です。
+A personal work portal built with Google Apps Script, with a CLI for building, previewing, and deploying separate work environments.
 
-Spreadsheet のリンク一覧をカード／リストで表示します。検索、社内外の絞り込み、複数タグ、関連リンク、8 種の配色と表示文言の編集に対応しています。Action Items は将来の連携用の空タブです。
+Display links from a spreadsheet as cards or a list. Search by name, description, or tags; filter internal and external tools; add related links; and customize the appearance with ten color themes and editable display text. The settings tab lets you switch between Japanese and English; your language preference is saved in User Properties. The initial selection follows browser preferences, with English as the fallback. The Action Items tab is currently empty and reserved for future integrations.
 
-**現場側でアプリのソースをコピーする必要はありません。** 設定とパッケージのバージョンだけを管理し、GAS 用コードは `.portal/` に生成します。現場ごとに別の Google アカウント・GAS・Spreadsheet を使えます。
+**Consumer projects only need configuration and a package dependency.** The CLI generates GAS code under `.portal/`. Each work environment can use its own Google account, Apps Script project, and spreadsheet.
 
-## 現在の配布状態
+## Installation
 
-このソースツリーは npm パッケージを作成できる状態ですが、npm registry への公開はまだ行っていません。パッケージ名の取得・公開先リポジトリの設定は公開時に行ってください。以下の tarball を使う方法は registry 公開なしで利用できます。
+Packages are distributed as `gas-portal-VERSION.tgz` assets on GitHub Releases, without publishing to the npm registry. Use the attached package from a published release in the public repository. GitHub's automatic Source code archives do not include the compiled assets.
 
-前提: Node.js 26.x / npm 12.2.1 以上。GAS への操作には対象アカウントで Apps Script API の利用を有効にし、clasp でログインする必要があります。
+Requirements: Node.js 26.x and npm 12.2.1 or later. To access GAS, enable the Apps Script API for the target Google account and sign in with clasp.
 
 ```sh
-# 本体のリポジトリで実行
-npm ci
-npm run check
-npm run pack:local
-
-# 現場用の新しいフォルダで実行
+# In a new directory for your work environment
 npm init -y
-npm install --save-dev --save-exact /absolute/path/to/gas-portal/releases/gas-portal-0.1.0.tgz
+# Use the .tgz URL from the release's Assets section
+npm install --save-dev --save-exact https://github.com/hatappo/gas-portal/releases/download/vVERSION/gas-portal-VERSION.tgz
 npx portal init --script-id YOUR_SCRIPT_ID --auth-profile work-a
 npm run login
 npm run build
 npm run preview
 ```
 
-`pack:local` は `releases/` にローカル配布物を生成します。同じバージョンで異なる内容の配布物を上書きしないため、更新時は version を上げてください。
+Replace `VERSION` with a [published release](https://github.com/hatappo/gas-portal/releases). Commit the dependency URL in package.json and the generated package-lock.json, then use `npm ci` for subsequent installations. To upgrade, run npm install with the new release's URL. Use a versioned URL rather than a mutable `latest` URL.
 
-上のローカル tarball は検証・手動配布用です。現場の package.json / lockfile にはそのパスが記録されるので、別マシンでは同じ tarball を用意してください。公開後は `npm install --save-dev --save-exact gas-portal@VERSION` でバージョン固定する運用に切り替えられます。公開されるまでは同名の第三者パッケージを誤ってインストールしないでください。
+To test a local package, run `npm ci`, `npm run check`, and `npm run pack:local` in this repository, then install `releases/gas-portal-VERSION.tgz`. The packaging command refuses to overwrite an existing package with different contents at the same version.
 
-`portal init` は既存の設定値・依存指定・同名 npm scripts を保持し、`.gitignore` に生成物と認証情報の除外を追加します。Script ID が未定でも実行でき、その場合は後から `portal.config.json` を編集します。Git リポジトリの作成は利用者が行います。
+When `portal init` adds a dependency, it uses the GitHub Release URL for the running CLI's version. Existing configuration, dependency specifications, and npm scripts with matching names are preserved. The command also adds generated files and credentials to `.gitignore`. You can initialize before creating a GAS project and fill in `portal.config.json` later. Initialize the consumer's Git repository yourself if needed.
 
 ```text
 my-work-portal/
@@ -39,15 +35,15 @@ my-work-portal/
 ├── package.json
 ├── package-lock.json
 ├── .gitignore
-└── .portal/               # Git 管理しない
+└── .portal/               # Not tracked by Git
     ├── generated.json
-    ├── .clasp.json         # 自動生成
-    ├── .claspignore        # 7 ファイルだけを許可
+    ├── .clasp.json         # Generated
+    ├── .claspignore        # Allows only the seven GAS files
     ├── dist/
     └── preview/
 ```
 
-## 現場の設定
+## Environment configuration
 
 ```json
 {
@@ -57,49 +53,89 @@ my-work-portal/
 }
 ```
 
-- `scriptId`: コードを送る Apps Script の ID。Google Cloud のプロジェクト ID とは異なります。
-- `authProfile`: clasp に保存する認証情報の別名。メールアドレスではありません。`portal login` 時に、その現場の Google アカウントを選んでください。
-- `deploymentId`: 更新する既存デプロイの ID。初回公開前は省略できます。未設定で公開済みデプロイが 1 件だけなら、それを更新し、成功後に ID を設定へ保存します。複数なら指定が必要です。
-- `repositoryUrl`: 任意の GitHub URL。未指定なら現場フォルダの Git origin を使い、空文字ならフッタに表示しません。認証情報を含む URL や GitHub 以外のホストは使用しません。
+- `scriptId`: the Apps Script project to upload to. This is not a Google Cloud project ID.
+- `authProfile`: a named clasp authentication profile, not an email address. Select the appropriate Google account when running `portal login`.
+- `deploymentId`: an existing deployment to update. Omit it before the first deployment. If exactly one versioned deployment exists, the CLI selects it and saves its ID after a successful update. Specify the ID when multiple deployments exist.
+- `repositoryUrl`: an optional GitHub repository URL for the footer. When omitted, the CLI uses the consumer directory's Git origin. Set it to an empty string to hide the link. URLs with credentials or hosts other than GitHub are rejected.
 
-認証トークンはこの設定に保存しません。clasp の標準の認証ストアで管理します。CLI はリモート操作で必ず `--user` を指定し、現在のデフォルトアカウントへ暗黙に切り替えません。名前と実際のアカウントの対応は `portal status` で確認できます。プロフィールの変更は、ウェブアプリの実行者設定を変更する操作ではありません。
+Authentication tokens remain in clasp's standard credential store. Every remote CLI operation explicitly selects `--user`; it does not silently switch to the default account. Use `portal status` to check the account associated with a profile. Changing the profile does not change the web app's execution identity.
 
-## コマンド
+## Commands
 
-| コマンド | 動作 |
+| Command | Behavior |
 | --- | --- |
-| `portal init` | 現場の設定・npm scripts・gitignore を準備 |
-| `portal login` | 指定プロフィールで Google にログイン |
-| `portal status` | 対象とログイン状態を表示 |
-| `portal build` | 同梱済み資産から GAS 用 7 ファイルを生成。通信なし |
-| `portal preview [--port 4174]` | Vite で架空データを表示。GAS・Spreadsheet には接続しない |
-| `portal push` | build 後に GAS へアップロード。公開版は更新しない |
-| `portal deployments` | 対象 GAS のデプロイ一覧を表示 |
-| `portal deploy [-d TEXT] [--deployment-id ID]` | GAS 側に保存済みの最新コードからバージョンを作り、既存デプロイを更新 |
+| `portal init` | Prepare environment configuration, npm scripts, and gitignore entries |
+| `portal login` | Sign in to Google using the selected profile |
+| `portal status` | Show the target project and authentication status |
+| `portal build` | Generate seven GAS files from bundled assets, without network access |
+| `portal preview [--port 4174]` | Serve mock data with Vite, without contacting GAS or Sheets |
+| `portal push` | Build and upload the code to GAS; does not update the published version |
+| `portal deployments` | List deployments for the target GAS project |
+| `portal deploy [-d TEXT] [--deployment-id ID]` | Create a version from code already saved in GAS and update an existing deployment |
 
-**deploy は build・push・check を実行しません。** 初回のウェブアプリ公開は GAS コンソールで行います。公開用がゼロなら案内して停止します。指定した ID が対象プロジェクトに存在しない場合や HEAD の場合も更新しません。API 実行用など複数のバージョン付きデプロイがあるときは、ウェブアプリの ID を指定してください。
+**deploy does not run build, push, or check.** Create the first web app deployment manually in the GAS console. The CLI stops with instructions if no versioned deployment exists. It also refuses to update HEAD or a deployment ID outside the target project. If multiple versioned deployments exist, including API executable deployments, specify the web app's ID.
 
-初期化用 CLI はありません。GAS エディタから `initializeProperties` を実行します。Execution API・独自 OAuth クライアント・API 実行可能デプロイの追加設定は不要です。
+There is no CLI command for property initialization. Run `initializeProperties` in the GAS editor. This does not require an Execution API deployment or a custom OAuth client.
 
-初回の設定、Spreadsheet の列、表示設定、プレビューについては [利用手順](docs/usage.md) を参照してください。
+See the [usage guide](docs/usage.md) for initial setup, spreadsheet columns, display settings, and preview scenarios.
 
-## 本体を開発する
+## Development
 
 ```sh
 npm ci
-npm run dev               # Vite: CSS HMR、JS/HTML はリロード
-npm run check             # lint、型チェック、配布物生成、テスト
+npm run dev               # Vite: CSS HMR, JS/HTML reloads
+npm run check             # Lint, type checks, build, and tests
 npm run pack:local
 ```
 
-本体のソースは `src/`、CLI は `bin/` と `lib/` にあります。`npm run build` は GAS 用の `dist/` と配布用の `assets/` を生成します。配布パッケージは CLI・生成済み資産・利用ドキュメントだけを含み、ソースやテスト、現場設定、認証情報を含みません。
+Application source lives in `src/`; the CLI lives in `bin/` and `lib/`. `npm run build` generates GAS output in `dist/` and package assets in `assets/`. Published packages contain the CLI, compiled assets, and usage documentation. They exclude source files, tests, environment configuration, and credentials.
 
-開発プレビューで GAS リンクを確認するときだけ、Git 管理対象外の `.clasp.json` に `scriptId` を設定できます。シートのリンクだけを確認する環境変数 `SPREADSHEET_ID` も使えます。どちらもパッケージの生成物には埋め込みません。
+To preview the GAS footer link during development, set `scriptId` in an untracked `.clasp.json`. The optional `SPREADSHEET_ID` environment variable enables the spreadsheet footer link. Neither value is embedded in packaged assets.
 
-`npm run dev` は本体開発用の HMR を提供します。利用者側の `portal preview` はインストール済みバージョンの完成形を確認するものです。設定やパッケージを更新したらプレビューを再起動してください。ブラウザの表示設定は現場フォルダごとに分離して localStorage に保存します。
+`npm run dev` provides HMR for application development. The consumer's `portal preview` shows the installed package's compiled output. Restart it after changing configuration or rebuilding the package. Preview settings are stored in browser localStorage and isolated by consumer directory.
 
-テストは Google サービスをモックし、実際の GAS や Spreadsheet は変更しません。公開前には別途テスト用 GAS で認証・push・デプロイ・実シートの読み込みを確認してください。
+Tests mock Google services and do not change live GAS projects or spreadsheets. Before releasing, use a separate test project to verify authentication, push, deployment, and spreadsheet access.
+
+## Testing local changes in a consumer project
+
+Use a directory dependency to test changes without publishing a release:
+
+```sh
+# In this repository: install dependencies and build assets
+npm ci
+npm run build
+
+# In the consumer project: adjust the relative path to your layout
+npm install --save-dev --install-links=false ../../hobby/gas-portal
+npm run preview
+```
+
+Add `install-links=false` to the consumer's `.npmrc` to keep the dependency as a symbolic link. Running npm ci in the consumer does not install dependencies in the linked repository. After editing application source, rebuild in this repository and restart the consumer's preview. CLI changes are available directly. A directory dependency does not pin source contents in the lockfile; use release tarballs for regular work environments.
+
+## Releases
+
+The workflow in `.github/workflows/release.yml` runs when a `v*` tag is pushed. It checks that the tag matches package.json, runs lint, type checks, the build, and tests, then attaches the `.tgz` to a GitHub Release. No npm registry token is required. Only the publishing job grants write access to the standard GITHUB_TOKEN. Tags containing a suffix such as `-rc.1` produce prereleases.
+
+```sh
+# Bump the version without overwriting existing tags or packages
+npm version patch --no-git-tag-version
+npm run check
+git add package.json package-lock.json
+git commit -m "chore(release): bump package version"
+# Replace VERSION with the version in package.json
+git tag vVERSION
+git push origin HEAD
+git push origin vVERSION
+```
+
+Commit the release's source and workflow changes before tagging. Existing releases are not overwritten. Publish a new version whenever package contents change. The local `v0.1.0` tag predates this distribution workflow, so use a new version for the first release through it.
+
+## Contributing
+
+Write documentation, code comments, CLI messages, test names, and commit messages in English. Use Conventional Commits, for example `feat(i18n): add language selection`. Existing Git history is not rewritten solely to translate commit messages.
+
+UI text supports Japanese and English through `src/shared/i18n.js`. Keep translation data, Japanese input aliases, and multilingual test fixtures where needed. Run lint before editing and `npm run check` after changes. New behavior should have meaningful regression coverage.
 
 ## License
 
-MIT。アイコンのライセンスについては [NOTICE](NOTICE) を参照してください。
+MIT. See [NOTICE](NOTICE) for icon licensing.
