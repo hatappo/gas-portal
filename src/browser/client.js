@@ -258,6 +258,53 @@
     return link;
   }
 
+  /** @param {string} value */
+  function faviconUrl(value) {
+    try {
+      const url = new URL(value);
+      const hostname = url.hostname.replace(/\.$/, '');
+      // Keep local addresses and reserved private DNS suffixes off the external service.
+      if (!['https:', 'http:'].includes(url.protocol) || !hostname.includes('.') ||
+          hostname.includes(':') || /^[\d.]+$/.test(hostname) ||
+          /(?:^|\.)(?:localhost|local|internal|lan|home|test|invalid|onion)$/.test(hostname) ||
+          hostname.endsWith('.home.arpa')) return '';
+      return 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(hostname) + '&sz=64';
+    } catch {
+      return '';
+    }
+  }
+
+  /** @param {CatalogTool} tool */
+  function toolFavicon(tool) {
+    const frame = document.createElement('span');
+    frame.className = 'tool-favicon';
+    frame.setAttribute('aria-hidden', 'true');
+    const fallback = document.createElement('span');
+    fallback.className = 'tool-favicon-fallback';
+    fallback.textContent = '🌐';
+    frame.append(fallback);
+    const url = faviconUrl(tool.url);
+    if (url) {
+      const image = document.createElement('img');
+      image.width = 20;
+      image.height = 20;
+      image.alt = '';
+      image.loading = 'lazy';
+      image.decoding = 'async';
+      image.referrerPolicy = 'no-referrer';
+      image.addEventListener('load', () => {
+        // Google's generic globe can load successfully as a 16px image.
+        // Avoid enlarging it or any other undersized favicon.
+        if (image.naturalWidth < image.width || image.naturalHeight < image.height) image.remove();
+        else frame.classList.add('is-loaded');
+      }, { once: true });
+      image.addEventListener('error', () => image.remove(), { once: true });
+      image.src = url;
+      frame.append(image);
+    }
+    return frame;
+  }
+
   /** @param {CatalogTool} tool */
   function relatedLinks(tool) {
     const list = document.createElement('ul');
@@ -281,7 +328,9 @@
     const link = toolLink(tool);
     link.className = 'tool-main';
     const title = document.createElement('h3');
-    title.textContent = tool.name;
+    const titleText = document.createElement('span');
+    titleText.textContent = tool.name;
+    title.append(toolFavicon(tool), titleText);
     const description = document.createElement('p');
     description.className = 'tool-description';
     description.textContent = tool.description;
@@ -298,7 +347,10 @@
     const name = document.createElement('th');
     name.scope = 'row';
     const link = toolLink(tool);
-    link.prepend(document.createTextNode(tool.name));
+    link.className = 'tool-name-link';
+    const titleText = document.createElement('span');
+    titleText.textContent = tool.name;
+    link.prepend(toolFavicon(tool), titleText);
     name.append(link);
     const description = document.createElement('td');
     description.textContent = tool.description || '—';
