@@ -6,7 +6,7 @@ function cachedServer(options = {}) {
   let now = 1700000000000;
   const values = sheetRows([entry()]);
   const properties = { SPREADSHEET_ID: 'sheet-one', SHEET_NAME: 'ツール一覧' };
-  const userProperties = {};
+  const userProperties = { ...properties };
   const entries = new Map();
   const writes = [];
   let locks = 0;
@@ -69,7 +69,7 @@ test('Expire cached entries even if the cache service retains them, and bypass c
 test('Separate cache entries by source and executing user while reusing the latest data across duration changes', () => {
   const first = cachedServer();
   first.context.getCatalog();
-  first.properties.SPREADSHEET_ID = 'sheet-two';
+  first.userProperties.SPREADSHEET_ID = 'sheet-two';
   assert.equal(first.context.getCatalog().cache.hit, false);
   first.context.saveCatalogCacheTtl(3600);
   assert.equal(first.context.getCatalog().cache.hit, true);
@@ -234,4 +234,50 @@ test('Embed the same cached catalog during doGet without an additional Sheets ca
   context.doGet();
   assert.equal(JSON.parse(template.initialCatalogJson).cache.hit, true);
   assert.equal(calls.length, 1);
+});
+
+test('Cache first-sheet resolution, normalize URL keys, and resolve tab reordering on forced refresh', () => {
+  const sheets = [{ title: 'First', index: 0 }, { title: 'Second', index: 1 }];
+  const fixture = cachedServer({ sheetProperties: sheets });
+  const { context, calls, userProperties } = fixture;
+  context.saveSpreadsheetSettings({ SPREADSHEET_ID: 'sheet-one', SHEET_NAME: '' });
+  assert.equal(context.getCatalog().cache.hit, false);
+  assert.equal(calls.length, 2);
+  userProperties.SPREADSHEET_ID = 'https://docs.google.com/spreadsheets/d/sheet-one/edit#gid=777';
+  sheets[0].index = 1;
+  sheets[1].index = 0;
+  assert.equal(context.getCatalog().cache.hit, true);
+  assert.equal(calls.length, 2);
+  assert.equal(context.getCatalog(true).cache.hit, false);
+  assert.equal(calls.length, 4);
+  assert.equal(calls.at(-1)[2], "'Second'");
+  context.saveSpreadsheetSettings({ SPREADSHEET_ID: '', SHEET_NAME: '' });
+  assert.equal(context.getCatalog().ok, false, 'Disconnecting must not reuse cached data or fall back to the Script Property');
+  assert.equal(calls.length, 4);
+});
+
+test('Discard pre-hidden caches and exclude hidden entries from RPC, HTML bootstrap, and new cache entries', () => {
+  const output = { setTitle() { return this; }, addMetaTag() { return this; } };
+  const template = { evaluate: () => output };
+  const fixture = cachedServer({ HtmlService: { createTemplateFromFile: () => template }, ScriptApp: { getScriptId: () => 'test' } });
+  const { context, values, cache, entries, writes } = fixture;
+  values[0].push('hidden');
+  values[1].push('FALSE');
+  values.push(['secret-entry', 'Hidden entry', 'https://example.com/private', 'Hidden description', 'internal', 'hidden-tag', '', 'TRUE']);
+  context.getCatalog();
+  const key = writes[0].key;
+  const old = { ...JSON.parse(writes[0].value), tools: [{ ...entry(), id: 'secret-entry', name: 'Hidden entry' }] };
+  entries.clear();
+  cache.put(key.replace(/^catalog-v2:/, 'catalog-v1:'), JSON.stringify(old), 21600);
+  context.doGet();
+  const initial = JSON.parse(template.initialCatalogJson);
+  assert.equal(initial.cache.hit, false);
+  assert.equal(initial.tools.length, 1);
+  assert.doesNotMatch(template.initialCatalogJson, /secret-entry|Hidden|hidden-tag/);
+  assert.match(writes.at(-1).key, /^catalog-v2:/);
+  assert.doesNotMatch(writes.at(-1).value, /secret-entry|Hidden|hidden-tag/);
+  values[1][7] = true;
+  assert.equal(context.getCatalog().tools.length, 1, 'Normal reads keep the cached snapshot');
+  assert.equal(context.getCatalog(true).tools.length, 0, 'Forced refresh applies changed visibility');
+  assert.equal(context.getCatalog().tools.length, 0);
 });

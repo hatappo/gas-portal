@@ -22,6 +22,10 @@ const bundle = await build({
   build: {
     write: false,
     target: 'es2020',
+    // HtmlService can misparse URL-bearing template literals emitted by Oxc.
+    // Keep string literals quoted and line breaks escaped in the inline bundle.
+    minify: 'terser',
+    terserOptions: { ecma: 5, format: { inline_script: true } },
     lib: { entry: path.join(root, 'src/browser/main.js'), name: 'MyPortal', formats: ['iife'], fileName: 'client', cssFileName: 'styles' },
   },
 });
@@ -31,6 +35,7 @@ const css = outputs.find((file) => file.type === 'asset' && file.fileName.endsWi
 if (outputs.length !== 2 || typeof client !== 'string' || typeof css !== 'string') {
   throw new Error('GAS output requires a single JavaScript bundle and CSS asset.');
 }
+new vm.Script(client, { filename: 'Client.html' });
 if (/<\/script/i.test(client) || /<\/style/i.test(css)) throw new Error('Generated assets must not contain closing HTML tags.');
 const index = withPortalAssets(readFileSync(path.join(root, 'src/Index.html'), 'utf8').replace('<!-- repository-link -->', '<!-- portal-repository-link -->'), root)
   .replace('<!-- gas-styles -->', "<?!= include_('Styles'); ?>")

@@ -50,7 +50,7 @@ test("Escape custom text and keep the document and portal names consistent", (t)
 
 test("Open GAS and spreadsheet links in new tabs and hide unconfigured spreadsheet links", (t) => {
   for (const spreadsheetId of ['', 'test-sheet']) {
-    const portal = server().context.getPortalContent_({}, { SPREADSHEET_ID: spreadsheetId });
+    const portal = server().context.getPortalContent_({ SPREADSHEET_ID: spreadsheetId });
     const html = withPreviewContent(readFileSync('src/Index.html', 'utf8'), portal);
     const dom = new JSDOM(html);
     t.after(() => dom.window.close());

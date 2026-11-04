@@ -20,7 +20,14 @@ interface PortalSettings {
   PORTAL_DESCRIPTION: string;
 }
 type PortalSettingsResponse = { ok: true; settings: PortalSettings } | { ok: false; error?: string };
+interface SpreadsheetSettings { SPREADSHEET_ID: string; SHEET_NAME: string }
+type SpreadsheetSettingsResponse = { ok: true; settings: SpreadsheetSettings } | { ok: false; error?: string };
+type SpreadsheetCreationResponse =
+  | { ok: true; spreadsheetId: string }
+  | { ok: false; error: string; spreadsheetId?: string; connected?: boolean };
 interface GasRunner {
+  createPortalSpreadsheet(browserLanguage?: string): void;
+  saveSpreadsheetSettings(settings: SpreadsheetSettings): void;
   withSuccessHandler<T>(callback: (response: T) => void): GasRunner;
   withFailureHandler(callback: () => void): GasRunner;
   getCatalog(forceRefresh?: boolean): void;
@@ -30,4 +37,13 @@ interface GasRunner {
   savePortalSettings(settings: PortalSettings, browserLanguage?: string): void;
   resetPortalSettings(): void;
 }
-declare const google: { script: { run: GasRunner } };
+interface GasLocation { hash: string }
+interface GasHistory {
+  push(state: null, params: null, hash: string): void;
+  setChangeHandler(callback: (event: { location: GasLocation }) => void): void;
+}
+declare const google: { script: {
+  run: GasRunner;
+  history?: GasHistory;
+  url?: { getLocation(callback: (location: GasLocation) => void): void };
+} };

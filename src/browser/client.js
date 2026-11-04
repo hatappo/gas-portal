@@ -57,9 +57,9 @@
   }
 
   const portalTabs = [
-    { button: element('tab-tools'), panel: element('directory') },
-    { button: element('tab-actions'), panel: element('actions-panel') },
-    { button: element('tab-settings'), panel: element('settings-panel') },
+    { hash: 'tools', button: element('tab-tools'), panel: element('directory') },
+    { hash: 'actions', button: element('tab-actions'), panel: element('actions-panel') },
+    { hash: 'settings', button: element('tab-settings'), panel: element('settings-panel') },
   ];
   let activeTab = 0;
   /** @param {number} index */
@@ -75,8 +75,59 @@
     });
     panelAnimation = animateAppearance(portalTabs[index].panel);
   }
+  // GAS renders this code in a sandbox iframe. Its bridge controls the public URL;
+  // the local preview uses the browser history API instead.
+  const gasHistory = typeof google !== 'undefined' ? google.script?.history : undefined;
+  const gasUrl = typeof google !== 'undefined' ? google.script?.url : undefined;
+  const useGasHistory = typeof gasHistory?.push === 'function' && typeof gasHistory?.setChangeHandler === 'function' && typeof gasUrl?.getLocation === 'function';
+  let routeHash = '';
+  let navigationRevision = 0;
+
+  /** @param {string | undefined} hash */
+  function applyRoute(hash) {
+    routeHash = typeof hash === 'string' ? hash.replace(/^#/, '') : '';
+    // Preserve the skip-to-content link without treating it as a tab route.
+    if (routeHash === 'main') return;
+    const index = portalTabs.findIndex((tab) => tab.hash === routeHash);
+    selectPortalTab(index < 0 ? 0 : index);
+  }
+
+  /** @param {number} index */
+  function navigatePortalTab(index) {
+    navigationRevision++;
+    selectPortalTab(index);
+    const hash = portalTabs[index].hash;
+    if (routeHash === hash) return;
+    try {
+      if (useGasHistory) gasHistory?.push(null, null, hash);
+      else window.history.pushState(window.history.state, '', '#' + hash);
+      routeHash = hash;
+    } catch {
+      // A bridge failure must not prevent switching tabs or discard form drafts.
+      console.warn('PORTAL_NAVIGATION_UPDATE_FAILED');
+    }
+  }
+
+  if (useGasHistory) {
+    try {
+      gasHistory?.setChangeHandler((event) => {
+        navigationRevision++;
+        applyRoute(event.location?.hash);
+      });
+      const initialRevision = navigationRevision;
+      gasUrl?.getLocation((location) => {
+        if (navigationRevision === initialRevision) applyRoute(location.hash);
+      });
+    } catch { console.warn('PORTAL_NAVIGATION_INIT_FAILED'); }
+  } else {
+    const syncRoute = () => { navigationRevision++; applyRoute(window.location.hash); };
+    window.addEventListener('popstate', syncRoute);
+    window.addEventListener('hashchange', syncRoute);
+    applyRoute(window.location.hash);
+  }
+
   portalTabs.forEach(({ button }, index) => {
-    button.addEventListener('click', () => selectPortalTab(index));
+    button.addEventListener('click', () => navigatePortalTab(index));
     button.addEventListener('keydown', (event) => {
       let next;
       if (event.key === 'ArrowRight') next = (index + 1) % portalTabs.length;
@@ -85,7 +136,7 @@
       else if (event.key === 'End') next = portalTabs.length - 1;
       else return;
       event.preventDefault();
-      selectPortalTab(next);
+      navigatePortalTab(next);
       portalTabs[next].button.focus();
     });
   });

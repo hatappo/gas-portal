@@ -1,8 +1,7 @@
 /** @returns {GoogleAppsScript.HTML.HtmlOutput} */
 function doGet() {
   const template = HtmlService.createTemplateFromFile('Index');
-  const scriptProperties = PropertiesService.getScriptProperties().getProperties();
-  const portal = getPortalContent_(getPortalUserProperties_(scriptProperties), scriptProperties);
+  const portal = getPortalContent_(getPortalUserProperties_());
   template.portal = portal;
   template.theme = getPortalTheme_();
   template.initialCatalogJson = serializeCatalog_(getCatalog());
@@ -58,9 +57,8 @@ function saveTheme(theme) {
 
 /** Use defaults for missing fields; preserve explicitly empty intro text. Never interpret content as HTML.
  * @param {Record<string, string>} properties
- * @param {Record<string, string>} scriptProperties
  */
-function getPortalContent_(properties, scriptProperties = {}) {
+function getPortalContent_(properties) {
   const languagePreference = PortalI18n.preference(properties.PORTAL_LANGUAGE);
   const language = PortalI18n.resolve(languagePreference);
   const defaults = getPortalPropertyDefaults_(language);
@@ -72,9 +70,11 @@ function getPortalContent_(properties, scriptProperties = {}) {
   };
   const name = properties.PORTAL_NAME?.trim() || defaults.PORTAL_NAME;
   const split = name.search(/\s/);
-  const spreadsheetId = scriptProperties.SPREADSHEET_ID?.trim() || '';
+  const spreadsheetId = normalizeSpreadsheetId_(properties.SPREADSHEET_ID);
   return {
     name,
+    spreadsheetId: properties.SPREADSHEET_ID || '',
+    sheetName: properties.SHEET_NAME || '',
     language,
     languagePreference,
     cacheSeconds: String(normalizeCatalogCacheTtl_(properties.CATALOG_CACHE_SECONDS)),
@@ -99,7 +99,7 @@ function getPortalPropertyDefaults_(language = 'en') {
   };
 }
 
-/** Serialize settings updates, migration, and initialization. @template T @param {() => T} action @returns {T} */
+/** Serialize settings updates and initialization. @template T @param {() => T} action @returns {T} */
 function withPortalPropertiesLock_(action) {
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
@@ -108,54 +108,49 @@ function withPortalPropertiesLock_(action) {
 
 /** @param {GoogleAppsScript.Properties.Properties} store
  * @param {Record<string, string>} defaults
- * @param {Record<string, string>} legacy
  */
-function initializePropertyStore_(store, defaults, legacy = {}) {
+function initializePropertyStore_(store, defaults) {
   const current = store.getProperties();
   /** @type {Record<string, string>} */
   const missing = {};
   const existing = [];
-  const migrated = [];
   for (const [key, value] of Object.entries(defaults)) {
     if (Object.prototype.hasOwnProperty.call(current, key)) {
       existing.push(key);
-    } else if (Object.prototype.hasOwnProperty.call(legacy, key)) {
-      missing[key] = legacy[key];
-      migrated.push(key);
     } else {
       missing[key] = value;
     }
   }
   if (Object.keys(missing).length) store.setProperties(missing, false);
-  return { created: Object.keys(missing), existing, migrated };
+  return { created: Object.keys(missing), existing, migrated: [] };
 }
 
-/** @param {Record<string, string>} scriptProperties */
-function initializeUserProperties_(scriptProperties) {
-  const defaults = getPortalPropertyDefaults_();
-  // Migrate only the four display fields, excluding connection settings and unknown keys.
-  const legacy = Object.fromEntries(Object.entries(scriptProperties).filter(([key]) => Object.prototype.hasOwnProperty.call(defaults, key)));
-  return initializePropertyStore_(PropertiesService.getUserProperties(), { ...defaults, PORTAL_THEME: 'auto', PORTAL_LANGUAGE: 'auto', CATALOG_CACHE_SECONDS: '21600' }, legacy);
+/** Initialize missing settings only in the executing user's store. */
+function initializeUserProperties_() {
+  return initializePropertyStore_(PropertiesService.getUserProperties(), {
+    ...getPortalPropertyDefaults_(),
+    PORTAL_THEME: 'auto', PORTAL_LANGUAGE: 'auto', CATALOG_CACHE_SECONDS: '21600',
+    SPREADSHEET_ID: '', SHEET_NAME: '',
+  });
 }
 
-/** @param {Record<string, string>} scriptProperties */
-function getPortalUserProperties_(scriptProperties) {
+function getPortalUserProperties_() {
   return withPortalPropertiesLock_(() => {
-    initializeUserProperties_(scriptProperties);
+    initializeUserProperties_();
     return PropertiesService.getUserProperties().getProperties();
   });
 }
 
 /** Run in the GAS editor. Preserve existing keys, including empty values, and never return their values. */
 function initializeProperties() {
-  return withPortalPropertiesLock_(() => {
-    const scriptStore = PropertiesService.getScriptProperties();
-    const script = initializePropertyStore_(scriptStore, {
-      SPREADSHEET_ID: 'EXAMPLE_SPREADSHEET_ID', SHEET_NAME: PortalI18n.t("Tools"),
-    });
-    const user = initializeUserProperties_(scriptStore.getProperties());
-    return { script, user };
-  });
+  // Editor-only consent flow. Keep this outside the lock and automatic initialization.
+  console.info('PORTAL_AUTHORIZATION_CHECK_STARTED');
+  ScriptApp.requireAllScopes(ScriptApp.AuthMode.FULL);
+  console.info('PORTAL_AUTHORIZATION_GRANTED');
+  return withPortalPropertiesLock_(() => ({
+    script: { created: [], existing: [], migrated: [] },
+    user: initializeUserProperties_(),
+  }));
 }
 
 /** Compatibility alias for earlier commands and editor workflows. */
@@ -203,7 +198,46 @@ function savePortalSettings(input, browserLanguage) {
   }
 }
 
-/** Preserve theme and connection settings; save defaults explicitly to prevent remigration. */
+/** Accept a raw ID or an editor URL on the exact Google Sheets origin.
+ * Published links and other origins are not spreadsheet IDs. @param {unknown} input
+ */
+function normalizeSpreadsheetId_(input) {
+  if (typeof input !== 'string') return '';
+  const value = input.trim();
+  if (/^[\w-]+$/.test(value)) return value;
+  const match = /^https:\/\/docs\.google\.com\/spreadsheets\/(?:u\/\d+\/)?d\/([\w-]+)(?:\/(?:edit|view|preview|copy))?\/?(?:[?#][^\s]*)?$/.exec(value);
+  return match ? match[1] : '';
+}
+
+/** Validate only the two source fields, without broadening the display-settings RPC. @param {unknown} input */
+function validateSpreadsheetSettings_(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error(PortalI18n.t("Check your spreadsheet settings."));
+  const values = /** @type {Record<string, unknown>} */ (input);
+  if (Object.keys(values).length !== 2 || typeof values.SPREADSHEET_ID !== 'string' || typeof values.SHEET_NAME !== 'string') {
+    throw new Error(PortalI18n.t("Check your spreadsheet settings."));
+  }
+  const id = normalizeSpreadsheetId_(values.SPREADSHEET_ID);
+  if (values.SPREADSHEET_ID.trim() && !id) throw new Error(PortalI18n.t("Enter a spreadsheet ID or a Google Sheets URL beginning with https://docs.google.com/spreadsheets/."));
+  const name = values.SHEET_NAME.trim();
+  if (id.length > 256 || name.length > 100) throw new Error(PortalI18n.t("Check your spreadsheet settings."));
+  return { SPREADSHEET_ID: id, SHEET_NAME: name };
+}
+
+/** Save for the executing user only. Empty values explicitly disconnect the source or select the first sheet. @param {unknown} input */
+function saveSpreadsheetSettings(input) {
+  let settings;
+  try { settings = validateSpreadsheetSettings_(input); }
+  catch (error) { return { ok: false, error: error instanceof Error ? error.message : PortalI18n.t("Check your input.") }; }
+  try {
+    withPortalPropertiesLock_(() => PropertiesService.getUserProperties().setProperties(settings, false));
+    return { ok: true, settings };
+  } catch {
+    console.error('SPREADSHEET_SETTINGS_SAVE_FAILED');
+    return { ok: false, error: PortalI18n.t("Could not save. Please try again.") };
+  }
+}
+
+/** Restore display defaults while preserving theme and connection settings. */
 function resetPortalSettings() {
   return savePortalSettings(getPortalPropertyDefaults_(getPortalLanguage_()));
 }
@@ -226,8 +260,7 @@ function getCatalog(forceRefresh = false) {
   } catch (error) {
     /** @type {Record<string, string>} */
     const messages = {
-      SPREADSHEET_NOT_CONFIGURED: PortalI18n.t("Set the spreadsheet ID in the SPREADSHEET_ID Script Property."),
-      SHEET_NAME_NOT_CONFIGURED: PortalI18n.t("Set the sheet name in the SHEET_NAME Script Property."),
+      SPREADSHEET_NOT_CONFIGURED: PortalI18n.t("Set a spreadsheet ID or Google Sheets URL in Settings."),
       SHEETS_SERVICE_DISABLED: PortalI18n.t("Enable the Google Sheets API in GAS Services."),
       SHEET_NOT_FOUND: PortalI18n.t("The specified sheet does not exist. Check that SHEET_NAME matches its name."),
       INVALID_SHEET_HEADERS: PortalI18n.t("The first row must contain id, name, and url columns. Also check for duplicate column names."),
@@ -263,4 +296,104 @@ function saveCatalogCacheTtl(seconds) {
  */
 function serializeCatalog_(catalog) {
   return JSON.stringify(catalog).replace(/[<>&\u2028\u2029]/g, (character) => '\\u' + character.charCodeAt(0).toString(16).padStart(4, '0'));
+}
+
+/** Define the new sheet's supported columns, table types, and header notes. @param {string} language */
+function portalSpreadsheetColumns_(language) {
+  /** @param {string} key */
+  const t = (key) => PortalI18n.t(key, language);
+  return [
+    { name: 'id', type: 'TEXT', width: 160, note: t('Required. Unique text ID. Entries are sorted by ID as text; leading zeros are preserved.') },
+    { name: 'hidden', type: 'BOOLEAN', width: 100, note: t('Optional. Check TRUE to hide this entry. FALSE or blank keeps it visible. Hidden rows are excluded from search, tags, and counts.') },
+    { name: 'scope', type: 'DROPDOWN', width: 130, note: t('Optional. Choose internal or external. Blank means internal.') },
+    { name: 'tags', type: 'TEXT', width: 200, note: t('Optional. Separate tags with commas or line breaks.') },
+    { name: 'name', type: 'TEXT', width: 220, note: t('Required. Display name shown in the portal.') },
+    { name: 'url', type: 'TEXT', width: 320, note: t('Required. Primary HTTPS URL, entered as plain text rather than a file chip.') },
+    { name: 'description', type: 'TEXT', width: 320, note: t('Optional. Plain-text description. HTML and Markdown are not interpreted.') },
+    { name: 'relatedLinks', type: 'TEXT', width: 380, note: t('Optional. One link per line in this cell: HTTPS URL, a space, then a label. Labels may contain spaces. Example:\nhttps://example.com/guide User guide\nhttps://example.com/source Source code') },
+  ];
+}
+
+/** Create a new source only. The same lock serializes source saves and duplicate create requests.
+ * Use Sheets API with drive.file; do not broaden access to all spreadsheets for writing.
+ * @param {unknown} [browserLanguage]
+ */
+function createPortalSpreadsheet(browserLanguage) {
+  let spreadsheetId = '';
+  let connected = false;
+  let stage = 'PRECHECK';
+  const language = getPortalLanguage_(browserLanguage);
+  try {
+    return withPortalPropertiesLock_(() => {
+      const store = PropertiesService.getUserProperties();
+      if (store.getProperty('SPREADSHEET_ID')?.trim()) {
+        return { ok: false, error: PortalI18n.t('A spreadsheet ID is already configured. No spreadsheet was created.', language) };
+      }
+      stage = 'AUTHORIZATION';
+      const authorization = ScriptApp.getAuthorizationInfo(ScriptApp.AuthMode.FULL);
+      if (authorization.getAuthorizationStatus() === ScriptApp.AuthorizationStatus.REQUIRED) {
+        console.error('SPREADSHEET_CREATION_BLOCKED', 'AUTHORIZATION_REQUIRED');
+        return { ok: false, error: PortalI18n.t('Additional authorization is required. Run initializeProperties in the GAS editor as the deploying account, grant the requested permissions, then reload the portal.', language) };
+      }
+      stage = 'PREPARE_REQUEST';
+      const columns = portalSpreadsheetColumns_(language);
+      const range = { sheetId: 0, startRowIndex: 0, endRowIndex: 101, startColumnIndex: 0, endColumnIndex: columns.length };
+      const name = store.getProperty('PORTAL_NAME')?.trim() || 'My Portal';
+      /** @type {GoogleAppsScript.Sheets.Schema.Spreadsheet} */
+      const resource = {
+        properties: { title: name + ' — Tools & Links' },
+        sheets: [{
+          // Create only A:H; unused I:Z columns do not exist, rather than being hidden.
+          properties: { sheetId: 0, title: 'Tools', gridProperties: { rowCount: 101, columnCount: columns.length, frozenRowCount: 1 } },
+          data: [{
+            startRow: 0, startColumn: 0,
+            columnMetadata: columns.map((column) => ({ pixelSize: column.width })),
+            rowData: [{ values: columns.map((column) => ({
+              userEnteredValue: { stringValue: column.name }, note: column.note,
+              userEnteredFormat: { textFormat: { bold: true, foregroundColorStyle: { rgbColor: { red: 22 / 255, green: 51 / 255, blue: 77 / 255 } } }, wrapStrategy: 'WRAP' },
+            })) }],
+          }],
+        }],
+      };
+      if (typeof Sheets === 'undefined') throw new Error('SHEETS_SERVICE_DISABLED');
+      stage = 'CREATE';
+      const created = Sheets.Spreadsheets.create(resource);
+      stage = 'CREATE_RESPONSE';
+      if (!created.spreadsheetId || !/^[\w-]+$/.test(created.spreadsheetId)) throw new Error('INVALID_CREATED_ID');
+      spreadsheetId = created.spreadsheetId;
+      // Checkpoint before table setup: later failures must not create another spreadsheet on retry.
+      stage = 'PROPERTY_SAVE';
+      store.setProperty('SPREADSHEET_ID', spreadsheetId);
+      connected = true;
+      /** @type {GoogleAppsScript.Sheets.Schema.Request[]} */
+      const requests = columns.filter((column) => column.type === 'TEXT').map((column) => ({ repeatCell: {
+        range: { ...range, startRowIndex: 1, startColumnIndex: columns.indexOf(column), endColumnIndex: columns.indexOf(column) + 1 },
+        cell: { userEnteredFormat: { numberFormat: { type: 'TEXT' }, wrapStrategy: 'WRAP' } },
+        fields: 'userEnteredFormat.numberFormat,userEnteredFormat.wrapStrategy',
+      } }));
+      requests.push({ addTable: { table: {
+        name: 'PortalLinks', range,
+        // Match the portal's Tsuyukusa theme (#71a4d9); table settings own the header fill.
+        rowsProperties: { headerColorStyle: { rgbColor: { red: 113 / 255, green: 164 / 255, blue: 217 / 255 } } },
+        columnProperties: columns.map((column, columnIndex) => ({
+          columnIndex, columnName: column.name, columnType: column.type,
+          ...(column.type === 'DROPDOWN' ? { dataValidationRule: { condition: { type: 'ONE_OF_LIST', values: [{ userEnteredValue: 'internal' }, { userEnteredValue: 'external' }] } } } : {}),
+        })),
+      } } });
+      stage = 'TABLE_SETUP';
+      Sheets.Spreadsheets.batchUpdate({ requests }, spreadsheetId);
+      // Deliberately leave SHEET_NAME (including absence) and other user settings untouched.
+      return { ok: true, spreadsheetId };
+    });
+  } catch (error) {
+    // Preserve the API reason in restricted execution logs, never in the browser response.
+    // Do not log request bodies, properties, or authentication tokens.
+    console.error('SPREADSHEET_CREATION_FAILED', stage, String(error));
+    const message = !spreadsheetId
+      ? 'Could not confirm creation. Check Google Drive and reload before trying again.'
+      : connected
+        ? 'Spreadsheet created and connected, but table setup failed. Open the created spreadsheet to check it.'
+        : 'Spreadsheet created, but its ID could not be saved. Save the ID shown in this form before reloading.';
+    return { ok: false, error: PortalI18n.t(message, language), ...(spreadsheetId ? { spreadsheetId, connected } : {}) };
+  }
 }

@@ -109,6 +109,21 @@
             <p id="language-status" role="status" aria-live="polite"></p>
           </div>
         </section>
+        <section class="display-settings" aria-labelledby="spreadsheet-settings-title">
+          <form id="spreadsheet-settings-form" class="portal-settings-form">
+            <div class="settings-heading"><h2 id="spreadsheet-settings-title" data-i18n="Spreadsheet">Spreadsheet</h2><p data-i18n="Choose the source for Tools & Links. Saved for your Google account.">Choose the source for Tools &amp; Links. Saved for your Google account.</p></div>
+            <fieldset id="spreadsheet-settings-fields">
+              <legend class="visually-hidden" data-i18n="Spreadsheet settings">Spreadsheet settings</legend>
+              <label class="settings-field"><span data-i18n="Spreadsheet ID or URL">Spreadsheet ID or URL</span><input id="setting-spreadsheet" name="SPREADSHEET_ID" value="<?= portal.spreadsheetId ?>" autocomplete="off" spellcheck="false" aria-describedby="spreadsheet-help"></label>
+              <label class="settings-field"><span data-i18n="Sheet name (optional)">Sheet name (optional)</span><input id="setting-sheet-name" name="SHEET_NAME" value="<?= portal.sheetName ?>" maxlength="100" autocomplete="off" aria-describedby="spreadsheet-help"></label>
+              <p id="spreadsheet-help" class="settings-help" data-i18n="Leave the sheet name blank to use the first sheet. The tab selected in a pasted URL is ignored. Saving does not change spreadsheet permissions.">Leave the sheet name blank to use the first sheet. The tab selected in a pasted URL is ignored. Saving does not change spreadsheet permissions.</p>
+              <div class="settings-form-actions"><button type="submit" class="settings-save" data-i18n="Save changes">Save changes</button><button type="button" id="create-spreadsheet" class="settings-reset" aria-describedby="create-spreadsheet-help" data-i18n="Create new spreadsheet">Create new spreadsheet</button><button type="button" id="reload-spreadsheet" class="settings-reset" hidden data-i18n="Reload portal">Reload portal</button></div>
+            </fieldset>
+            <p id="create-spreadsheet-help" class="settings-help" data-i18n="Create a new spreadsheet with a ready-to-use table when no spreadsheet ID is saved or entered. Existing spreadsheets are never initialized.">Create a new spreadsheet with a ready-to-use table when no spreadsheet ID is saved or entered. Existing spreadsheets are never initialized.</p>
+            <a id="created-spreadsheet-link" class="footer-link" target="_blank" rel="noopener noreferrer" hidden><span data-i18n="Open created spreadsheet">Open created spreadsheet</span> <!-- external-link-icon --></a>
+            <p id="spreadsheet-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
+          </form>
+        </section>
         <section class="theme-settings" aria-labelledby="theme-settings-title">
           <div class="settings-heading"><div><h2 id="theme-settings-title"><span data-i18n="Color theme">Color theme</span></h2><p><span data-i18n="Choose a color theme. Your selection is saved automatically.">Choose a color theme. Your selection is saved automatically.</span></p></div></div>
           <div class="theme-save-status" role="status" aria-live="polite" id="theme-status"></div>

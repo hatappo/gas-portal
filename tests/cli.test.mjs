@@ -30,6 +30,8 @@ test("Pin the dependency on init and preserve scripts, configuration, and ignore
   const pkg = JSON.parse(readFileSync(path.join(root, 'package.json')));
   assert.equal(pkg.devDependencies['gas-portal'], `https://github.com/hatappo/gas-portal/releases/download/v${packageInfo.version}/gas-portal-${packageInfo.version}.tgz`);
   assert.equal(pkg.scripts.deploy, 'portal deploy');
+  assert.equal(pkg.scripts.ship, 'npm run push && npm run deploy');
+  pkg.scripts.ship = 'custom-publish';
   pkg.scripts.build = 'custom-build';
   writeFileSync(path.join(root, 'package.json'), JSON.stringify(pkg));
   writeFileSync(path.join(root, '.gitignore'), '*.private\n!.portal/\n');
@@ -41,6 +43,7 @@ test("Pin the dependency on init and preserve scripts, configuration, and ignore
   assert.equal(readFileSync(path.join(root, '.gitignore'), 'utf8'), ignore);
   assert.equal(readConfig(root).scriptId, 'work-a-script');
   assert.equal(JSON.parse(readFileSync(path.join(root, 'package.json'))).scripts.build, 'custom-build');
+  assert.equal(JSON.parse(readFileSync(path.join(root, 'package.json'))).scripts.ship, 'custom-publish');
 });
 
 test("Preserve existing Release URLs and directory dependencies in either dependency section", (t) => {
@@ -219,4 +222,26 @@ test("Display search and theme choices in a source-free packaged preview", async
   assert.equal(doc.querySelectorAll('#tools > li').length, 1);
   // Async persistence is also covered by browser, theme, and settings tests.
   assert.equal(doc.querySelectorAll('input[name="portal-theme"]').length, 11);
+});
+
+test('Add ship to existing consumers and stop before deployment if push fails', (t) => {
+  const root = fixture(t);
+  const file = path.join(root, 'package.json');
+  const pkg = JSON.parse(readFileSync(file));
+  delete pkg.scripts.ship;
+  // Exercise npm sequencing with local stub scripts; never call clasp or Google.
+  pkg.scripts.push = 'node push.cjs';
+  pkg.scripts.deploy = 'node deploy.cjs';
+  writeFileSync(file, JSON.stringify(pkg));
+  writeFileSync(path.join(root, 'push.cjs'), "require('node:fs').appendFileSync('calls.txt', 'push\\n'); process.exit(Number(process.env.TEST_PUSH_EXIT || 0));");
+  writeFileSync(path.join(root, 'deploy.cjs'), "require('node:fs').appendFileSync('calls.txt', 'deploy\\n');");
+  init(root);
+  assert.equal(JSON.parse(readFileSync(file)).scripts.push, pkg.scripts.push);
+  const log = path.join(root, 'calls.txt');
+  for (const [exitCode, expected] of [[0, 'push\ndeploy\n'], [1, 'push\n']]) {
+    writeFileSync(log, '');
+    const result = spawnSync('npm', ['run', 'ship'], { cwd: root, encoding: 'utf8', env: { ...process.env, TEST_PUSH_EXIT: String(exitCode) } });
+    assert.equal(result.status, exitCode, result.stdout + result.stderr);
+    assert.equal(readFileSync(log, 'utf8'), expected);
+  }
 });

@@ -5,3 +5,4 @@ import './client.js';
 import './theme.js';
 import './settings.js';
 import './cache-settings.js';
+import './spreadsheet-settings.js';

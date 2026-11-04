@@ -77,3 +77,28 @@ test("Require migration for legacy-only columns and ignore them when the new col
     ['a', 'A', 'https://example.com', '旧リンク', 'https://old.example.com', 'https://new.example.com 新リンク']]);
   assert.deepEqual(result.tools[0].relatedLinks, [{ url: 'https://new.example.com', label: '新リンク' }]);
 });
+
+test('Hide TRUE rows with reordered headers and preserve visible defaults', () => {
+  const result = parse([
+    ['hidden', 'url', 'id', 'name'],
+    ...['TRUE', ' true ', true, 'FALSE', false, '', 'other'].map((value, index) => [value, 'https://example.com', String(index), 'Entry']),
+  ]);
+  assert.deepEqual(result.tools.map((tool) => tool.id), ['3', '4', '5', '6']);
+  assert.deepEqual(result.issues, []);
+  assert.equal(parse([['id', 'name', 'url', 'hidden'], ['a', 'Visible', 'https://example.com']]).tools.length, 1);
+});
+
+test('Exclude hidden drafts and duplicate IDs before validation while retaining original issue row numbers', () => {
+  const result = parse([
+    ['id', 'name', 'url', 'hidden', 'tags', 'relatedLinks'],
+    ['same', 'Hidden entry', 'https://example.com/hidden', 'TRUE', 'hidden-only-tag', 'not a link'],
+    ['same', 'Visible entry', 'https://example.com/visible', 'FALSE', 'visible-tag'],
+    ['', 'Hidden unfinished draft', '', true],
+    ['bad', 'Invalid visible entry', 'javascript:alert(1)', ''],
+  ]);
+  assert.deepEqual(result.tools.map((tool) => tool.id), ['same']);
+  assert.deepEqual(result.tools[0].tags, ['visible-tag']);
+  assert.deepEqual(result.issues.map((issue) => issue.row), [5]);
+  assert.doesNotMatch(JSON.stringify(result), /Hidden|hidden-only-tag|not a link/);
+  assert.deepEqual(parse([['id', 'name', 'url', 'hidden'], ['', '', '', true]]), { tools: [], issues: [] });
+});

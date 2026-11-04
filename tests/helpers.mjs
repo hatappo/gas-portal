@@ -20,11 +20,12 @@ export function sheetRows(entries) {
 }
 
 export function server({ values = sheetRows([entry()]), sheetProperties = [{ title: 'ツール一覧', index: 0 }],
-  properties = { SPREADSHEET_ID: 'test-spreadsheet-id', SHEET_NAME: 'ツール一覧' }, userProperties = {}, ...overrides } = {}) {
+  properties = {}, userProperties = { SPREADSHEET_ID: 'test-spreadsheet-id', SHEET_NAME: 'ツール一覧' }, ...overrides } = {}) {
   const logs = [];
   const calls = [];
   const context = vm.createContext({
-    console: { error: (...args) => logs.push(args) },
+    console: { error: (...args) => logs.push(args), info: (...args) => logs.push(args) },
+    ScriptApp: { AuthMode: { FULL: 'FULL' }, requireAllScopes() {} },
     PropertiesService: {
       getScriptProperties: () => ({ getProperties: () => ({ ...properties }), setProperties: (values) => Object.assign(properties, values) }),
       getUserProperties: () => ({ getProperties: () => ({ ...userProperties }), setProperties: (values) => Object.assign(userProperties, values), getProperty: (key) => userProperties[key] ?? null, setProperty: (key, value) => { userProperties[key] = value; } }),
@@ -34,7 +35,7 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
       get: (...args) => { calls.push(['get', ...args]); return { sheets: sheetProperties.map((properties) => ({ properties })) }; },
       Values: { get: (...args) => {
         calls.push(['values', ...args]);
-        if (!sheetProperties.some((sheet) => sheet.title === (properties.SHEET_NAME || '').trim())) throw new Error('Unable to parse range');
+        if (!sheetProperties.some((sheet) => sheet.title === args[1].slice(1, -1).replaceAll("''", "'"))) throw new Error('Unable to parse range');
         return { values };
       } },
     } },
@@ -54,7 +55,7 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
 
 export const plain = (value) => JSON.parse(JSON.stringify(value));
 
-export function browser(setupWindow = () => {}, client = ['language', 'client', 'theme', 'settings', 'cache-settings'].map((file) => readFileSync(`src/browser/${file}.js`, 'utf8')).join('\n'), source = readFileSync('src/Index.html', 'utf8')) {
+export function browser(setupWindow = () => {}, client = ['language', 'client', 'theme', 'settings', 'cache-settings', 'spreadsheet-settings'].map((file) => readFileSync(`src/browser/${file}.js`, 'utf8')).join('\n'), source = readFileSync('src/Index.html', 'utf8')) {
   const html = withPreviewContent(source, server().context.getPortalContent_({ PORTAL_LANGUAGE: 'ja' }))
     .replace(/<\?[\s\S]*?\?>/g, '');
   const dom = new JSDOM(html, { runScripts: 'outside-only', url: 'https://example.com' });
@@ -63,11 +64,15 @@ export function browser(setupWindow = () => {}, client = ['language', 'client', 
   const themeRequests = [];
   const cacheSettingsRequests = [];
   const settingsRequests = [];
+  const sourceSettingsRequests = [];
+  const creationRequests = [];
   const runner = {
     withSuccessHandler(handler) { this.success = handler; return this; },
     withFailureHandler(handler) { this.failure = handler; return this; },
     getCatalog(forceRefresh) { requests.push({ forceRefresh, success: this.success, failure: this.failure }); },
     saveCatalogCacheTtl(seconds) { cacheSettingsRequests.push({ seconds, success: this.success, failure: this.failure }); },
+    createPortalSpreadsheet(browserLanguage) { creationRequests.push({ browserLanguage, success: this.success, failure: this.failure }); },
+    saveSpreadsheetSettings(settings) { sourceSettingsRequests.push({ settings, success: this.success, failure: this.failure }); },
     savePortalSettings(settings, browserLanguage) { settingsRequests.push({ settings, browserLanguage, success: this.success, failure: this.failure }); },
     resetPortalSettings() { settingsRequests.push({ reset: true, success: this.success, failure: this.failure }); },
     saveLanguage(language) { languageRequests.push({ language, success: this.success, failure: this.failure }); },
@@ -77,7 +82,7 @@ export function browser(setupWindow = () => {}, client = ['language', 'client', 
   setupWindow(dom.window);
   dom.window.eval(readFileSync('src/shared/i18n.js', 'utf8'));
   dom.window.eval(client);
-  return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests, cacheSettingsRequests };
+  return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests, cacheSettingsRequests, sourceSettingsRequests, creationRequests };
 }
 
 export const catalog = {

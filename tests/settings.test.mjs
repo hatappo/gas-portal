@@ -7,30 +7,30 @@ import { browser, server, plain } from './helpers.mjs';
 
 const values = (overrides = {}) => ({ PORTAL_NAME: 'Fumi Portal', PORTAL_ICON: 'F', PORTAL_HEADLINE: '今日の仕事', PORTAL_DESCRIPTION: 'リンクとタスク', ...overrides });
 
-test("Migrate legacy display settings once while preserving existing empty values", () => {
+test("Initialize display defaults independently of Script Properties and preserve existing empty values", () => {
   const properties = { PORTAL_NAME: 'Old Portal', PORTAL_HEADLINE: 'Old headline', SPREADSHEET_ID: 'private-id' };
   const userProperties = { PORTAL_HEADLINE: '', PORTAL_THEME: 'kuri', OTHER: 'keep' };
   const { context } = server({ properties, userProperties });
-  context.getPortalUserProperties_(properties);
-  assert.equal(userProperties.PORTAL_NAME, 'Old Portal');
+  context.getPortalUserProperties_();
+  assert.equal(userProperties.PORTAL_NAME, 'My Portal');
   assert.equal(userProperties.PORTAL_HEADLINE, '');
-  assert.equal(userProperties.SPREADSHEET_ID, undefined);
+  assert.equal(userProperties.SPREADSHEET_ID, '');
   properties.PORTAL_NAME = 'Changed legacy';
-  context.getPortalUserProperties_(properties);
-  assert.equal(userProperties.PORTAL_NAME, 'Old Portal');
+  context.getPortalUserProperties_();
+  assert.equal(userProperties.PORTAL_NAME, 'My Portal');
   assert.equal(userProperties.PORTAL_THEME, 'kuri');
   assert.equal(userProperties.OTHER, 'keep');
 });
 
-test("Save and reset only four display fields without reviving legacy values", () => {
+test("Save and reset only four display fields without reading Script Properties", () => {
   const properties = { PORTAL_NAME: 'Old Portal', SPREADSHEET_ID: 'sheet', SHEET_NAME: 'Tools' };
   const userProperties = { PORTAL_THEME: 'sakura', OTHER: 'keep' };
   const { context } = server({ properties, userProperties });
   assert.deepEqual(plain(context.savePortalSettings(values())), { ok: true, settings: values() });
-  assert.equal(context.getPortalContent_(userProperties, properties).name, 'Fumi Portal');
+  assert.equal(context.getPortalContent_(userProperties).name, 'Fumi Portal');
   const reset = plain(context.resetPortalSettings());
   assert.deepEqual(reset.settings, plain(context.getPortalPropertyDefaults_()));
-  context.getPortalUserProperties_(properties);
+  context.getPortalUserProperties_();
   context.initializeProperties();
   assert.equal(userProperties.PORTAL_NAME, 'My Portal');
   assert.equal(userProperties.PORTAL_THEME, 'sakura');

@@ -1,19 +1,29 @@
 /** Validate the configured source before using the API or cache. */
 function getSheetSource_() {
-  const properties = PropertiesService.getScriptProperties().getProperties();
-  const id = (properties.SPREADSHEET_ID || '').trim();
+  let properties = PropertiesService.getUserProperties().getProperties();
+  // doGet has already initialized these fields; avoid repeated initialization work on warm reads.
+  if (!Object.prototype.hasOwnProperty.call(properties, 'SPREADSHEET_ID') || !Object.prototype.hasOwnProperty.call(properties, 'SHEET_NAME')) {
+    properties = getPortalUserProperties_();
+  }
+  const id = normalizeSpreadsheetId_(properties.SPREADSHEET_ID);
   const name = (properties.SHEET_NAME || '').trim();
   if (!/^[\w-]+$/.test(id)) throw new Error('SPREADSHEET_NOT_CONFIGURED');
-  if (!name) throw new Error('SHEET_NAME_NOT_CONFIGURED');
   return { id, name };
 }
 
-/** Read values directly; request sheet metadata only to diagnose a failed read.
+/** Read named sheets directly; resolve the first sheet from metadata when no name is configured.
  * @param {{id: string, name: string}} [source] @returns {Catalog}
  */
 function readSheetCatalog_(source = getSheetSource_()) {
   if (typeof Sheets === 'undefined' || !Sheets?.Spreadsheets?.Values) throw new Error('SHEETS_SERVICE_DISABLED');
-  const { id, name } = source;
+  const { id } = source;
+  let name = source.name;
+  if (!name) {
+    const spreadsheet = Sheets.Spreadsheets.get(id, { fields: 'sheets(properties(title,index))' });
+    const first = spreadsheet.sheets?.slice().sort((a, b) => (a.properties?.index ?? 0) - (b.properties?.index ?? 0))[0];
+    name = first?.properties?.title || '';
+    if (!name) throw new Error('SHEET_NOT_FOUND');
+  }
   // Always quote sheet names to handle apostrophes and named-range collisions.
   const range = "'" + name.replace(/'/g, "''") + "'";
   let response;
@@ -44,7 +54,7 @@ function readCachedSheetCatalog_(forceRefresh) {
   try {
     // Version the key whenever cached catalog semantics change. Include the source, sharing one entry across duration choices.
     const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, JSON.stringify([source.id, source.name]), Utilities.Charset.UTF_8);
-    key = 'catalog-v1:' + digest.map((byte) => (byte & 255).toString(16).padStart(2, '0')).join('');
+    key = 'catalog-v2:' + digest.map((byte) => (byte & 255).toString(16).padStart(2, '0')).join('');
     cache = CacheService.getUserCache();
   } catch { /* Cache availability must never prevent a live read. */ }
 
@@ -106,9 +116,11 @@ function parseSheetCatalog_(rows) {
   const sourceRows = [];
   rows.slice(1).forEach((row, index) => {
     // Handle omitted trailing cells and blank spreadsheet rows.
-    if (row.every((cell) => String(cell ?? '').trim() === '')) return;
+    if (row.every((cell, column) => headers[column] === 'hidden' || String(cell ?? '').trim() === '')) return;
     /** @param {string} name */
     const cell = (name) => String(row[headers.indexOf(name)] ?? '');
+    // Exclude hidden rows before validation, duplicate detection, and serialization.
+    if (cell('hidden').trim().toUpperCase() === 'TRUE') return;
     entries.push({
       id: cell('id'), name: cell('name'), url: cell('url'), description: cell('description'),
       scope: /** @type {CatalogEntry['scope']} */ (cell('scope')),
