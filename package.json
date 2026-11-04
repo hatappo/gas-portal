@@ -1,7 +1,7 @@
 {
   "name": "gas-portal",
   "version": "0.1.0",
-  "description": "A personal Google Apps Script portal, distributed with a multi-account deployment CLI.",
+  "description": "A personal work portal built with Google Apps Script.",
   "type": "module",
   "packageManager": "npm@12.2.1",
   "engines": {
