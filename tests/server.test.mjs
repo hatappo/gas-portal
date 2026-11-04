@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { entry, server, plain, sheetRows } from './helpers.mjs';
 
-test('スクリプトプロパティで指定したタブを位置に関係なく読み、RPC の形を維持する', () => {
+test("Read the configured sheet regardless of position and preserve the RPC shape", () => {
   const { context, calls } = server({
     properties: { SPREADSHEET_ID: ' test-id ', SHEET_NAME: "仕事's リンク" },
     sheetProperties: [{ title: 'Other', index: 0 }, { title: "仕事's リンク", index: 1 }],
@@ -17,7 +17,7 @@ test('スクリプトプロパティで指定したタブを位置に関係な�
   ]);
 });
 
-test('再読み込みごとにシートを取得し、変更したデータを反映する', () => {
+test("Reload spreadsheet data on every request", () => {
   const values = sheetRows([entry()]);
   const { context, calls } = server({ values });
   assert.equal(context.getCatalog().tools[0].name, entry().name);
@@ -26,7 +26,7 @@ test('再読み込みごとにシートを取得し、変更したデータを�
   assert.equal(calls.length, 4);
 });
 
-test('サービス・シート・ヘッダ不備を安全なメッセージで通知する', () => {
+test("Report missing services, sheets, and headers safely", () => {
   for (const [options, expected] of [
     [{ Sheets: undefined }, /Google Sheets API/],
     [{ sheetProperties: [] }, /シートがありません/],
@@ -40,7 +40,7 @@ test('サービス・シート・ヘッダ不備を安全なメッセージで�
   }
 });
 
-test('プロパティ不足・不正 ID は API を呼ばずに設定を案内する', () => {
+test("Reject missing properties and invalid IDs before calling the API", () => {
   for (const [properties, expected] of [
     [{}, /SPREADSHEET_ID/],
     [{ SPREADSHEET_ID: 'https://docs.google.com/spreadsheets/d/test/edit' }, /SPREADSHEET_ID/],
@@ -53,7 +53,7 @@ test('プロパティ不足・不正 ID は API を呼ばずに設定を案内�
   }
 });
 
-test('API のエラー詳細やファイル ID を利用者・ログへ漏らさない', () => {
+test("Do not expose API error details or file IDs", () => {
   const { context, logs } = server({ Sheets: { Spreadsheets: { Values: {}, get() { throw new Error('secret spreadsheet-id private-data'); } } } });
   const result = plain(context.getCatalog());
   assert.equal(result.ok, false);
@@ -61,14 +61,14 @@ test('API のエラー詳細やファイル ID を利用者・ログへ漏らさ
   assert.match(result.error, /共有設定・認可/);
 });
 
-test('マニフェストは自分のみ・デプロイ者実行で Sheets の読み取り専用認可だけを持つ', () => {
+test("Use deployer execution, private access, and read-only Sheets authorization", () => {
   const manifest = JSON.parse(readFileSync('src/appsscript.json', 'utf8'));
   assert.deepEqual(manifest.webapp, { access: 'MYSELF', executeAs: 'USER_DEPLOYING' });
   assert.deepEqual(manifest.oauthScopes, ['https://www.googleapis.com/auth/spreadsheets.readonly']);
   assert.deepEqual(manifest.dependencies.enabledAdvancedServices, [{ userSymbol: 'Sheets', serviceId: 'sheets', version: 'v4' }]);
 });
 
-test('ページ生成時のプロジェクト ID からエディタの URL を作り、ポータルのタイトルを設定する', () => {
+test("Generate the editor URL from the current project and set the page title", () => {
   for (const scriptId of ['project-one', 'project-two']) {
     let title;
     const output = { setTitle(value) { title = value; return this; }, addMetaTag() { return this; } };
@@ -81,11 +81,11 @@ test('ページ生成時のプロジェクト ID からエディタの URL を�
     assert.equal(template.projectUrl, `https://script.google.com/home/projects/${scriptId}/edit`);
     assert.equal(title, 'My Portal');
     assert.equal(template.portal.spreadsheetUrl, 'https://docs.google.com/spreadsheets/d/test-spreadsheet-id/edit');
-    assert.equal(calls.length, 0, 'ページ生成ではシートを読み込まない');
+    assert.equal(calls.length, 0, 'Rendering the page must not read the spreadsheet');
   }
 });
 
-test('Spreadsheet のリンクは設定 ID から生成し、未設定・不正な ID はリンクを作らない', () => {
+test("Generate spreadsheet links only for valid configured IDs", () => {
   const { context } = server();
   for (const id of ['', '   ', 'https://example.com', 'bad/id', '"><img src=x>']) {
     assert.equal(context.getPortalContent_({}, { SPREADSHEET_ID: id }).spreadsheetUrl, '');
@@ -96,7 +96,7 @@ test('Spreadsheet のリンクは設定 ID から生成し、未設定・不正�
   }
 });
 
-test('ポータルの文言はプロパティから読み、未設定・空白は既定値に戻し、再表示で変更を反映する', () => {
+test("Read display properties, apply defaults for blank values, and reflect subsequent changes", () => {
   const userProperties = {};
   let title;
   const output = { setTitle(value) { title = value; return this; }, addMetaTag() { return this; } };
@@ -108,8 +108,8 @@ test('ポータルの文言はプロパティから読み、未設定・空白�
   });
   context.doGet();
   assert.equal(title, 'My Portal');
-  assert.equal(template.portal.headline, '毎日の仕事に、ひとつの入口を。');
-  assert.equal(template.portal.description, '業務で使うツールやサービスへのリンクと、日々のToDoをひとつにまとめます。');
+  assert.equal(template.portal.headline, 'One place to start your workday.');
+  assert.equal(template.portal.description, 'Keep your work tools, service links, and daily to-dos in one place.');
   userProperties.PORTAL_NAME = '  Fumi Workspace  ';
   userProperties.PORTAL_HEADLINE = '今日の仕事';
   userProperties.PORTAL_DESCRIPTION = 'リンクとタスク';
@@ -125,6 +125,6 @@ test('ポータルの文言はプロパティから読み、未設定・空白�
   assert.equal(title, '仕事場');
   assert.equal(template.portal.brandLead, title);
   assert.equal(template.portal.brandRest, '');
-  assert.equal(template.portal.headline, '毎日の仕事に、ひとつの入口を。');
-  assert.equal(template.portal.description, '業務で使うツールやサービスへのリンクと、日々のToDoをひとつにまとめます。');
+  assert.equal(template.portal.headline, 'One place to start your workday.');
+  assert.equal(template.portal.description, 'Keep your work tools, service links, and daily to-dos in one place.');
 });

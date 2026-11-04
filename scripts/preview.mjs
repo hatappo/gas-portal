@@ -5,65 +5,85 @@ import vm from 'node:vm';
 import { withPreviewProject, withPreviewContent } from './preview-project.mjs';
 import { withPortalAssets } from './portal-html.mjs';
 
-// このファイルとデモデータは GAS にアップロードされない。
+// This file and its mock data are not uploaded to GAS.
 const demo = {
   ok: true,
   tools: [
-    { id: 'demo-address', name: 'アドレス生成', description: '名前から、メールアドレスに使う文字列を生成します。', scope: 'internal', tags: ['アカウント', '業務効率化'], url: 'https://example.com/#demo-address', relatedLinks: [
-      { label: '使い方', url: 'https://example.com/manual' },
-      { label: 'ソースコード', url: 'https://example.com/source' },
+    { id: 'demo-address', name: 'Address generator', description: 'Generate an email address from a name.', scope: 'internal', tags: ['Accounts', 'Productivity'], url: 'https://example.com/#demo-address', relatedLinks: [
+      { label: 'User guide', url: 'https://example.com/manual' },
+      { label: 'Source code', url: 'https://example.com/source' },
     ] },
-    { id: 'demo-expense', name: '経費精算サービス', description: '領収書の登録と経費申請に使う外部サービスです。', scope: 'external', tags: ['経理', '申請', '業務効率化'], url: 'https://example.com/#demo-expense' },
-    { id: 'demo-guide', name: '社内ガイド', description: '業務の進め方や、よくある質問を確認できます。', scope: 'internal', tags: ['資料', 'オンボーディング'], url: 'https://example.com/#demo-guide' },
-    { id: 'demo-request', name: '各種申請', description: '必要な申請フォームへアクセスできます。', scope: 'internal', tags: ['経理', '申請'], url: 'https://example.com/#demo-request' },
+    { id: 'demo-expense', name: 'Expense service', description: 'Upload receipts and submit expense claims.', scope: 'external', tags: ['Finance', 'Requests', 'Productivity'], url: 'https://example.com/#demo-expense' },
+    { id: 'demo-guide', name: 'Workplace guide', description: 'Find work instructions and answers to common questions.', scope: 'internal', tags: ['Reference', 'Onboarding'], url: 'https://example.com/#demo-guide' },
+    { id: 'demo-request', name: 'Request forms', description: 'Open the forms you need for everyday requests.', scope: 'internal', tags: ['Finance', 'Requests'], url: 'https://example.com/#demo-request' },
   ],
   issues: [],
 };
 export function renderPreview(html, root, options = {}) {
   const url = pathToFileURL(path.join(root, 'src/server/'));
   const context = vm.createContext({ console });
+  const i18n = readFileSync(path.join(root, 'src/shared/i18n.js'), 'utf8');
+  vm.runInContext(i18n, context);
   for (const name of ['Catalog', 'Code']) {
     vm.runInContext(readFileSync(new URL(`${name}.js`, url), 'utf8'), context);
   }
   const catalog = { ok: true, ...context.parseCatalog_(demo.tools) };
-  // データに </script> 等が含まれても script 要素を閉じさせない。
+  // Prevent embedded data from closing the script element.
   const serialize = (value) => JSON.stringify(value).replace(/</g, '\\u003c');
-  // 任意の環境変数はフッタのリンク確認だけに使う。シートへの通信はしない。
+  // Use optional environment variables only for footer links; do not contact Sheets.
   const portal = context.getPortalContent_({}, { SPREADSHEET_ID: options.spreadsheetId ?? process.env.SPREADSHEET_ID ?? '' });
   return withPreviewContent(withPreviewProject(withPortalAssets(html, root), options.configPath ?? path.join(root, '.clasp.json')), portal)
-    .replace('<!-- preview-label -->', '<p class="eyebrow">LOCAL PREVIEW · 架空データ</p>')
+    .replace('<!-- preview-label -->', '<p class="preview-label"><span>LOCAL PREVIEW</span> · <span data-i18n="Mock data">Mock data</span></p>')
     .replace('<script type="module" src="/browser/main.js"></script>', () => `<script>
+      ${i18n}
+      let previewPreference = 'auto';
+      try { previewPreference = PortalI18n.preference(localStorage.getItem('portal-preview-language')); } catch { /* Storage may be unavailable. */ }
+      const browserLanguages = typeof navigator === 'undefined' ? [] : navigator.languages?.length ? navigator.languages : [navigator.language];
+      let previewLanguage = PortalI18n.resolve(previewPreference, browserLanguages);
+      if (typeof document !== 'undefined') {
+        document.documentElement.lang = previewLanguage;
+        document.documentElement.dataset.languagePreference = previewPreference;
+      }
       const getPortalPropertyDefaults_ = ${context.getPortalPropertyDefaults_.toString()};
       const validatePortalSettings_ = ${context.validatePortalSettings_.toString()};
       try {
         const stored = localStorage.getItem('portal-preview-settings');
         if (stored) {
-          const settings = validatePortalSettings_(JSON.parse(stored));
+          const settings = validatePortalSettings_(JSON.parse(stored), previewLanguage);
           Object.entries(settings).forEach(([key, value]) => {
             document.querySelector('#portal-settings-form [name="' + key + '"]').value = value;
           });
         }
-      } catch { /* 不正な保存値や保存不可のブラウザでは HTML の既定値を使う。 */ }
+      } catch { /* Use HTML defaults when stored values are invalid or browser storage is unavailable. */ }
       const demo = ${serialize(demo)};
       const catalog = ${serialize(catalog)};
       const scenario = new URLSearchParams(location.search).get('state');
-      // ローカルだけはブラウザに保存。本番では GAS の User Properties を使用する。
+      // Use browser storage locally; production uses GAS User Properties.
       try {
         const storedTheme = localStorage.getItem('portal-preview-theme');
         const theme = storedTheme === 'shikon' ? 'kuri' : storedTheme;
         if (Array.from(document.querySelectorAll('input[name="portal-theme"]')).some(input => input.value === theme)) document.documentElement.dataset.theme = theme;
-      } catch { /* ブラウザが保存を許可しない場合は既定値で表示する。 */ }
+      } catch { /* Use defaults when the browser denies storage access. */ }
       const google = {script: {run: {
         withSuccessHandler(fn) {return {...this, success: fn};},
         withFailureHandler(fn) {return {...this, failure: fn};},
-        savePortalSettings(input) {setTimeout(() => {
+        savePortalSettings(input, browserLanguage) {setTimeout(() => {
           try {
-            const settings = validatePortalSettings_(input);
+            const settings = validatePortalSettings_(input, PortalI18n.resolve(previewPreference, [browserLanguage || previewLanguage]));
             localStorage.setItem('portal-preview-settings', JSON.stringify(settings));
             this.success({ok:true, settings});
           } catch (error) { this.success({ok:false, error:error.message}); }
         }, 200);},
-        resetPortalSettings() {this.savePortalSettings(getPortalPropertyDefaults_());},
+        resetPortalSettings() {this.savePortalSettings(getPortalPropertyDefaults_(previewLanguage));},
+        saveLanguage(language) {setTimeout(() => {
+          if (!['auto', 'ja', 'en'].includes(language)) return this.success({ok:false});
+          try {
+            localStorage.setItem('portal-preview-language', language);
+            previewPreference = language;
+            previewLanguage = PortalI18n.resolve(language, browserLanguages);
+            this.success({ok:true, language});
+          } catch { this.failure(); }
+        }, 200);},
         saveTheme(theme) {setTimeout(() => {
           try {
             localStorage.setItem('portal-preview-theme', theme);
@@ -73,15 +93,15 @@ export function renderPreview(html, root, options = {}) {
         getCatalog() {setTimeout(() => {
           if (scenario === 'error') return this.failure();
           if (scenario === 'empty') return this.success({ok:true, tools:[], issues:[]});
-          if (scenario === 'invalid') return this.success({ok:true, tools:[], issues:[{row:2, message:'url に有効な HTTPS の URL を入力してください。'}]});
-          if (scenario === 'config') return this.success({ok:false, error:'指定シートの 1 行目に id・name・url の列が必要です。列名の重複も確認してください。'});
+          if (scenario === 'invalid') return this.success({ok:true, tools:[], issues:[{row:2, message:PortalI18n.t('Enter a valid HTTPS URL in url.')}]});
+          if (scenario === 'config') return this.success({ok:false, error:PortalI18n.t('The first row must contain id, name, and url columns. Also check for duplicate column names.')});
           this.success(catalog);
         }, 350);}
       }}};
     </script>\n<script type="module" src="/browser/main.js"></script>`);
 }
 
-/** GAS のテンプレートと RPC だけをローカル用に置き換える。配信・HMR は Vite に任せる。 */
+/** Replace GAS templates and RPC locally. Vite handles serving and HMR. */
 export function gasPreview(root) {
   return {
     name: 'gas-preview',

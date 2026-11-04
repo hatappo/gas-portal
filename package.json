@@ -49,5 +49,13 @@
   "dependencies": {
     "@google/clasp": "3.4.1",
     "vite": "8.3.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hatappo/gas-portal.git"
+  },
+  "homepage": "https://github.com/hatappo/gas-portal#readme",
+  "bugs": {
+    "url": "https://github.com/hatappo/gas-portal/issues"
   }
 }

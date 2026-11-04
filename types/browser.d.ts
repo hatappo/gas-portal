@@ -24,8 +24,9 @@ interface GasRunner {
   withSuccessHandler<T>(callback: (response: T) => void): GasRunner;
   withFailureHandler(callback: () => void): GasRunner;
   getCatalog(): void;
+  saveLanguage(language: string): void;
   saveTheme(theme: string): void;
-  savePortalSettings(settings: PortalSettings): void;
+  savePortalSettings(settings: PortalSettings, browserLanguage?: string): void;
   resetPortalSettings(): void;
 }
 declare const google: { script: { run: GasRunner } };

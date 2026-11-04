@@ -7,18 +7,19 @@ import { renderPreview } from '../scripts/preview.mjs';
 
 const source = readFileSync('src/Index.html', 'utf8');
 
-test('Vite 用 HTML は GAS タグを解決し、モックと通常のモジュール入口を含む', (t) => {
+test("Resolve GAS templates and include the mock and Vite module entry", (t) => {
   const html = renderPreview(source, process.cwd());
   assert.doesNotMatch(html, /<\?|__preview\/version|location.reload|setInterval/);
   const dom = new JSDOM(html);
   t.after(() => dom.window.close());
   assert.equal(dom.window.document.title, 'My Portal');
-  assert.match(dom.window.document.querySelector('.eyebrow').textContent, /LOCAL PREVIEW/);
+  assert.equal(dom.window.document.querySelector('.intro .preview-label'), null);
+  assert.match(dom.window.document.querySelector('.site-header > .preview-label').textContent, /LOCAL PREVIEW/);
   assert.equal(dom.window.document.querySelector('script[type="module"]').getAttribute('src'), '/browser/main.js');
   assert.equal(dom.window.document.querySelectorAll('.external-link-icon').length >= 1, true);
 });
 
-test('プレビューは成功・空・不正行・設定エラー・通信エラーを通信せず再現する', (t) => {
+test("Simulate success, empty, invalid, configuration, and transport states offline", (t) => {
   const dom = new JSDOM(renderPreview(source, process.cwd()));
   t.after(() => dom.window.close());
   const mock = dom.window.document.querySelector('script:not([src])').textContent;
@@ -36,7 +37,7 @@ test('プレビューは成功・空・不正行・設定エラー・通信エ�
   }
 });
 
-test('ローカルのテーマを復元・保存し、一覧取得中の保存でも応答ハンドラを取り違えない', (t) => {
+test("Restore and save themes without mixing concurrent response handlers", (t) => {
   const dom = new JSDOM(renderPreview(source, process.cwd()));
   t.after(() => dom.window.close());
   let stored = 'shikon';
@@ -59,7 +60,7 @@ test('ローカルのテーマを復元・保存し、一覧取得中の保存�
   assert.equal(stored, 'sumi');
 });
 
-test('表示設定モックは保存・復元・リセットを行い、テーマを保持する', (t) => {
+test("Save, restore, and reset display settings while preserving the theme", (t) => {
   const settings = { PORTAL_NAME: 'Local Portal', PORTAL_ICON: 'L', PORTAL_HEADLINE: 'Local headline', PORTAL_DESCRIPTION: 'Local description' };
   const storage = { 'portal-preview-settings': JSON.stringify(settings), 'portal-preview-theme': 'kuri' };
   const dom = new JSDOM(renderPreview(source, process.cwd()));

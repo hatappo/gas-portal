@@ -7,12 +7,14 @@ import { withPortalAssets } from './portal-html.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const dist = path.join(root, 'dist');
-// 構文エラーを検出してから生成物を置き換える。ビルド時にシートへアクセスしない。
+// Check syntax before replacing output. Building does not access the spreadsheet.
+const i18n = readFileSync(path.join(root, 'src/shared/i18n.js'), 'utf8');
+new vm.Script(i18n);
 const serverFiles = ['Code.js', 'Catalog.js', 'SheetCatalog.js'];
 for (const file of serverFiles) {
   new vm.Script(readFileSync(path.join(root, 'src/server', file), 'utf8'), { filename: file });
 }
-// GAS は JS/CSS を HTML として同梱する。Vite の結果をメモリで受け取り、成功後だけ dist を更新する。
+// GAS embeds JS/CSS as HTML. Keep Vite output in memory and update dist only after success.
 const bundle = await build({
   configFile: false,
   root: path.join(root, 'src'),
@@ -27,9 +29,9 @@ const outputs = (Array.isArray(bundle) ? bundle : [bundle]).flatMap((result) => 
 const client = outputs.find((file) => file.type === 'chunk')?.code;
 const css = outputs.find((file) => file.type === 'asset' && file.fileName.endsWith('.css'))?.source;
 if (outputs.length !== 2 || typeof client !== 'string' || typeof css !== 'string') {
-  throw new Error('GAS 向けの出力は単一の JS と CSS が必要です。');
+  throw new Error('GAS output requires a single JavaScript bundle and CSS asset.');
 }
-if (/<\/script/i.test(client) || /<\/style/i.test(css)) throw new Error('生成物に HTML の終了タグを含めることはできません。');
+if (/<\/script/i.test(client) || /<\/style/i.test(css)) throw new Error('Generated assets must not contain closing HTML tags.');
 const index = withPortalAssets(readFileSync(path.join(root, 'src/Index.html'), 'utf8').replace('<!-- repository-link -->', '<!-- portal-repository-link -->'), root)
   .replace('<!-- gas-styles -->', "<?!= include_('Styles'); ?>")
   .replace('<script type="module" src="/browser/main.js"></script>', "<?!= include_('Client'); ?>")
@@ -41,8 +43,8 @@ for (const file of ['appsscript.json']) {
 }
 writeFileSync(path.join(dist, 'Index.html'), index);
 for (const file of serverFiles) {
-  copyFileSync(path.join(root, 'src/server', file), path.join(dist, file));
+  writeFileSync(path.join(dist, file), (file === 'Code.js' ? i18n + '\n' : '') + readFileSync(path.join(root, 'src/server', file), 'utf8'));
 }
 writeFileSync(path.join(dist, 'Styles.html'), `<style>\n${css}\n</style>\n`);
 writeFileSync(path.join(dist, 'Client.html'), `<script>\n${client}\n</script>\n`);
-console.log('dist/ に GAS 用の 7 ファイルを出力しました。');
+console.log('Generated seven GAS files in dist/.');

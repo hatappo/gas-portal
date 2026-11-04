@@ -11,17 +11,36 @@ function doGet() {
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
-/** @param {unknown} theme */
-function isPortalTheme_(theme) {
-  return typeof theme === 'string' && ['tsuyukusa', 'sakura', 'wakatake', 'yamabuki', 'tetsukon', 'sumi', 'kuri', 'fukamidori'].includes(theme);
+/** Read the current user's language, falling back to English when browser language is unavailable. */
+/** @param {unknown} [browserLanguage] */
+function getPortalLanguage_(browserLanguage) {
+  try { return PortalI18n.resolve(PropertiesService.getUserProperties().getProperty('PORTAL_LANGUAGE'), [PortalI18n.normalize(browserLanguage)]); }
+  catch { return 'en'; }
 }
 
-/** 現在の実行ユーザーの設定。個人用・デプロイ者実行の Web アプリを前提とする。 */
+/** @param {unknown} language @returns {{ok: true, language: string} | {ok: false}} */
+function saveLanguage(language) {
+  if (language !== 'ja' && language !== 'en' && language !== 'auto') return { ok: false };
+  try {
+    withPortalPropertiesLock_(() => PropertiesService.getUserProperties().setProperty('PORTAL_LANGUAGE', language));
+    return { ok: true, language };
+  } catch {
+    console.error('LANGUAGE_SAVE_FAILED');
+    return { ok: false };
+  }
+}
+
+/** @param {unknown} theme */
+function isPortalTheme_(theme) {
+  return typeof theme === 'string' && ['auto', 'tsuyukusa', 'sakura', 'wakatake', 'yamabuki', 'ginnezu', 'tetsukon', 'sumi', 'kuri', 'fukamidori', 'daidai'].includes(theme);
+}
+
+/** Settings belong to the executing user; this app is personal and runs as its deployer. */
 function getPortalTheme_() {
   const theme = PropertiesService.getUserProperties().getProperty('PORTAL_THEME');
-  // 旧テーマの保存値は読み取り時に引き継ぐ。
+  // Map the legacy theme when reading, without rewriting storage.
   if (theme === 'shikon') return 'kuri';
-  return isPortalTheme_(theme) ? theme : 'tsuyukusa';
+  return isPortalTheme_(theme) ? theme : 'auto';
 }
 
 /** @param {unknown} theme @returns {{ok: true, theme: string} | {ok: false}} */
@@ -36,38 +55,49 @@ function saveTheme(theme) {
   }
 }
 
-/** 未設定・空白は既定値を使う。HTML としては解釈しない。
+/** Use defaults for missing or blank values; never interpret content as HTML.
  * @param {Record<string, string>} properties
  * @param {Record<string, string>} scriptProperties
  */
 function getPortalContent_(properties, scriptProperties = {}) {
-  const defaults = getPortalPropertyDefaults_();
+  const languagePreference = PortalI18n.preference(properties.PORTAL_LANGUAGE);
+  const language = PortalI18n.resolve(languagePreference);
+  const defaults = getPortalPropertyDefaults_(language);
+  const original = getPortalPropertyDefaults_('ja');
+  /** @param {'PORTAL_HEADLINE' | 'PORTAL_DESCRIPTION'} key */
+  const content = (key) => {
+    const value = properties[key]?.trim();
+    return !value || value === original[key] || value === getPortalPropertyDefaults_('en')[key] ? defaults[key] : value;
+  };
   const name = properties.PORTAL_NAME?.trim() || defaults.PORTAL_NAME;
   const split = name.search(/\s/);
   const spreadsheetId = scriptProperties.SPREADSHEET_ID?.trim() || '';
   return {
     name,
+    language,
+    languagePreference,
     defaultsJson: JSON.stringify(defaults),
     icon: Array.from(properties.PORTAL_ICON?.trim() || defaults.PORTAL_ICON)[0],
     brandLead: split < 0 ? name : name.slice(0, split),
     brandRest: split < 0 ? '' : name.slice(split),
-    headline: properties.PORTAL_HEADLINE?.trim() || defaults.PORTAL_HEADLINE,
-    description: properties.PORTAL_DESCRIPTION?.trim() || defaults.PORTAL_DESCRIPTION,
+    headline: content('PORTAL_HEADLINE'),
+    description: content('PORTAL_DESCRIPTION'),
     spreadsheetUrl: /^[\w-]+$/.test(spreadsheetId) ? 'https://docs.google.com/spreadsheets/d/' + spreadsheetId + '/edit' : '',
   };
 }
 
-/** 対応プロパティの一覧と初期値。表示の既定値もここで管理する。 */
-function getPortalPropertyDefaults_() {
+/** Supported display properties and their defaults. */
+/** @param {string} [language] */
+function getPortalPropertyDefaults_(language = 'en') {
   return {
     PORTAL_NAME: 'My Portal',
-    PORTAL_HEADLINE: '毎日の仕事に、ひとつの入口を。',
-    PORTAL_DESCRIPTION: '業務で使うツールやサービスへのリンクと、日々のToDoをひとつにまとめます。',
+    PORTAL_HEADLINE: PortalI18n.t("One place to start your workday.", language),
+    PORTAL_DESCRIPTION: PortalI18n.t("Keep your work tools, service links, and daily to-dos in one place.", language),
     PORTAL_ICON: 'P',
   };
 }
 
-/** 設定更新・移行・初期化の競合を防ぐ。 @template T @param {() => T} action @returns {T} */
+/** Serialize settings updates, migration, and initialization. @template T @param {() => T} action @returns {T} */
 function withPortalPropertiesLock_(action) {
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
@@ -101,9 +131,9 @@ function initializePropertyStore_(store, defaults, legacy = {}) {
 /** @param {Record<string, string>} scriptProperties */
 function initializeUserProperties_(scriptProperties) {
   const defaults = getPortalPropertyDefaults_();
-  // 移行するのは表示設定 4 項目のみ。接続先と任意キーはユーザー領域にコピーしない。
+  // Migrate only the four display fields, excluding connection settings and unknown keys.
   const legacy = Object.fromEntries(Object.entries(scriptProperties).filter(([key]) => Object.prototype.hasOwnProperty.call(defaults, key)));
-  return initializePropertyStore_(PropertiesService.getUserProperties(), { ...defaults, PORTAL_THEME: 'tsuyukusa' }, legacy);
+  return initializePropertyStore_(PropertiesService.getUserProperties(), { ...defaults, PORTAL_THEME: 'auto', PORTAL_LANGUAGE: 'auto' }, legacy);
 }
 
 /** @param {Record<string, string>} scriptProperties */
@@ -114,19 +144,19 @@ function getPortalUserProperties_(scriptProperties) {
   });
 }
 
-/** GAS エディタから実行。存在するキーは空値も含めて保持し、設定値は返さない。 */
+/** Run in the GAS editor. Preserve existing keys, including empty values, and never return their values. */
 function initializeProperties() {
   return withPortalPropertiesLock_(() => {
     const scriptStore = PropertiesService.getScriptProperties();
     const script = initializePropertyStore_(scriptStore, {
-      SPREADSHEET_ID: 'EXAMPLE_SPREADSHEET_ID', SHEET_NAME: 'ツール一覧',
+      SPREADSHEET_ID: 'EXAMPLE_SPREADSHEET_ID', SHEET_NAME: PortalI18n.t("Tools"),
     });
     const user = initializeUserProperties_(scriptStore.getProperties());
     return { script, user };
   });
 }
 
-/** 旧コマンド・エディタ操作との互換用。新しい初期化処理へ委譲する。 */
+/** Compatibility alias for earlier commands and editor workflows. */
 function initializeScriptProperties() {
   const result = initializeProperties();
   return {
@@ -135,56 +165,56 @@ function initializeScriptProperties() {
   };
 }
 
-/** @param {unknown} input @returns {Record<string, string>} */
-function validatePortalSettings_(input) {
-  const defaults = getPortalPropertyDefaults_();
+/** @param {unknown} input @param {string} [language] @returns {Record<string, string>} */
+function validatePortalSettings_(input, language = 'en') {
+  const defaults = getPortalPropertyDefaults_(language);
   /** @type {Record<string, number>} */
   const limits = { PORTAL_NAME: 80, PORTAL_ICON: 1, PORTAL_HEADLINE: 160, PORTAL_DESCRIPTION: 500 };
-  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('表示設定の形式が不正です。');
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error(PortalI18n.t("Invalid display settings."));
   const values = /** @type {Record<string, unknown>} */ (input);
   if (Object.keys(values).length !== Object.keys(defaults).length || Object.keys(values).some((key) => !Object.prototype.hasOwnProperty.call(defaults, key))) {
-    throw new Error('変更できるのは表示設定の 4 項目だけです。');
+    throw new Error(PortalI18n.t("Only the four display settings can be changed."));
   }
   /** @type {Record<string, string>} */
   const settings = {};
   for (const [key, fallback] of Object.entries(defaults)) {
     const value = values[key];
-    if (typeof value !== 'string') throw new Error('表示設定はテキストで入力してください。');
+    if (typeof value !== 'string') throw new Error(PortalI18n.t("Enter display settings as text."));
     const trimmed = value.trim();
-    if (Array.from(trimmed).length > limits[key]) throw new Error(key + ' は ' + limits[key] + ' 文字以内で入力してください。');
+    if (Array.from(trimmed).length > limits[key]) throw new Error(PortalI18n.t('{key} must contain at most {limit} characters.', 'ja', { key, limit: limits[key] }));
     settings[key] = trimmed || fallback;
   }
   return settings;
 }
 
-/** @param {unknown} input */
-function savePortalSettings(input) {
+/** @param {unknown} input @param {unknown} [browserLanguage] */
+function savePortalSettings(input, browserLanguage) {
   let settings;
-  try { settings = validatePortalSettings_(input); }
-  catch (error) { return { ok: false, error: error instanceof Error ? error.message : '入力内容を確認してください。' }; }
+  try { settings = validatePortalSettings_(input, getPortalLanguage_(browserLanguage)); }
+  catch (error) { return { ok: false, error: error instanceof Error ? error.message : PortalI18n.t("Check your input.") }; }
   try {
     withPortalPropertiesLock_(() => PropertiesService.getUserProperties().setProperties(settings, false));
     return { ok: true, settings };
   } catch {
     console.error('PORTAL_SETTINGS_SAVE_FAILED');
-    return { ok: false, error: '保存できませんでした。もう一度お試しください。' };
+    return { ok: false, error: PortalI18n.t("Could not save. Please try again.") };
   }
 }
 
-/** テーマ・接続先は保持。既定値を明示的に保存し、旧 Script Properties の再移行を防ぐ。 */
+/** Preserve theme and connection settings; save defaults explicitly to prevent remigration. */
 function resetPortalSettings() {
-  return savePortalSettings(getPortalPropertyDefaults_());
+  return savePortalSettings(getPortalPropertyDefaults_(getPortalLanguage_()));
 }
 
-/** 静的な自作ファイルだけをテンプレートへ埋め込む。 @param {string} filename */
+/** Embed only the approved static files in the template. @param {string} filename */
 function include_(filename) {
   if (!['Styles', 'Client'].includes(filename)) throw new Error('INVALID_INCLUDE');
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
 /**
- * 公開 RPC。アクセス制限は Web アプリの MYSELF 設定が担う。
- * デプロイ者の読み取り専用認可で、設定したスプレッドシートを読む。
+ * Public RPC; access is restricted by the web app's MYSELF setting.
+ * Read the configured spreadsheet with the deployer's read-only authorization.
  * @returns {({ok: true} & Catalog) | {ok: false, error: string}}
  */
 function getCatalog() {
@@ -193,15 +223,15 @@ function getCatalog() {
   } catch (error) {
     /** @type {Record<string, string>} */
     const messages = {
-      SPREADSHEET_NOT_CONFIGURED: 'スクリプトプロパティ SPREADSHEET_ID にスプレッドシートの ID を設定してください。',
-      SHEET_NAME_NOT_CONFIGURED: 'スクリプトプロパティ SHEET_NAME に読み込むシート名を設定してください。',
-      SHEETS_SERVICE_DISABLED: 'GAS のサービスで Google Sheets API を有効にしてください。',
-      SHEET_NOT_FOUND: '指定されたシートがありません。SHEET_NAME とシート名が一致しているか確認してください。',
-      INVALID_SHEET_HEADERS: '指定シートの 1 行目に id・name・url の列が必要です。列名の重複も確認してください。',
-      LEGACY_RELATED_HEADERS: '関連リンクを relatedLinks 列にまとめてください。1 セル内に「URL 半角スペース ラベル」を 1 行ずつ入力します。',
+      SPREADSHEET_NOT_CONFIGURED: PortalI18n.t("Set the spreadsheet ID in the SPREADSHEET_ID Script Property."),
+      SHEET_NAME_NOT_CONFIGURED: PortalI18n.t("Set the sheet name in the SHEET_NAME Script Property."),
+      SHEETS_SERVICE_DISABLED: PortalI18n.t("Enable the Google Sheets API in GAS Services."),
+      SHEET_NOT_FOUND: PortalI18n.t("The specified sheet does not exist. Check that SHEET_NAME matches its name."),
+      INVALID_SHEET_HEADERS: PortalI18n.t("The first row must contain id, name, and url columns. Also check for duplicate column names."),
+      LEGACY_RELATED_HEADERS: PortalI18n.t("Combine related links in the relatedLinks column, with one URL, a space, and a label per line."),
     };
     const code = error instanceof Error && Object.prototype.hasOwnProperty.call(messages, error.message) ? error.message : 'READ_FAILED';
     console.error('CATALOG_FAILED', code);
-    return { ok: false, error: messages[code] || '一覧を取得できませんでした。スプレッドシートの共有設定・認可・Sheets API の設定を確認し、ページを再読み込みしてください。' };
+    return { ok: false, error: messages[code] || PortalI18n.t("Could not load the list. Check spreadsheet sharing, authorization, and Sheets API settings, then reload the page.") };
   }
 }

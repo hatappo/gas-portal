@@ -14,7 +14,7 @@ try {
   const destination = path.join(root, 'releases', name);
   mkdirSync(path.dirname(destination), { recursive: true });
   if (existsSync(destination)) {
-    if (!readFileSync(destination).equals(readFileSync(source))) throw new Error('同じバージョンの異なる配布物が既にあります。package.json の version を更新して再実行してください。');
+    if (!readFileSync(destination).equals(readFileSync(source))) throw new Error('A different package already exists at this version. Bump the version in package.json and try again.');
   } else copyFileSync(source, destination);
-  console.log(`ローカル配布物: ${destination}`);
+  console.log(`Local package: ${destination}`);
 } finally { rmSync(temporary, { recursive: true, force: true }); }

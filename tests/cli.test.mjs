@@ -25,10 +25,10 @@ function stub(list = [{ deploymentId: 'head' }, { deploymentId: 'web', versionNu
   } };
 }
 
-test('init は依存バージョンを固定し、既存スクリプト・設定・ignore を保持して再実行できる', (t) => {
+test("Pin the dependency on init and preserve scripts, configuration, and ignore rules across reruns", (t) => {
   const root = fixture(t);
   const pkg = JSON.parse(readFileSync(path.join(root, 'package.json')));
-  assert.equal(pkg.devDependencies['gas-portal'], packageInfo.version);
+  assert.equal(pkg.devDependencies['gas-portal'], `https://github.com/hatappo/gas-portal/releases/download/v${packageInfo.version}/gas-portal-${packageInfo.version}.tgz`);
   assert.equal(pkg.scripts.deploy, 'portal deploy');
   pkg.scripts.build = 'custom-build';
   writeFileSync(path.join(root, 'package.json'), JSON.stringify(pkg));
@@ -43,25 +43,38 @@ test('init は依存バージョンを固定し、既存スクリプト・設定
   assert.equal(JSON.parse(readFileSync(path.join(root, 'package.json'))).scripts.build, 'custom-build');
 });
 
-test('設定未入力でも init・build・preview ができ、リモート操作は認証と対象の設定を必須にする', (t) => {
+test("Preserve existing Release URLs and directory dependencies in either dependency section", (t) => {
+  const root = fixture(t);
+  for (const key of ['dependencies', 'devDependencies']) {
+    for (const dependency of ['file:../../hobby/gas-portal', 'https://github.com/hatappo/gas-portal/releases/download/v0.0.9/gas-portal-0.0.9.tgz']) {
+      writeFileSync(path.join(root, 'package.json'), JSON.stringify({ private: true, [key]: { 'gas-portal': dependency } }));
+      init(root);
+      const pkg = JSON.parse(readFileSync(path.join(root, 'package.json')));
+      assert.equal(pkg[key]['gas-portal'], dependency);
+      assert.equal(pkg[key === 'dependencies' ? 'devDependencies' : 'dependencies'], undefined);
+    }
+  }
+});
+
+test("Allow unconfigured local operations but require authentication and a target for remote operations", (t) => {
   const root = fixture(t);
   saveConfig(root, {});
   build(root);
   buildPreview(root);
   const { run, calls } = stub();
-  for (const command of [push, login]) assert.throws(() => command(root, run), /scriptId と authProfile/);
-  assert.throws(() => deploy(root, {}, run), /scriptId と authProfile/);
+  for (const command of [push, login]) assert.throws(() => command(root, run), /scriptId and authProfile/);
+  assert.throws(() => deploy(root, {}, run), /scriptId and authProfile/);
   assert.equal(calls.length, 0);
 });
 
-test('設定の未知キー・パス・HTML・不正な認証名を拒否する', () => {
+test("Reject unknown keys, paths, HTML, and invalid profile names", () => {
   for (const value of [null, [], { scriptId: 'https://example.com' }, { scriptId: '../other' }, { authProfile: '--user' },
     { authProfile: 'work a' }, { account: 'wrong-key' }, { repositoryUrl: 'https://token@github.com/a/b' }, { deploymentId: 'web' }]) {
     assert.throws(() => validateConfig(value));
   }
 });
 
-test('init が既存の不正な package.json やシンボリックリンクを上書きしない', (t) => {
+test("Protect malformed package.json files and symbolic links during init", (t) => {
   const root = fixture(t);
   const config = readFileSync(path.join(root, 'portal.config.json'), 'utf8');
   writeFileSync(path.join(root, 'package.json'), '{bad json');
@@ -70,10 +83,10 @@ test('init が既存の不正な package.json やシンボリックリンクを�
   const other = fixture(t, 'outside');
   rmSync(path.join(root, 'portal.config.json'));
   symlinkSync(path.join(other, 'portal.config.json'), path.join(root, 'portal.config.json'));
-  assert.throws(() => init(root), /通常のファイル/);
+  assert.throws(() => init(root), /non-regular file/);
 });
 
-test('build は 7 ファイルだけを生成し、現場の GitHub リンクを反映する', (t) => {
+test("Generate only seven files and inject the consumer GitHub link", (t) => {
   const root = fixture(t);
   saveConfig(root, { ...readConfig(root), repositoryUrl: 'https://github.com/example/work-a' });
   const result = build(root);
@@ -87,21 +100,21 @@ test('build は 7 ファイルだけを生成し、現場の GitHub リンクを
   assert.equal(manifest.executionApi, undefined);
 });
 
-test('生成物ではない .portal と生成先の symlink を保護する', (t) => {
+test("Protect unrelated .portal directories and output symbolic links", (t) => {
   const root = fixture(t);
   mkdirSync(path.join(root, '.portal'));
   writeFileSync(path.join(root, '.portal/keep.txt'), 'keep');
-  assert.throws(() => build(root), /生成物ではありません/);
+  assert.throws(() => build(root), /not generated/);
   assert.equal(readFileSync(path.join(root, '.portal/keep.txt'), 'utf8'), 'keep');
   const second = fixture(t, 'second');
   build(second);
   rmSync(path.join(second, '.portal/dist'), { recursive: true });
   symlinkSync(path.join(root, '.portal'), path.join(second, '.portal/dist'));
-  assert.throws(() => build(second), /通常のディレクトリ/);
+  assert.throws(() => build(second), /regular directory/);
   assert.equal(readFileSync(path.join(root, '.portal/keep.txt'), 'utf8'), 'keep');
 });
 
-test('clasp の実際の判定で許可した生成物だけが push 対象になる', (t) => {
+test("Use actual clasp filtering to upload only the allowed generated files", (t) => {
   const root = fixture(t);
   build(root);
   for (const file of ['secret.js', 'notes.html', '.secret.json']) writeFileSync(path.join(root, '.portal/dist', file), 'private');
@@ -111,7 +124,7 @@ test('clasp の実際の判定で許可した生成物だけが push 対象に�
   assert.deepEqual(result.filesToPush.sort(), GAS_FILES.map((name) => '.portal/dist/' + name).sort());
 });
 
-test('現場ごとの生成物・認証プロフィール・プレビュー保存領域を分離する', (t) => {
+test("Isolate generated files, profiles, and preview storage by environment", (t) => {
   const a = fixture(t, 'a');
   const b = fixture(t, 'b');
   const { run, calls } = stub();
@@ -125,9 +138,11 @@ test('現場ごとの生成物・認証プロフィール・プレビュー保�
   assert.doesNotMatch(previews[0], /home\/projects\/b-script\/edit/);
   const key = (html) => /portal-preview-settings-[\w-]+/.exec(html)[0];
   assert.notEqual(key(previews[0]), key(previews[1]));
+  const languageKey = (html) => /portal-preview-language-[\w-]+/.exec(html)[0];
+  assert.notEqual(languageKey(previews[0]), languageKey(previews[1]));
 });
 
-test('deploy は build・push せず、唯一の公開先を更新して ID を保存する', (t) => {
+test("Update the only versioned deployment and save its ID without building or pushing", (t) => {
   const root = fixture(t);
   const { run, calls } = stub();
   assert.equal(deploy(root, {}, run), 'web');
@@ -136,7 +151,7 @@ test('deploy は build・push せず、唯一の公開先を更新して ID を�
   assert.equal(readConfig(root).deploymentId, 'web');
 });
 
-test('設定済みの公開先を選び、明示した ID で切り替えできる。description は単一引数', (t) => {
+test("Select configured or explicit deployment IDs and pass descriptions as one argument", (t) => {
   const root = fixture(t);
   saveConfig(root, { ...readConfig(root), deploymentId: 'web' });
   const { run, calls } = stub([{ deploymentId: 'web', versionNumber: 1 }, { deploymentId: 'second', versionNumber: 2 }]);
@@ -148,7 +163,7 @@ test('設定済みの公開先を選び、明示した ID で切り替えでき�
   assert.equal(readConfig(root).deploymentId, 'second');
 });
 
-test('公開先ゼロ・曖昧・他プロジェクトの ID・HEAD・不正な一覧では更新しない', (t) => {
+test("Reject missing, ambiguous, foreign, HEAD, or malformed deployments", (t) => {
   const root = fixture(t);
   for (const [list, options] of [[[], {}], [[{ deploymentId: 'head' }], {}],
     [[{ deploymentId: 'a', versionNumber: 1 }, { deploymentId: 'b', versionNumber: 2 }], {}],
@@ -162,14 +177,14 @@ test('公開先ゼロ・曖昧・他プロジェクトの ID・HEAD・不正な�
   }
 });
 
-test('更新失敗では deploymentId を保存しない', (t) => {
+test("Do not save deploymentId after a failed update", (t) => {
   const root = fixture(t);
   const { run } = stub(undefined, 'update-deployment');
   assert.throws(() => deploy(root, {}, run), /remote failed/);
   assert.equal(readConfig(root).deploymentId, undefined);
 });
 
-test('login は設定したプロフィールを使い、コードを生成しない', (t) => {
+test("Log in with the selected profile without generating code", (t) => {
   const root = fixture(t);
   const { run, calls } = stub();
   login(root, run);
@@ -178,7 +193,7 @@ test('login は設定したプロフィールを使い、コードを生成し�
   assert.equal(existsSync(path.join(root, '.portal/dist')), false);
 });
 
-test('CLI は未知のコマンド・オプション・不足引数を拒否し、終了コードを返す', (t) => {
+test("Reject unknown commands, options, and missing arguments with a failure exit code", (t) => {
   const root = fixture(t);
   const cli = path.resolve('bin/portal.mjs');
   for (const args of [['properties:init'], ['deploy', '--force'], ['deploy', '--description'], ['push', 'other'], ['preview', '--port', '0']]) {
@@ -190,7 +205,7 @@ test('CLI は未知のコマンド・オプション・不足引数を拒否し�
   assert.match(help.stdout, /initializeProperties/);
 });
 
-test('配布用プレビューはソース不要で一覧・検索・テーマの選択肢を表示する', async (t) => {
+test("Display search and theme choices in a source-free packaged preview", async (t) => {
   const root = fixture(t);
   const html = readFileSync(path.join(buildPreview(root), 'index.html'), 'utf8');
   assert.doesNotMatch(html, /<\?|browser\/main.js|node_modules/);
@@ -199,9 +214,9 @@ test('配布用プレビューはソース不要で一覧・検索・テーマ�
   await new Promise((resolve) => setTimeout(resolve, 400));
   const doc = dom.window.document;
   assert.equal(doc.querySelectorAll('#tools > li').length, 4);
-  doc.querySelector('#search').value = '経費';
+  doc.querySelector('#search').value = 'Expense';
   doc.querySelector('#search').dispatchEvent(new dom.window.Event('input'));
   assert.equal(doc.querySelectorAll('#tools > li').length, 1);
-  // 非同期保存はブラウザ・既存のテーマと設定 UI のテストでも検証する。
-  assert.equal(doc.querySelectorAll('input[name="portal-theme"]').length, 8);
+  // Async persistence is also covered by browser, theme, and settings tests.
+  assert.equal(doc.querySelectorAll('input[name="portal-theme"]').length, 11);
 });

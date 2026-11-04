@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { browser, catalog, entry, server, plain, sheetRows } from './helpers.mjs';
 
-test('サーバーが自動付与した GAS タグで検索・絞り込みでき、両表示に反映される', (t) => {
+test("Search and filter automatic GAS tags in both views", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   const { context } = server({ values: sheetRows([
@@ -25,7 +25,7 @@ test('サーバーが自動付与した GAS タグで検索・絞り込みでき
   assert.match(document.querySelector('#tool-rows').textContent, /GAS/);
 });
 
-test('カードとテーブルの切替後も区分・タグ・検索条件が保持される', (t) => {
+test("Preserve scope, tags, and search when switching views", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   requests[0].success({ ...catalog, tools: [
@@ -52,7 +52,7 @@ test('カードとテーブルの切替後も区分・タグ・検索条件が�
   assert.equal(document.querySelector('#search').value, 'guide');
 });
 
-test('複数タグは AND 条件で絞り込み、選択解除と全条件リセットができる', (t) => {
+test("Combine tags with AND logic and support deselection and clearing all filters", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   requests[0].success({ ...catalog, tools: [
@@ -74,7 +74,7 @@ test('複数タグは AND 条件で絞り込み、選択解除と全条件リセ
   assert.equal(document.querySelector('#scope-all').getAttribute('aria-pressed'), 'true');
 });
 
-test('タグ名も検索対象にし、タグがない場合は両表示でラベルを表示しない', (t) => {
+test("Search tags without showing labels for tools that have no tags", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   requests[0].success({ ...catalog, tools: [
@@ -92,7 +92,7 @@ test('タグ名も検索対象にし、タグがない場合は両表示でラ�
   assert.equal(document.querySelectorAll('#tools a').length, 1);
 });
 
-test('読込中と失敗時は検索・表示切替を無効にし、ブラウザの再読み込みへ案内する', (t) => {
+test("Disable controls while loading or after failure and offer a browser reload", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   assert.equal(document.querySelector('#search').disabled, true);
@@ -106,7 +106,7 @@ test('読込中と失敗時は検索・表示切替を無効にし、ブラウ�
   assert.match(document.querySelector('#status-description').textContent, /ブラウザでページを再読み込み/);
 });
 
-test('読み込み中から一覧へ切り替え、新しいタブのリンクを表示する', (t) => {
+test("Replace loading state with tools that open in new tabs", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   assert.match(document.querySelector('#status-title').textContent, /読み込み/);
@@ -118,7 +118,7 @@ test('読み込み中から一覧へ切り替え、新しいタブのリンク�
   assert.equal(document.querySelector('#status').hidden, true);
 });
 
-test('検索の全角・英字大小・空白を正規化しタグと組み合わせる', (t) => {
+test("Normalize full-width characters, case, and whitespace while combining tags", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   requests[0].success(catalog);
@@ -133,7 +133,7 @@ test('検索の全角・英字大小・空白を正規化しタグと組み合�
   assert.equal(document.querySelectorAll('#tools a').length, 2);
 });
 
-test('説明でも検索できる', (t) => {
+test("Search descriptions", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   requests[0].success(catalog);
@@ -142,7 +142,7 @@ test('説明でも検索できる', (t) => {
   assert.equal(document.querySelectorAll('#tools a').length, 1);
 });
 
-test('未登録とデータ不備による全件除外を区別する', (t) => {
+test("Distinguish an empty catalog from entries excluded due to data issues", (t) => {
   for (const issues of [[], [{ row: 2, message: 'URL が不正です。' }]]) {
     const { dom, document, requests } = browser();
     t.after(() => dom.window.close());
@@ -152,7 +152,7 @@ test('未登録とデータ不備による全件除外を区別する', (t) => {
   }
 });
 
-test('通信エラーとサーバーエラーを表示し、ページを開き直せば取得できる', (t) => {
+test("Show transport and server failures and recover after reopening", (t) => {
   for (const fail of [(request) => request.failure(new Error('private-id')), (request) => request.success({ ok: false })]) {
     const { dom, document, requests } = browser();
     t.after(() => dom.window.close());
@@ -168,7 +168,7 @@ test('通信エラーとサーバーエラーを表示し、ページを開き�
   assert.equal(fresh.document.querySelector('#search').disabled, false);
 });
 
-test('両表示で名前・説明・タグ・警告に HTML を埋め込んでも実行しない', (t) => {
+test("Render names, descriptions, tags, and warnings as text in both views", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   const payload = '<img src=x onerror="window.attacked=true">';
@@ -185,7 +185,7 @@ test('両表示で名前・説明・タグ・警告に HTML を埋め込んで�
   assert.ok(document.querySelector('#tool-rows').textContent.includes(payload));
 });
 
-test('ブラウザ側でも HTTPS 以外はリンクにしない', (t) => {
+test("Reject non-HTTPS links in the browser", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   requests[0].success({ ...catalog, tools: [{ ...catalog.tools[0], url: 'javascript:alert(1)' }] });
@@ -193,7 +193,7 @@ test('ブラウザ側でも HTTPS 以外はリンクにしない', (t) => {
   assert.match(document.querySelector('#status-title').textContent, /取得できません/);
 });
 
-test('タイムアウト後に遅れて届いた成功応答を表示しない', (t) => {
+test("Ignore successful responses that arrive after timeout", (t) => {
   const timers = [];
   const { dom, document, requests } = browser((window) => {
     window.setTimeout = (callback) => { timers.push(callback); return timers.length; };
@@ -208,7 +208,7 @@ test('タイムアウト後に遅れて届いた成功応答を表示しない',
   assert.match(document.querySelector('#status-description').textContent, /ブラウザ/);
 });
 
-test('複数の関連リンクを両表示で独立した安全なリンクとして描画する', (t) => {
+test("Render multiple related links as independent safe links in both views", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   const relatedLinks = [
@@ -239,7 +239,7 @@ test('複数の関連リンクを両表示で独立した安全なリンクと�
   assert.equal(document.querySelectorAll('#tool-rows tr')[1].lastElementChild.textContent, '—');
 });
 
-test('関連リンクがない旧レスポンスも表示し、不正な関連リンクは描画しない', (t) => {
+test("Support legacy responses without related links and reject invalid links", (t) => {
   for (const relatedLinks of [null, {}, [null], [{ label: '', url: 'https://example.com' }],
     [{ label: '使い方', url: 'javascript:alert(1)' }], [{ label: '使い方', url: 'https://user:pass@example.com' }]]) {
     const { dom, document, requests } = browser();
@@ -255,7 +255,7 @@ test('関連リンクがない旧レスポンスも表示し、不正な関連�
   assert.equal(document.querySelectorAll('.related-links').length, 0);
 });
 
-test('シートの設定エラーは HTML として解釈せず表示する', (t) => {
+test("Render sheet configuration errors as plain text", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   const error = '先頭シートの列を確認してください。<img src=x onerror=alert(1)>';
@@ -265,7 +265,7 @@ test('シートの設定エラーは HTML として解釈せず表示する', (t
   assert.equal(document.querySelector('#search').disabled, true);
 });
 
-test('シートの不備は空行を含む実際の行番号で表示する', (t) => {
+test("Report actual spreadsheet row numbers including blank rows", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   const { context } = server({ values: [
@@ -276,7 +276,7 @@ test('シートの不備は空行を含む実際の行番号で表示する', (t
   assert.match(document.querySelector('#warning-summary').textContent, /スプレッドシート/);
 });
 
-test('結果が変わるとアニメーションし、連続操作は前の再生を止めて最新結果とフォーカスを保持する', (t) => {
+test("Animate changed results while preserving the latest state and focus", (t) => {
   const animations = [];
   const { dom, document, requests } = browser((window) => {
     window.matchMedia = () => ({ matches: false, addEventListener() {} });
@@ -296,7 +296,7 @@ test('結果が変わるとアニメーションし、連続操作は前の再�
   };
   input('guide');
   input('GUIDE');
-  assert.equal(animations.length, 2, '結果が同じなら再生しない');
+  assert.equal(animations.length, 2, 'Do not animate unchanged results');
   input('該当なし');
   input('');
   assert.equal(animations.length, 4);
@@ -309,13 +309,13 @@ test('結果が変わるとアニメーションし、連続操作は前の再�
   assert.equal(animations.length, 5);
 });
 
-test('動きを減らす設定では再生せず、再生中に設定を変えても即座に停止する', (t) => {
+test("Respect reduced motion and stop active animations when the preference changes", (t) => {
   let change;
   let played = 0;
   let cancelled = 0;
   const media = { matches: true, addEventListener(event, callback) { change = callback; } };
   const { dom, document, requests } = browser((window) => {
-    window.matchMedia = () => media;
+    window.matchMedia = (query) => query === '(prefers-reduced-motion: reduce)' ? media : { matches: false, addEventListener() {} };
     window.HTMLElement.prototype.animate = () => {
       played++;
       return { cancel() { cancelled++; } };
@@ -336,7 +336,7 @@ test('動きを減らす設定では再生せず、再生中に設定を変え�
   assert.equal(document.querySelectorAll('#tools > li').length, 2);
 });
 
-test('タブを往復しても検索・タグ・表示形式を保持し、追加の API 呼び出しをしない', (t) => {
+test("Preserve filters and view across tabs without extra API calls", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   requests[0].success(catalog);
@@ -363,7 +363,7 @@ test('タブを往復しても検索・タグ・表示形式を保持し、追�
   assert.equal(requests.length, 1);
 });
 
-test('タブは矢印・Home・End で循環し、読み込みや失敗で選択中のタブが変わらない', (t) => {
+test("Support arrow, Home, and End navigation without changing tabs on loading or failure", (t) => {
   for (const complete of [(request) => request.success(catalog), (request) => request.failure()]) {
     const { dom, document, requests } = browser();
     t.after(() => dom.window.close());

@@ -2,14 +2,14 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { server, plain } from './helpers.mjs';
 
-test('アイコンは未設定なら P、指定値の先頭の Unicode 文字を使用する', () => {
+test("Default the icon to P and use the first Unicode code point", () => {
   const { context } = server();
   for (const [value, expected] of [['', 'P'], [' ', 'P'], [' F ', 'F'], ['😀Portal', '😀'], ['<script>', '<']]) {
     assert.equal(context.getPortalContent_({ PORTAL_ICON: value }).icon, expected);
   }
 });
 
-test('初期化は保存先を分け、空値・既存テーマ・未知のキーを保持し、再実行で書き込まない', () => {
+test("Initialize separate stores while preserving existing values and avoiding repeat writes", () => {
   const scriptValues = { PORTAL_NAME: 'Legacy Portal', SPREADSHEET_ID: 'private-id', OTHER: 'keep' };
   const userValues = { PORTAL_ICON: '', PORTAL_THEME: 'kuri', OTHER: 'user-keep' };
   let writes = 0;
@@ -25,7 +25,7 @@ test('初期化は保存先を分け、空値・既存テーマ・未知のキ�
   const result = plain(context.initializeProperties());
   assert.deepEqual(result.script, { created: ['SHEET_NAME'], existing: ['SPREADSHEET_ID'], migrated: [] });
   assert.deepEqual(result.user, {
-    created: ['PORTAL_NAME', 'PORTAL_HEADLINE', 'PORTAL_DESCRIPTION'],
+    created: ['PORTAL_NAME', 'PORTAL_HEADLINE', 'PORTAL_DESCRIPTION', 'PORTAL_LANGUAGE'],
     existing: ['PORTAL_ICON', 'PORTAL_THEME'], migrated: ['PORTAL_NAME'],
   });
   assert.equal(userValues.PORTAL_NAME, 'Legacy Portal');
@@ -44,14 +44,14 @@ test('初期化は保存先を分け、空値・既存テーマ・未知のキ�
   assert.equal(locks, 0);
 });
 
-test('旧 initializeScriptProperties も新しい初期化に委譲し、旧レスポンス形式を維持する', () => {
+test("Preserve the legacy initializer response shape", () => {
   const { context } = server({ properties: {} });
   const result = plain(context.initializeScriptProperties());
-  assert.equal(result.created.length, 7);
+  assert.equal(result.created.length, 8);
   assert.deepEqual(result.existing, []);
 });
 
-test('初期化の書き込み失敗でもロックを解放する', () => {
+test("Release the initialization lock after storage failures", () => {
   let released = false;
   const { context } = server({
     PropertiesService: { getScriptProperties: () => ({ getProperties: () => ({}), setProperties() { throw new Error('write failed'); } }) },

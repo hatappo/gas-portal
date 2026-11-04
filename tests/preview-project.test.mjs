@@ -7,7 +7,7 @@ import { JSDOM } from 'jsdom';
 import { withPreviewProject, withPreviewContent } from '../scripts/preview-project.mjs';
 import { server } from './helpers.mjs';
 
-test('プレビューのプロジェクトリンクは接続先から生成し、未設定なら隠し、不正な ID を拒否する', (t) => {
+test("Generate configured project links, hide missing ones, and reject invalid IDs", (t) => {
   const root = mkdtempSync(path.join(tmpdir(), 'gas-portal-preview-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const config = path.join(root, '.clasp.json');
@@ -28,11 +28,11 @@ test('プレビューのプロジェクトリンクは接続先から生成し�
   }
   for (const scriptId of ['"><script>alert(1)</script>', 'https://example.com', null, 123]) {
     writeFileSync(config, JSON.stringify({ scriptId }));
-    assert.throws(() => withPreviewProject(html, config), /scriptId が不正/);
+    assert.throws(() => withPreviewProject(html, config), /Invalid scriptId/);
   }
 });
 
-test('カスタム文言の HTML・引用符をテキストとして表示し、ページ名とブラウザタイトルを揃える', (t) => {
+test("Escape custom text and keep the document and portal names consistent", (t) => {
   const payload = '</title><img src=x onerror=alert(1)> & "quoted" $&';
   const portal = server().context.getPortalContent_({ PORTAL_NAME: payload, PORTAL_HEADLINE: payload, PORTAL_DESCRIPTION: payload });
   const source = readFileSync('src/Index.html', 'utf8');
@@ -48,7 +48,7 @@ test('カスタム文言の HTML・引用符をテキストとして表示し、
   assert.equal(document.querySelectorAll('img').length, 0);
 });
 
-test('フッタの GAS と Spreadsheet は別タブで開き、未設定の Spreadsheet は表示しない', (t) => {
+test("Open GAS and spreadsheet links in new tabs and hide unconfigured spreadsheet links", (t) => {
   for (const spreadsheetId of ['', 'test-sheet']) {
     const portal = server().context.getPortalContent_({}, { SPREADSHEET_ID: spreadsheetId });
     const html = withPreviewContent(readFileSync('src/Index.html', 'utf8'), portal);
