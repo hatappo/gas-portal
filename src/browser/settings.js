@@ -34,8 +34,15 @@
     const elements = { '.brand-mark': settings.PORTAL_ICON, '#page-title': settings.PORTAL_HEADLINE, '.intro-copy': settings.PORTAL_DESCRIPTION };
     Object.entries(elements).forEach(([selector, value]) => {
       const element = document.querySelector(selector);
-      if (element) element.textContent = value;
+      if (element) {
+        element.textContent = value;
+        if (selector !== '.brand-mark') /** @type {HTMLElement} */ (element).hidden = !value;
+      }
     });
+    const intro = /** @type {HTMLElement} */ (document.querySelector('.intro'));
+    intro.hidden = !settings.PORTAL_HEADLINE && !settings.PORTAL_DESCRIPTION;
+    if (settings.PORTAL_HEADLINE) intro.setAttribute('aria-labelledby', 'page-title');
+    else intro.removeAttribute('aria-labelledby');
   }
 
   function save() {

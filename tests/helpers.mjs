@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { createHash } from 'node:crypto';
 import { JSDOM } from 'jsdom';
 import { withPreviewContent } from '../scripts/preview-project.mjs';
 
@@ -31,8 +32,17 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     Sheets: { Spreadsheets: {
       get: (...args) => { calls.push(['get', ...args]); return { sheets: sheetProperties.map((properties) => ({ properties })) }; },
-      Values: { get: (...args) => { calls.push(['values', ...args]); return { values }; } },
+      Values: { get: (...args) => {
+        calls.push(['values', ...args]);
+        if (!sheetProperties.some((sheet) => sheet.title === (properties.SHEET_NAME || '').trim())) throw new Error('Unable to parse range');
+        return { values };
+      } },
     } },
+    Utilities: {
+      DigestAlgorithm: { SHA_256: 'sha256' }, Charset: { UTF_8: 'utf8' },
+      computeDigest: (algorithm, value) => [...createHash(algorithm).update(value).digest()],
+      newBlob: (text) => ({ getBytes: () => [...Buffer.from(text)] }),
+    },
     ...overrides,
   });
   vm.runInContext(readFileSync('src/shared/i18n.js', 'utf8'), context);
@@ -44,18 +54,20 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
 
 export const plain = (value) => JSON.parse(JSON.stringify(value));
 
-export function browser(setupWindow = () => {}, client = ['language', 'client', 'theme', 'settings'].map((file) => readFileSync(`src/browser/${file}.js`, 'utf8')).join('\n'), source = readFileSync('src/Index.html', 'utf8')) {
+export function browser(setupWindow = () => {}, client = ['language', 'client', 'theme', 'settings', 'cache-settings'].map((file) => readFileSync(`src/browser/${file}.js`, 'utf8')).join('\n'), source = readFileSync('src/Index.html', 'utf8')) {
   const html = withPreviewContent(source, server().context.getPortalContent_({ PORTAL_LANGUAGE: 'ja' }))
     .replace(/<\?[\s\S]*?\?>/g, '');
   const dom = new JSDOM(html, { runScripts: 'outside-only', url: 'https://example.com' });
   const requests = [];
   const languageRequests = [];
   const themeRequests = [];
+  const cacheSettingsRequests = [];
   const settingsRequests = [];
   const runner = {
     withSuccessHandler(handler) { this.success = handler; return this; },
     withFailureHandler(handler) { this.failure = handler; return this; },
-    getCatalog() { requests.push({ success: this.success, failure: this.failure }); },
+    getCatalog(forceRefresh) { requests.push({ forceRefresh, success: this.success, failure: this.failure }); },
+    saveCatalogCacheTtl(seconds) { cacheSettingsRequests.push({ seconds, success: this.success, failure: this.failure }); },
     savePortalSettings(settings, browserLanguage) { settingsRequests.push({ settings, browserLanguage, success: this.success, failure: this.failure }); },
     resetPortalSettings() { settingsRequests.push({ reset: true, success: this.success, failure: this.failure }); },
     saveLanguage(language) { languageRequests.push({ language, success: this.success, failure: this.failure }); },
@@ -65,7 +77,7 @@ export function browser(setupWindow = () => {}, client = ['language', 'client', 
   setupWindow(dom.window);
   dom.window.eval(readFileSync('src/shared/i18n.js', 'utf8'));
   dom.window.eval(client);
-  return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests };
+  return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests, cacheSettingsRequests };
 }
 
 export const catalog = {

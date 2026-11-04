@@ -21,7 +21,7 @@
       });
     }
     // These nodes contain application messages, never catalog names or descriptions.
-    for (const id of ['status-title', 'status-description', 'theme-status', 'portal-settings-status', 'language-status']) {
+    for (const id of ['status-title', 'status-description', 'theme-status', 'portal-settings-status', 'language-status', 'cache-settings-status']) {
       const element = document.getElementById(id);
       if (element) element.textContent = PortalI18n.translate(element.textContent || '', root.lang);
     }

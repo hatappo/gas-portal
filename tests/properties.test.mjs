@@ -25,7 +25,7 @@ test("Initialize separate stores while preserving existing values and avoiding r
   const result = plain(context.initializeProperties());
   assert.deepEqual(result.script, { created: ['SHEET_NAME'], existing: ['SPREADSHEET_ID'], migrated: [] });
   assert.deepEqual(result.user, {
-    created: ['PORTAL_NAME', 'PORTAL_HEADLINE', 'PORTAL_DESCRIPTION', 'PORTAL_LANGUAGE'],
+    created: ['PORTAL_NAME', 'PORTAL_HEADLINE', 'PORTAL_DESCRIPTION', 'PORTAL_LANGUAGE', 'CATALOG_CACHE_SECONDS'],
     existing: ['PORTAL_ICON', 'PORTAL_THEME'], migrated: ['PORTAL_NAME'],
   });
   assert.equal(userValues.PORTAL_NAME, 'Legacy Portal');
@@ -47,7 +47,7 @@ test("Initialize separate stores while preserving existing values and avoiding r
 test("Preserve the legacy initializer response shape", () => {
   const { context } = server({ properties: {} });
   const result = plain(context.initializeScriptProperties());
-  assert.equal(result.created.length, 8);
+  assert.equal(result.created.length, 9);
   assert.deepEqual(result.existing, []);
 });
 

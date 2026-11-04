@@ -10,7 +10,7 @@ interface CatalogTool {
 }
 interface CatalogWarning { row: number; message: string }
 type CatalogResponse =
-  | { ok: true; tools: CatalogTool[]; issues: CatalogWarning[] }
+  | { ok: true; tools: CatalogTool[]; issues: CatalogWarning[]; cache?: { hit: boolean; fetchedAt: number } }
   | { ok: false; error?: string };
 type ThemeResponse = { ok: true; theme: string } | { ok: false };
 interface PortalSettings {
@@ -23,7 +23,8 @@ type PortalSettingsResponse = { ok: true; settings: PortalSettings } | { ok: fal
 interface GasRunner {
   withSuccessHandler<T>(callback: (response: T) => void): GasRunner;
   withFailureHandler(callback: () => void): GasRunner;
-  getCatalog(): void;
+  getCatalog(forceRefresh?: boolean): void;
+  saveCatalogCacheTtl(seconds: number): void;
   saveLanguage(language: string): void;
   saveTheme(theme: string): void;
   savePortalSettings(settings: PortalSettings, browserLanguage?: string): void;

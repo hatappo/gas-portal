@@ -41,7 +41,7 @@ test('Initialize the language once, preserving existing values and isolating use
   assert.equal(userProperties.PORTAL_LANGUAGE, 'auto');
 });
 
-test('Use localized preset text while preserving custom content and applying localized blank defaults', () => {
+test('Use localized preset text while preserving custom content and preserving intentionally blank intro text', () => {
   const app = server({ userProperties: { PORTAL_LANGUAGE: 'en' } });
   const preset = plain(app.context.getPortalPropertyDefaults_());
   const content = app.context.getPortalContent_({ ...preset, PORTAL_LANGUAGE: 'en' });
@@ -50,7 +50,7 @@ test('Use localized preset text while preserving custom content and applying loc
   const custom = { ...preset, PORTAL_LANGUAGE: 'en', PORTAL_HEADLINE: '独自の見出し', PORTAL_DESCRIPTION: '<b>custom</b>' };
   assert.equal(app.context.getPortalContent_(custom).headline, custom.PORTAL_HEADLINE);
   assert.equal(app.context.getPortalContent_(custom).description, custom.PORTAL_DESCRIPTION);
-  assert.equal(app.context.savePortalSettings({ ...preset, PORTAL_HEADLINE: '' }).settings.PORTAL_HEADLINE, content.headline);
+  assert.equal(app.context.savePortalSettings({ ...preset, PORTAL_HEADLINE: '' }).settings.PORTAL_HEADLINE, '');
   assert.equal(app.context.resetPortalSettings().settings.PORTAL_HEADLINE, content.headline);
 });
 
@@ -81,6 +81,8 @@ test('Switch labels, accessibility text, warnings, and default content without l
   app.languageRequests[0].success({ ok: true, language: 'en' });
   assert.equal(doc.documentElement.lang, 'en');
   assert.equal(doc.getElementById('tab-settings').getAttribute('aria-label'), 'Settings');
+  assert.equal(doc.getElementById('refresh-catalog').getAttribute('aria-label'), 'Fetch latest');
+  assert.equal(doc.getElementById('refresh-catalog').title, 'Fetch latest from spreadsheet');
   assert.equal(doc.getElementById('search').placeholder, 'Search by name, description, or tags');
   assert.equal(doc.getElementById('search').value, 'Guide');
   assert.equal(doc.getElementById('view-list').getAttribute('aria-pressed'), 'true');
@@ -94,6 +96,8 @@ test('Switch labels, accessibility text, warnings, and default content without l
   choose(app, 'ja');
   app.languageRequests[1].success({ ok: true, language: 'ja' });
   assert.equal(doc.getElementById('tab-settings').getAttribute('aria-label'), '設定');
+  assert.equal(doc.getElementById('refresh-catalog').getAttribute('aria-label'), '最新データを取得');
+  assert.equal(doc.getElementById('refresh-catalog').title, 'キャッシュを使わずシートから最新データを取得');
   assert.equal(doc.getElementById('setting-headline').value, 'Unsaved custom headline');
   assert.match(doc.getElementById('tool-rows').textContent, /Guide.*社内/);
 });
@@ -134,7 +138,7 @@ test('Preview language persists locally, restores on reload, and reports storage
   const html = renderPreview(readFileSync('src/Index.html', 'utf8'), process.cwd());
   const dom = new JSDOM(html);
   t.after(() => dom.window.close());
-  const mock = dom.window.document.querySelector('script:not([src])').textContent;
+  const mock = dom.window.document.querySelector('script:not([src]):not([type="application/json"])').textContent;
   const runMock = () => {
     const context = vm.createContext({ document: dom.window.document, URLSearchParams, location: { search: '' }, setTimeout(fn) { fn(); },
       localStorage: { getItem: key => storage[key], setItem(key, value) { storage[key] = value; } } });
@@ -191,7 +195,7 @@ test('Automatic mode follows browser changes without writes and explicit selecti
   assert.equal(doc.documentElement.dataset.languagePreference, 'auto');
 });
 
-test('Automatic settings use the resolved browser language for blank fields without overriding saved choices', (t) => {
+test('Keep optional intro text empty regardless of resolved or saved language', (t) => {
   const app = browser((window) => {
     window.document.documentElement.dataset.languagePreference = 'auto';
     Object.defineProperty(window.navigator, 'languages', { value: ['ja-JP'] });
@@ -203,7 +207,7 @@ test('Automatic settings use the resolved browser language for blank fields with
   assert.equal(request.browserLanguage, 'ja');
   const api = server({ userProperties: { PORTAL_LANGUAGE: 'auto' } });
   const response = api.context.savePortalSettings(request.settings, request.browserLanguage);
-  assert.equal(response.settings.PORTAL_HEADLINE, '毎日の仕事に、ひとつの入口を。');
+  assert.equal(response.settings.PORTAL_HEADLINE, '');
   const explicit = server({ userProperties: { PORTAL_LANGUAGE: 'en' } });
-  assert.equal(explicit.context.savePortalSettings(request.settings, 'ja').settings.PORTAL_HEADLINE, 'One place to start your workday.');
+  assert.equal(explicit.context.savePortalSettings(request.settings, 'ja').settings.PORTAL_HEADLINE, '');
 });

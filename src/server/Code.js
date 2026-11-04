@@ -5,6 +5,7 @@ function doGet() {
   const portal = getPortalContent_(getPortalUserProperties_(scriptProperties), scriptProperties);
   template.portal = portal;
   template.theme = getPortalTheme_();
+  template.initialCatalogJson = serializeCatalog_(getCatalog());
   template.projectUrl = 'https://script.google.com/home/projects/' + encodeURIComponent(ScriptApp.getScriptId()) + '/edit';
   return template.evaluate()
     .setTitle(portal.name)
@@ -55,7 +56,7 @@ function saveTheme(theme) {
   }
 }
 
-/** Use defaults for missing or blank values; never interpret content as HTML.
+/** Use defaults for missing fields; preserve explicitly empty intro text. Never interpret content as HTML.
  * @param {Record<string, string>} properties
  * @param {Record<string, string>} scriptProperties
  */
@@ -67,7 +68,7 @@ function getPortalContent_(properties, scriptProperties = {}) {
   /** @param {'PORTAL_HEADLINE' | 'PORTAL_DESCRIPTION'} key */
   const content = (key) => {
     const value = properties[key]?.trim();
-    return !value || value === original[key] || value === getPortalPropertyDefaults_('en')[key] ? defaults[key] : value;
+    return value === undefined || value === original[key] || value === getPortalPropertyDefaults_('en')[key] ? defaults[key] : value;
   };
   const name = properties.PORTAL_NAME?.trim() || defaults.PORTAL_NAME;
   const split = name.search(/\s/);
@@ -76,6 +77,7 @@ function getPortalContent_(properties, scriptProperties = {}) {
     name,
     language,
     languagePreference,
+    cacheSeconds: String(normalizeCatalogCacheTtl_(properties.CATALOG_CACHE_SECONDS)),
     defaultsJson: JSON.stringify(defaults),
     icon: Array.from(properties.PORTAL_ICON?.trim() || defaults.PORTAL_ICON)[0],
     brandLead: split < 0 ? name : name.slice(0, split),
@@ -133,7 +135,7 @@ function initializeUserProperties_(scriptProperties) {
   const defaults = getPortalPropertyDefaults_();
   // Migrate only the four display fields, excluding connection settings and unknown keys.
   const legacy = Object.fromEntries(Object.entries(scriptProperties).filter(([key]) => Object.prototype.hasOwnProperty.call(defaults, key)));
-  return initializePropertyStore_(PropertiesService.getUserProperties(), { ...defaults, PORTAL_THEME: 'auto', PORTAL_LANGUAGE: 'auto' }, legacy);
+  return initializePropertyStore_(PropertiesService.getUserProperties(), { ...defaults, PORTAL_THEME: 'auto', PORTAL_LANGUAGE: 'auto', CATALOG_CACHE_SECONDS: '21600' }, legacy);
 }
 
 /** @param {Record<string, string>} scriptProperties */
@@ -182,7 +184,7 @@ function validatePortalSettings_(input, language = 'en') {
     if (typeof value !== 'string') throw new Error(PortalI18n.t("Enter display settings as text."));
     const trimmed = value.trim();
     if (Array.from(trimmed).length > limits[key]) throw new Error(PortalI18n.t('{key} must contain at most {limit} characters.', 'ja', { key, limit: limits[key] }));
-    settings[key] = trimmed || fallback;
+    settings[key] = key === 'PORTAL_HEADLINE' || key === 'PORTAL_DESCRIPTION' ? trimmed : trimmed || fallback;
   }
   return settings;
 }
@@ -215,11 +217,12 @@ function include_(filename) {
 /**
  * Public RPC; access is restricted by the web app's MYSELF setting.
  * Read the configured spreadsheet with the deployer's read-only authorization.
- * @returns {({ok: true} & Catalog) | {ok: false, error: string}}
+ * @param {boolean} [forceRefresh]
+ * @returns {({ok: true} & Catalog & {cache: {hit: boolean, fetchedAt: number}}) | {ok: false, error: string}}
  */
-function getCatalog() {
+function getCatalog(forceRefresh = false) {
   try {
-    return { ok: true, ...readSheetCatalog_() };
+    return { ok: true, ...readCachedSheetCatalog_(forceRefresh === true) };
   } catch (error) {
     /** @type {Record<string, string>} */
     const messages = {
@@ -234,4 +237,30 @@ function getCatalog() {
     console.error('CATALOG_FAILED', code);
     return { ok: false, error: messages[code] || PortalI18n.t("Could not load the list. Check spreadsheet sharing, authorization, and Sheets API settings, then reload the page.") };
   }
+}
+
+
+/** @param {unknown} value */
+function normalizeCatalogCacheTtl_(value) {
+  return ['0', '300', '3600', '21600'].includes(String(value)) ? Number(value) : 21600;
+}
+
+/** Persist only the supported cache duration choices. @param {unknown} seconds */
+function saveCatalogCacheTtl(seconds) {
+  if (typeof seconds !== 'number' || ![0, 300, 3600, 21600].includes(seconds)) return { ok: false };
+  try {
+    withPortalPropertiesLock_(() => PropertiesService.getUserProperties().setProperty('CATALOG_CACHE_SECONDS', String(seconds)));
+    return { ok: true, seconds };
+  } catch {
+    console.error('CACHE_SETTINGS_SAVE_FAILED');
+    return { ok: false };
+  }
+}
+
+
+/** Escape JSON for a non-executable script element; never embed raw spreadsheet text.
+ * @param {unknown} catalog @returns {string}
+ */
+function serializeCatalog_(catalog) {
+  return JSON.stringify(catalog).replace(/[<>&\u2028\u2029]/g, (character) => '\\u' + character.charCodeAt(0).toString(16).padStart(4, '0'));
 }
