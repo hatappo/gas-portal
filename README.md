@@ -2,7 +2,7 @@
 
 A personal work portal built with Google Apps Script, with a CLI for building, previewing, and deploying separate work environments.
 
-Display links from a spreadsheet as cards or a list. Search by name, description, or tags; filter internal and external tools; add related links; and customize the appearance with ten color themes and editable display text. The settings tab lets you switch between Japanese and English; your language preference is saved in User Properties. The initial selection follows browser preferences, with English as the fallback. The Action Items tab is currently empty and reserved for future integrations.
+Display links from a spreadsheet as cards or a list. Connect an existing spreadsheet or create a new one with a typed table and column notes from Settings. Search by name, description, or tags; filter internal and external tools; add related links; and customize the appearance with ten color themes and editable display text. The settings tab lets you switch between Japanese and English; your language preference is saved in User Properties. The initial selection follows browser preferences, with English as the fallback. The Action Items tab is currently empty and reserved for future integrations.
 
 **Consumer projects only need configuration and a package dependency.** The CLI generates GAS code under `.portal/`. Each work environment can use its own Google account, Apps Script project, and spreadsheet.
 
@@ -73,9 +73,11 @@ Authentication tokens remain in clasp's standard credential store. Every remote 
 | `portal deployments` | List deployments for the target GAS project |
 | `portal deploy [-d TEXT] [--deployment-id ID]` | Create a version from code already saved in GAS and update an existing deployment |
 
+`portal init` also generates `npm run ship`, an alias for `npm run push && npm run deploy`. It uploads first and updates the deployment only after a successful push. Run `portal init` again to add this alias to an existing consumer; existing scripts are preserved.
+
 **deploy does not run build, push, or check.** Create the first web app deployment manually in the GAS console. The CLI stops with instructions if no versioned deployment exists. It also refuses to update HEAD or a deployment ID outside the target project. If multiple versioned deployments exist, including API executable deployments, specify the web app's ID.
 
-There is no CLI command for property initialization. Run `initializeProperties` in the GAS editor. This does not require an Execution API deployment or a custom OAuth client.
+Missing property defaults are initialized automatically; manually running an initializer is optional. To initialize them explicitly or authorize newly added permissions, run `initializeProperties` in the GAS editor as the deploying account. It calls `ScriptApp.requireAllScopes` before adding missing properties, preserving existing values. No Execution API deployment or custom OAuth client is required.
 
 See the [usage guide](docs/usage.md) for initial setup, spreadsheet columns, display settings, and preview scenarios.
 
@@ -90,9 +92,11 @@ npm run pack:local
 
 Application source lives in `src/`; the CLI lives in `bin/` and `lib/`. `npm run build` generates GAS output in `dist/` and package assets in `assets/`. Published packages contain the CLI, compiled assets, and usage documentation. They exclude source files, tests, environment configuration, and credentials.
 
-To preview the GAS footer link during development, set `scriptId` in an untracked `.clasp.json`. The optional `SPREADSHEET_ID` environment variable enables the spreadsheet footer link. Neither value is embedded in packaged assets.
+To preview the GAS footer link during development, set `scriptId` in an untracked `.clasp.json`. The optional `SPREADSHEET_ID` environment variable accepts an ID or Google Sheets URL to preview the spreadsheet setting and footer link. Neither value is embedded in packaged assets.
 
 `npm run dev` provides HMR for application development. The consumer's `portal preview` shows the installed package's compiled output. Restart it after changing configuration or rebuilding the package. Preview settings are stored in browser localStorage and isolated by consumer directory.
+
+The GAS build uses Terser to keep URLs and multiline text in quoted string literals, avoiding HtmlService parsing issues with minifier-generated template literals.
 
 Tests mock Google services and do not change live GAS projects or spreadsheets. Before releasing, use a separate test project to verify authentication, push, deployment, and spreadsheet access.
 
