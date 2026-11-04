@@ -35,9 +35,9 @@ Spreadsheet access is read-only, but the OAuth permission is not restricted to t
 
 ## Display settings
 
-The gear tab offers **Language** choices for Japanese and English. Selections are saved automatically in the executing user's `PORTAL_LANGUAGE` User Property. The initial preference is **Automatic (browser)** (`auto`). The first supported language in the browser preference list is used; English is the fallback when neither Japanese nor English is available. Browser preferences commonly reflect OS settings, but users can configure them separately. Existing explicit Japanese or English choices take priority. Select Automatic to resume detection. Detected languages are not persisted as explicit choices. Switching languages preserves filters, the selected tab, and unsaved display settings. Preset headlines and descriptions follow the language; custom text and spreadsheet data retain their original language. Theme names include their Japanese names in English mode.
+The lower part of **Display settings** in the gear tab offers **Language** choices for Japanese and English. Selections are saved automatically in the executing user's `PORTAL_LANGUAGE` User Property. The initial preference is **Automatic (browser)** (`auto`). The first supported language in the browser preference list is used; English is the fallback when neither Japanese nor English is available. Browser preferences commonly reflect OS settings, but users can configure them separately. Existing explicit Japanese or English choices take priority. Select Automatic to resume detection. Detected languages are not persisted as explicit choices. Switching languages preserves filters, the selected tab, and unsaved display settings. Preset headlines and descriptions follow the language; custom text and spreadsheet data retain their original language. Theme names include their Japanese names in English mode.
 
-The gear tab lets you edit the portal name, icon, headline, and description. These values are stored in User Properties. Restoring defaults only changes the form fields; explicitly save to apply them. Theme selections are saved automatically.
+The gear tab lets you edit the portal name, icon, headline, and description. These values are stored in User Properties. Headline and description may be saved as empty strings. Each empty field is hidden; when both are empty, the entire intro area and its spacing are removed from layout. Missing properties still receive the initial defaults. Restoring defaults only changes the form fields; explicitly save to apply them. Theme selections are saved automatically.
 
 | Key | Default |
 | --- | --- |
@@ -47,12 +47,27 @@ The gear tab lets you edit the portal name, icon, headline, and description. The
 | PORTAL_DESCRIPTION | Keep your work tools, service links, and daily to-dos in one place. |
 | PORTAL_THEME | auto |
 | PORTAL_LANGUAGE | auto (browser preference; English fallback) |
+| CATALOG_CACHE_SECONDS | 21600 (6 hours) |
 
 In English, the preset headline is “One place to start your workday.” and the description is “Keep your work tools, service links, and daily to-dos in one place.” Existing values that exactly match either preset are treated as presets for display, without rewriting stored values.
 
 New users default to Automatic, which follows `prefers-color-scheme`: Tsuyukusa for light mode (or when unavailable), Tetsukon for dark mode. Changes are applied while the page is open. Only the preference `auto` is stored; resolved colors are not saved. Explicit saved colors are preserved.
 
 The ten themes are Tsuyukusa, Sakura, Wakatake, Yamabuki, Ginnezu (Light), Tetsukon, Sumi, Kuri, Fukamidori, and Daidai (Dark). Ginnezu uses a monochrome silver palette and Daidai uses orange accents on a dark background. Their accent colors, Ginnezu `#afafb0` and Daidai `#ee7800`, are based on [Traditional Colors of Japan](https://www.colordic.org/w); companion shades are adjusted for readable contrast. Legacy Shikon values are treated as Kuri. Display settings previously stored in Script Properties migrate only into missing User Property keys. Spreadsheet connection settings remain in Script Properties.
+
+## Catalog loading and cache
+
+The initial catalog is embedded as escaped JSON in the HTML response. The browser renders it directly without an initial `google.script.run` round trip. A live catalog read makes one Sheets API values request. Sheet metadata is fetched only after a failed values request to retain useful missing-sheet diagnostics. Cache hits do not call Sheets.
+
+**Catalog cache duration**, below the display text fields and above Language in **Display settings**, offers Disabled, 5 minutes, 1 hour, and 6 hours (default). Changes are saved automatically to the executing user's `CATALOG_CACHE_SECONDS` User Property and apply to the next load. Initialization preserves existing values. These settings do not belong in Script Properties or portal.config.json.
+
+**Fetch latest** in Tools & Links bypasses the cache, reads the spreadsheet, and replaces the cached entry. Search, scope, remaining selected tags, and the Cards/List choice are preserved. The retrieval time identifies the data snapshot; a Cached label indicates reuse. A normal browser reload may reuse the cache. Fetch latest also retries failed loads.
+
+Only validated catalog fields and row issues are stored in GAS User Cache, separated by spreadsheet ID and sheet name. Unknown spreadsheet columns are excluded. User Cache belongs to the executing user (the deployer in this personal app), not independently to each visitor. Errors are never cached. A failed forced refresh is reported instead of silently returning old data. Concurrent cache fills are serialized with a user lock.
+
+The [GAS Cache service](https://developers.google.com/apps-script/reference/cache/cache) supports at most six hours and 100 KB per entry, and may evict data sooner. Oversized catalogs or unavailable cache storage fall back to live reads. Shortening the selected duration checks the stored retrieval time; increasing it does not extend the Cache service's original expiry. Cache keys are versioned in source and must change when the cached catalog format or interpretation changes. Access checks against Sheets run on live reads; cached data may remain until expiry or Fetch latest after a sharing change.
+
+The local preview simulates caching with mock data and browser storage. It never reads Sheets and is not a production performance benchmark. The initial page request still executes GAS. Cached catalog data is read while generating the HTML; a cache miss reads Sheets before sending that response. This removes the second data-fetch round trip rather than merely hiding a loading indicator. Initial read failures are embedded as errors so Settings and Fetch latest remain available. Fetch latest uses the existing asynchronous RPC.
 
 ## Local preview
 

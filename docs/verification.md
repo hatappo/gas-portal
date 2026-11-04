@@ -51,6 +51,60 @@
 - Initial catalog loading was inspected, not benchmarked or changed: HTML delivery is followed by getCatalog RPC, sheet-name validation, and sheet-value retrieval. Follow-up candidates include reducing service calls, short-lived server caching, and embedding the initial catalog in HTML; each requires separate validation of freshness and error behavior.
 - No production push/deploy was performed.
 
+## Catalog caching and settings order / 2026-11-04
+
+- Moved language selection to the end of Settings, after the new cache duration control.
+- Reduced a successful live read from two Sheets requests to one; metadata is requested only to diagnose a failed values read. A valid cache hit makes zero Sheets requests.
+- Added executing-user cache entries scoped to spreadsheet ID and sheet name, with a one-hour default and Disabled / 5 minutes / 1 hour / 6 hours choices. Forced refresh bypasses and replaces the entry while preserving filters and view mode.
+- Tested expiration, cache eviction/corruption/outages, oversized UTF-8 catalogs, invalid configuration, excluded private sheet columns, failed refreshes, and serialized cache fills. Preview storage remains isolated by consumer directory.
+- Lint, browser/GAS type checks, build, and all 123 tests passed. Consumer build passed. Browser verification covered cached reloads, forced refresh, cache-duration persistence, language placement, and the 390px layout.
+- The seven-file output and OAuth scopes are unchanged. No live GAS deployment or real Sheets latency benchmark was performed; improvements are verified by API-call counts rather than claimed timing gains.
+
+## Display settings grouping / 2026-11-04
+
+- Grouped cache duration and language below the display text form, within the Display settings section. The divider now follows these controls and separates the Color theme section.
+- Kept automatic preference saving independent of the display form submit/reset actions. Updated the grouping regression assertion.
+- Initial catalog loading still uses the asynchronous GAS RPC; cache hits avoid Sheets access but do not remove the loading state or browser-to-GAS round trip.
+
+## Optional intro text / 2026-11-04
+
+- Allow explicitly blank headline and description values while retaining defaults for absent properties. Initialization and language changes preserve saved blanks.
+- Hide each blank intro element and remove the entire intro area from layout when both are empty, including initial server HTML. Saving defaults restores the area; resetting form fields alone does not.
+- Lint, type checks, build, and 125 tests passed; consumer build passed. Browser verification confirmed empty-value saving, restoration after reload, and the compact list layout.
+- Initial catalog data is still fetched asynchronously. HTML embedding was discussed but not implemented in this change.
+
+## Embedded initial catalog / 2026-11-04
+
+- Embed the initial catalog in a non-executable JSON script element during doGet. Valid initial data renders without a client catalog RPC or an intermediate loading panel; manual refresh still uses the asynchronous forced-refresh path.
+- Escape HTML-sensitive characters and Unicode line separators before embedding spreadsheet content. Tests cover malicious script-closing text, exact JSON round trips, malformed payloads, safe error rendering, and manual recovery.
+- Verified one Sheets values request for a cold doGet and no additional Sheets requests for a warm cached doGet. Missing bootstrap markup retains the legacy asynchronous fallback.
+- Added a 24px gap between the header and navigation when both intro fields are blank. Browser verification confirmed saved blanks after reload, immediate catalog rendering, and successful forced refresh.
+- Lint, browser/GAS type checks, build, and all 131 tests passed; consumer checks/build and git diff --check passed. The seven-file GAS output contract and OAuth scopes remain unchanged.
+- No production push/deploy or live GAS latency benchmark was performed. Cache misses now delay HTML delivery while the initial sheet read completes.
+
+## Compact catalog controls / 2026-11-04
+
+- Made the refresh button icon-only while retaining its localized accessible name, hover explanation, and 44px target. Grouped the retrieval timestamp beside the button without a separate timestamp row.
+- Placed the Tags label beside the wrapping tag controls. Narrow layouts wrap control groups while keeping retrieval details and refresh together.
+- Lint, browser/GAS type checks, build, and all 131 tests passed, including refresh behavior and Japanese/English accessibility labels. Consumer build passed.
+- Browser verification confirmed the desktop layout, successful icon-triggered refresh, and wrapping at 390px and 320px widths. No production push/deploy was performed.
+
+## Lucide controls and six-hour cache default / 2026-11-04
+
+- Bundled Lucide refresh-cw, layout-grid, and list SVGs with their license notices; development and packaged builds embed them without CDN requests.
+- Made Cards/List icon-only with accessible names and matching hover titles. Refresh is transparent and muted at rest, with a button surface on hover or keyboard focus; all targets remain 44px.
+- Display retrieval times as 24-hour HH:mm without dates or day periods in Japanese and English, including 00:05 at midnight.
+- Set the cache fallback and initializer to 21600 seconds across GAS, browser controls, and previews. Existing saved values remain authoritative. Tested the six-hour expiration boundary and preservation of explicit settings.
+- Lint, type checks, build, and all 132 tests passed; consumer build and git diff --check passed. Browser verification covered Cards/List switching, keyboard focus, forced refresh, and desktop/390px layouts.
+- No production push/deploy was performed.
+
+## Combined refresh control / 2026-11-04
+
+- Combined the refresh icon and retrieval time into one button with a 6px gap. The entire control is clickable, transparent at rest, and receives a subtle background on hover or keyboard focus.
+- Retained the localized action label, tooltip, timestamp live region, and a minimum 44px target height. Added the timestamp as the accessible description.
+- Added a regression test for timestamp clicks, forced refresh, duplicate-click prevention while loading, and successful timestamp restoration.
+- Lint, type checks, build, and all 133 tests passed; consumer build passed. Browser verification confirmed timestamp-triggered refresh, the combined hover background, and the updated time. No production push/deploy was performed.
+
 ## Before publishing
 
 - Configure the Git remote and verify package.json's repository / homepage / bugs fields. Distribute tarballs through GitHub Releases; do not publish to the npm registry.
