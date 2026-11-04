@@ -5,3 +5,25 @@ that embeds these icons.
 
 Runtime dependencies @google/clasp and Vite are installed separately by npm
 and retain their own licenses. They are not copied into gas-portal's sources.
+
+Generated favicon images use Libre Baskerville, copyright 2012 The Libre
+Baskerville Project Authors (https://github.com/impallari/Libre-Baskerville),
+licensed under SIL Open Font License 1.1. The font is a development-only
+npm dependency. Its full license is copied to the published favicon site
+as FONT-LICENSE.txt. Font binaries are not included in the GAS output.
+
+Generated kana favicons use Shippori Mincho, copyright 2021 The Shippori
+Mincho Project Authors (https://github.com/fontdasu/ShipporiMincho), licensed
+under SIL Open Font License 1.1. The full license from this development-only
+font dependency is published as JAPANESE-FONT-LICENSE.txt. Font binaries
+are not included in the GAS output.
+
+The fallback favicon is the unmodified outline of the character 玄 from
+Kouzan Brush Font Sousho (衡山毛筆フォント草書), written and created by
+Aoyagi Kouzan (青柳衡山), distributed by Musashi System.
+Source: https://opentype.jp/kouzansousho.htm
+Font archive: https://opentype.jp/bin/KouzanSousho.zip (2017-04-11 edition).
+The publisher permits free use, including commercial and logo use,
+without restrictions, and provides the font without warranty.
+Only the single glyph artwork is included; the original font is not
+bundled. The font is not claimed to be covered by this project's MIT license.

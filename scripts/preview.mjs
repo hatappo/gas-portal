@@ -46,6 +46,7 @@ export function renderPreview(html, root, options = {}) {
         document.documentElement.dataset.languagePreference = previewPreference;
       }
       const getPortalPropertyDefaults_ = ${context.getPortalPropertyDefaults_.toString()};
+      const normalizePortalIcon_ = ${context.normalizePortalIcon_.toString()};
       const validatePortalSettings_ = ${context.validatePortalSettings_.toString()};
       try {
         const stored = localStorage.getItem('portal-preview-settings');

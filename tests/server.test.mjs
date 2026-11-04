@@ -72,7 +72,7 @@ test("Use private deployer execution with read-only Sheets access and per-file c
 test("Generate the editor URL from the current project and set the page title", () => {
   for (const scriptId of ['project-one', 'project-two']) {
     let title;
-    const output = { setTitle(value) { title = value; return this; }, addMetaTag() { return this; } };
+    const output = { setTitle(value) { title = value; return this; }, setFaviconUrl() { return this; }, addMetaTag() { return this; } };
     const template = { evaluate() { return output; } };
     const { context, calls } = server({
       HtmlService: { createTemplateFromFile(name) { assert.equal(name, 'Index'); return template; } },
@@ -101,7 +101,7 @@ test("Generate spreadsheet links only for valid configured IDs", () => {
 test("Read display properties, apply defaults for missing fields, and reflect subsequent changes", () => {
   const userProperties = {};
   let title;
-  const output = { setTitle(value) { title = value; return this; }, addMetaTag() { return this; } };
+  const output = { setTitle(value) { title = value; return this; }, setFaviconUrl() { return this; }, addMetaTag() { return this; } };
   const template = { evaluate() { return output; } };
   const { context } = server({
     userProperties,
