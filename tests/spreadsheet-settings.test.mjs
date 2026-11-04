@@ -151,7 +151,7 @@ test('Preview persists source settings without accessing Google and restores the
 });
 
 
-test('Preview creates a fake source once, preserves the sheet name, and reloads an empty catalog', (t) => {
+test('Preview creates a fake source once and keeps demo entries after reload', (t) => {
   const storage = { 'portal-preview-source': JSON.stringify(settings('', '')) };
   const create = () => {
     const dom = new JSDOM(renderPreview(source, process.cwd()));
@@ -173,6 +173,7 @@ test('Preview creates a fake source once, preserves the sheet name, and reloads 
   assert.equal(restored.document.querySelector('#setting-spreadsheet').value, 'preview-created-sheet');
   restored.run.withSuccessHandler((value) => { result = value; }).getCatalog();
   assert.equal(result.ok, true);
-  assert.deepEqual(plain(result.tools), []);
+  assert.equal(result.tools.length, 4);
+  assert.equal(result.tools[0].id, 'demo-address');
   assert.deepEqual(plain(result.issues), []);
 });

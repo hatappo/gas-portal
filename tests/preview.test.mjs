@@ -17,6 +17,12 @@ test("Resolve GAS templates and include the mock and Vite module entry", (t) => 
   assert.match(dom.window.document.querySelector('.site-header > .preview-label').textContent, /LOCAL PREVIEW/);
   assert.equal(dom.window.document.querySelector('script[type="module"]').getAttribute('src'), '/browser/main.js');
   assert.equal(dom.window.document.querySelectorAll('.external-link-icon').length >= 1, true);
+  for (const [tab, icon] of [['tools', 'tool-case'], ['actions', 'list-checks'], ['settings', 'settings']]) {
+    const svg = dom.window.document.querySelector('#tab-' + tab + ' > svg');
+    assert.equal(svg.getAttribute('class'), icon + '-icon');
+    assert.equal(svg.getAttribute('aria-hidden'), 'true');
+    assert.equal(svg.getAttribute('focusable'), 'false');
+  }
 });
 
 test("Simulate success, empty, invalid, configuration, and transport states offline", (t) => {
@@ -105,7 +111,11 @@ test('Preview cache settings persist, cached loads restore, and forced refresh a
   assert.equal(load(initial.run).cache.hit, true);
   initial.run.withSuccessHandler((value) => { result = value; }).saveCatalogCacheTtl(21600);
   assert.equal(result.ok, true);
+  assert.equal(initial.document.querySelector('#actions-cache-seconds').dataset.savedValue, '300');
+  initial.run.withSuccessHandler((value) => { result = value; }).saveActionsCacheTtl(900);
+  assert.equal(result.ok, true);
   const restored = create();
+  assert.equal(restored.document.querySelector('#actions-cache-seconds').dataset.savedValue, '900');
   assert.equal(restored.document.querySelector('#catalog-cache-seconds').dataset.savedValue, '21600');
   assert.equal(load(restored.run).cache.hit, true);
   assert.equal(load(restored.run, true).cache.hit, false);

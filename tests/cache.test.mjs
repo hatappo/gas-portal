@@ -172,8 +172,16 @@ test('Keep filters and List view during forced refresh, prevent duplicate reques
   document.querySelector('#view-list').click();
   document.querySelector('#scope-internal').click();
   [...document.querySelectorAll('#tags button')].find((button) => button.textContent === '資料').click();
+  const previousCount = document.querySelector('#count').textContent;
+  const previousTime = document.querySelector('#catalog-freshness').textContent;
+  refresh.getBoundingClientRect = () => ({ width: 173.25 });
   refresh.click();
   refresh.click();
+  assert.equal(document.querySelector('#count').textContent, previousCount);
+  assert.equal(document.querySelector('#catalog-freshness').textContent, previousTime);
+  assert.equal(document.querySelector('#catalog-freshness').hidden, false);
+  assert.equal(refresh.style.minWidth, '174px');
+  assert.equal(refresh.getAttribute('aria-busy'), 'true');
   assert.equal(requests.length, 2);
   assert.equal(requests[1].forceRefresh, true);
   requests[1].success({ ...catalog, cache: { hit: false, fetchedAt: 1700000010000 } });
@@ -181,6 +189,8 @@ test('Keep filters and List view during forced refresh, prevent duplicate reques
   assert.equal(document.querySelector('#view-list').getAttribute('aria-pressed'), 'true');
   assert.equal(document.querySelectorAll('#tool-rows tr').length, 1);
   assert.doesNotMatch(document.querySelector('#catalog-freshness').textContent, /キャッシュ/);
+  assert.equal(refresh.style.minWidth, '174px');
+  assert.equal(refresh.getAttribute('aria-busy'), 'false');
   refresh.click();
   requests[2].failure();
   assert.equal(refresh.disabled, false);
@@ -190,7 +200,7 @@ test('Keep filters and List view during forced refresh, prevent duplicate reques
   assert.equal(document.querySelectorAll('#tool-rows tr').length, 1);
 });
 
-test('Save cache duration separately, group preferences under display settings, and restore failed or timed-out choices', (t) => {
+test('Save cache duration separately, group cache under Tools & Links, and restore failed or timed-out choices', (t) => {
   let timeout;
   const { dom, document, cacheSettingsRequests } = browser((window) => {
     const original = window.setTimeout.bind(window);
@@ -199,9 +209,12 @@ test('Save cache duration separately, group preferences under display settings, 
   t.after(() => dom.window.close());
   const display = document.querySelector('.display-settings');
   const theme = document.querySelector('.theme-settings');
-  assert.equal(display.querySelector('h2').textContent, '表示設定');
-  assert.equal(display.lastElementChild.className, 'language-settings');
-  assert.ok(display.querySelector('.cache-settings'));
+  assert.equal(display.querySelector('h2').textContent, 'ポータルの表示内容');
+  const appearance = document.querySelector('#settings-appearance-panel');
+  assert.equal(appearance.lastElementChild.className, 'language-settings');
+  assert.ok(appearance.contains(theme));
+  assert.ok(document.querySelector('#settings-tools-panel .cache-settings'));
+  assert.equal(appearance.querySelector('.cache-settings'), null);
   assert.equal(theme.querySelector('.cache-settings, .language-settings'), null);
   assert.equal(document.querySelector('#catalog-cache-seconds').closest('form'), null, 'Automatic preferences must remain independent of the display form submit');
   const select = document.querySelector('#catalog-cache-seconds');
@@ -280,4 +293,44 @@ test('Discard pre-hidden caches and exclude hidden entries from RPC, HTML bootst
   assert.equal(context.getCatalog().tools.length, 1, 'Normal reads keep the cached snapshot');
   assert.equal(context.getCatalog(true).tools.length, 0, 'Forced refresh applies changed visibility');
   assert.equal(context.getCatalog().tools.length, 0);
+});
+
+test('Initialize and validate a five-minute Action Items preference independently of the catalog', () => {
+  const userProperties = { CATALOG_CACHE_SECONDS: '21600' };
+  const { context } = server({ userProperties });
+  context.initializeProperties();
+  assert.equal(userProperties.ACTIONS_CACHE_SECONDS, '300');
+  for (const seconds of [0, 60, 300, 900, 1800, 3600, 21600]) {
+    assert.deepEqual(plain(context.saveActionsCacheTtl(seconds)), { ok: true, seconds });
+    context.initializeProperties();
+    assert.equal(userProperties.ACTIONS_CACHE_SECONDS, String(seconds));
+    assert.equal(context.getPortalContent_(userProperties).actionsCacheSeconds, String(seconds));
+  }
+  for (const seconds of ['300', null, undefined, {}, true, NaN, -1, 1, 21601]) {
+    assert.deepEqual(plain(context.saveActionsCacheTtl(seconds)), { ok: false });
+    assert.equal(context.normalizeActionsCacheTtl_(seconds), 300);
+  }
+  assert.equal(userProperties.CATALOG_CACHE_SECONDS, '21600');
+  assert.equal(context.getPortalContent_({}).actionsCacheSeconds, '300');
+});
+
+test('Automatically save Action Items cache duration with independent controls and restore after failure', (t) => {
+  const app = browser(); t.after(() => app.dom.window.close());
+  const { document, dom, cacheSettingsRequests } = app;
+  const select = document.getElementById('actions-cache-seconds');
+  assert.equal(select.closest('[role="tabpanel"]').id, 'settings-actions-panel');
+  assert.equal(select.closest('form'), null);
+  assert.equal(select.value, '300');
+  select.value = '60'; select.dispatchEvent(new dom.window.Event('change'));
+  assert.equal(select.disabled, true);
+  assert.equal(document.getElementById('catalog-cache-seconds').disabled, false);
+  assert.equal(cacheSettingsRequests[0].kind, 'actions');
+  assert.equal(cacheSettingsRequests[0].seconds, 60);
+  cacheSettingsRequests[0].success({ ok: true, seconds: 60 });
+  assert.equal(select.dataset.savedValue, '60');
+  assert.equal(select.disabled, false);
+  select.value = '0'; select.dispatchEvent(new dom.window.Event('change'));
+  cacheSettingsRequests[1].failure();
+  assert.equal(select.value, '60');
+  assert.equal(document.getElementById('catalog-cache-seconds').value, '21600');
 });

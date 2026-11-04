@@ -43,7 +43,7 @@ test('Create only the eight supported columns with typed table, header notes, an
   assert.deepEqual(plain(app.context.createPortalSpreadsheet('en')), { ok: true, spreadsheetId: 'created-sheet' });
   assert.equal(app.requests.length, 2);
   const spreadsheet = app.requests[0][1];
-  assert.equal(spreadsheet.properties.title, 'My Work — Tools & Links');
+  assert.equal(spreadsheet.properties.title, 'My Work');
   assert.equal(spreadsheet.sheets.length, 1);
   const sheet = spreadsheet.sheets[0];
   assert.deepEqual(sheet.properties.gridProperties, { rowCount: 101, columnCount: 8, frozenRowCount: 1 });

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { JSDOM } from 'jsdom';
 import { withPreviewContent } from '../scripts/preview-project.mjs';
 
@@ -28,9 +28,9 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
     ScriptApp: { AuthMode: { FULL: 'FULL' }, requireAllScopes() {} },
     PropertiesService: {
       getScriptProperties: () => ({ getProperties: () => ({ ...properties }), setProperties: (values) => Object.assign(properties, values) }),
-      getUserProperties: () => ({ getProperties: () => ({ ...userProperties }), setProperties: (values) => Object.assign(userProperties, values), getProperty: (key) => userProperties[key] ?? null, setProperty: (key, value) => { userProperties[key] = value; } }),
+      getUserProperties: () => ({ getProperties: () => ({ ...userProperties }), setProperties: (values) => Object.assign(userProperties, values), getProperty: (key) => userProperties[key] ?? null, setProperty: (key, value) => { userProperties[key] = value; }, deleteProperty: (key) => { delete userProperties[key]; } }),
     },
-    LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
+    LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }), getUserLock: () => ({ waitLock() {}, releaseLock() {} }) },
     Sheets: { Spreadsheets: {
       get: (...args) => { calls.push(['get', ...args]); return { sheets: sheetProperties.map((properties) => ({ properties })) }; },
       Values: { get: (...args) => {
@@ -40,6 +40,7 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
       } },
     } },
     Utilities: {
+      getUuid: randomUUID,
       DigestAlgorithm: { SHA_256: 'sha256' }, Charset: { UTF_8: 'utf8' },
       computeDigest: (algorithm, value) => [...createHash(algorithm).update(value).digest()],
       newBlob: (text) => ({ getBytes: () => [...Buffer.from(text)] }),
@@ -47,7 +48,7 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
     ...overrides,
   });
   vm.runInContext(readFileSync('src/shared/i18n.js', 'utf8'), context);
-  for (const name of ['Catalog', 'SheetCatalog', 'Code']) {
+  for (const name of ['Catalog', 'SheetCatalog', 'Code', 'GitHub']) {
     vm.runInContext(readFileSync(`src/server/${name}.js`, 'utf8'), context);
   }
   return { context, logs, calls };
@@ -55,7 +56,7 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
 
 export const plain = (value) => JSON.parse(JSON.stringify(value));
 
-export function browser(setupWindow = () => {}, client = ['language', 'client', 'theme', 'settings', 'cache-settings', 'spreadsheet-settings'].map((file) => readFileSync(`src/browser/${file}.js`, 'utf8')).join('\n'), source = readFileSync('src/Index.html', 'utf8')) {
+export function browser(setupWindow = () => {}, client = ['language', 'client', 'theme', 'settings', 'cache-settings', 'spreadsheet-settings', 'action-items', 'github'].map((file) => readFileSync(`src/browser/${file}.js`, 'utf8')).join('\n'), source = readFileSync('src/Index.html', 'utf8')) {
   const html = withPreviewContent(source, server().context.getPortalContent_({ PORTAL_LANGUAGE: 'ja' }))
     .replace(/<\?[\s\S]*?\?>/g, '');
   const dom = new JSDOM(html, { runScripts: 'outside-only', url: 'https://example.com' });
@@ -66,10 +67,16 @@ export function browser(setupWindow = () => {}, client = ['language', 'client', 
   const settingsRequests = [];
   const sourceSettingsRequests = [];
   const creationRequests = [];
+  const githubRequests = [];
   const runner = {
+    getGitHubConnections() { githubRequests.push({ kind: 'connections', success: this.success, failure: this.failure }); },
+    saveGitHubConnection(input) { githubRequests.push({ kind: 'save', input, success: this.success, failure: this.failure }); },
+    disconnectGitHub(id) { githubRequests.push({ kind: 'disconnect', id, success: this.success, failure: this.failure }); },
+    getGitHubActionItems(id, force) { githubRequests.push({ kind: 'actions', id, force, success: this.success, failure: this.failure }); },
     withSuccessHandler(handler) { this.success = handler; return this; },
     withFailureHandler(handler) { this.failure = handler; return this; },
     getCatalog(forceRefresh) { requests.push({ forceRefresh, success: this.success, failure: this.failure }); },
+    saveActionsCacheTtl(seconds) { cacheSettingsRequests.push({ kind: 'actions', seconds, success: this.success, failure: this.failure }); },
     saveCatalogCacheTtl(seconds) { cacheSettingsRequests.push({ seconds, success: this.success, failure: this.failure }); },
     createPortalSpreadsheet(browserLanguage) { creationRequests.push({ browserLanguage, success: this.success, failure: this.failure }); },
     saveSpreadsheetSettings(settings) { sourceSettingsRequests.push({ settings, success: this.success, failure: this.failure }); },
@@ -82,7 +89,7 @@ export function browser(setupWindow = () => {}, client = ['language', 'client', 
   setupWindow(dom.window);
   dom.window.eval(readFileSync('src/shared/i18n.js', 'utf8'));
   dom.window.eval(client);
-  return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests, cacheSettingsRequests, sourceSettingsRequests, creationRequests };
+  return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests, cacheSettingsRequests, sourceSettingsRequests, creationRequests, githubRequests };
 }
 
 export const catalog = {

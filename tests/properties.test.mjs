@@ -25,7 +25,7 @@ test("Initialize User Properties without accessing Script Properties or repeatin
   const result = plain(context.initializeProperties());
   assert.deepEqual(result.script, { created: [], existing: [], migrated: [] });
   assert.deepEqual(result.user, {
-    created: ['PORTAL_NAME', 'PORTAL_HEADLINE', 'PORTAL_DESCRIPTION', 'PORTAL_LANGUAGE', 'CATALOG_CACHE_SECONDS', 'SPREADSHEET_ID', 'SHEET_NAME'],
+    created: ['PORTAL_NAME', 'PORTAL_HEADLINE', 'PORTAL_DESCRIPTION', 'PORTAL_LANGUAGE', 'CATALOG_CACHE_SECONDS', 'ACTIONS_CACHE_SECONDS', 'SPREADSHEET_ID', 'SHEET_NAME'],
     existing: ['PORTAL_ICON', 'PORTAL_THEME'], migrated: [],
   });
   assert.equal(userValues.PORTAL_NAME, 'My Portal');
@@ -48,7 +48,7 @@ test("Initialize User Properties without accessing Script Properties or repeatin
 test("Preserve the legacy initializer response shape", () => {
   const { context } = server({ userProperties: {} });
   const result = plain(context.initializeScriptProperties());
-  assert.equal(result.created.length, 9);
+  assert.equal(result.created.length, 10);
   assert.deepEqual(result.existing, []);
 });
 
@@ -109,7 +109,7 @@ test('Editor initialization requests consent before locking or writing and prese
   assert.deepEqual(userProperties, { PORTAL_NAME: 'Keep me', PORTAL_HEADLINE: '' });
   assert.deepEqual(plain(app.logs), [['PORTAL_AUTHORIZATION_CHECK_STARTED']]);
   consentRequired = false;
-  assert.equal(app.context.initializeProperties().user.created.length, 7);
+  assert.equal(app.context.initializeProperties().user.created.length, 8);
   assert.equal(checks, 2);
   assert.equal(userProperties.PORTAL_NAME, 'Keep me');
   assert.equal(userProperties.PORTAL_HEADLINE, '');

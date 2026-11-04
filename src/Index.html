@@ -21,16 +21,18 @@
         <p class="intro-copy" <? if (!portal.description) { ?>hidden<? } ?>><?= portal.description ?></p>
       </section>
       <div class="portal-tabs" role="tablist" aria-label="Portal sections" data-i18n-aria-label="Portal sections">
-        <button type="button" id="tab-tools" role="tab" aria-selected="true" aria-controls="directory" tabindex="0">Tools &amp; Links<span id="count" class="count" aria-live="polite"></span></button>
-        <button type="button" id="tab-actions" role="tab" aria-selected="false" aria-controls="actions-panel" tabindex="-1">Action Items</button>
-        <button type="button" id="tab-settings" class="settings-tab" role="tab" aria-label="Settings" data-i18n-aria-label="Settings" title="Settings" data-i18n-title="Settings" aria-selected="false" aria-controls="settings-panel" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3 1-1h4l1 1 .4 2 1.6 1.1 2-.6 1.4 1.4 1 1.7-.5 1.8-1.5 1.4v2l1.5 1.4.5 1.8-1 1.7-1.4 1.4-2-.6-1.6 1.1-.4 2-1 1h-4l-1-1-.4-2L7 18.9l-2 .6-1.4-1.4-1-1.7.5-1.8L4.6 13v-2L3.1 9.6l-.5-1.8 1-1.7L5 4.7l2 .6L8.6 4Z" transform="translate(0 1) scale(1 .92)"/><circle cx="12" cy="12" r="3.2"/></svg></button>
+        <button type="button" id="tab-tools" role="tab" aria-selected="true" aria-controls="directory" tabindex="0"><!-- tool-case-icon --><span>Tools &amp; Links</span></button>
+        <button type="button" id="tab-actions" role="tab" aria-selected="false" aria-controls="actions-panel" tabindex="-1"><!-- list-checks-icon --><span>Action Items</span></button>
+        <button type="button" id="tab-settings" class="settings-tab" role="tab" aria-label="Settings" data-i18n-aria-label="Settings" title="Settings" data-i18n-title="Settings" aria-selected="false" aria-controls="settings-panel" tabindex="-1"><!-- settings-icon --></button>
       </div>
       <section class="directory" role="tabpanel" aria-labelledby="tab-tools" aria-busy="true" id="directory" tabindex="0">
         <div class="directory-toolbar">
-          <div class="search-box">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
-            <label class="visually-hidden" for="search"><span data-i18n="Search tools by name, description, or tags">Search tools by name, description, or tags</span></label>
-            <input type="search" id="search" placeholder="Search by name, description, or tags" data-i18n-placeholder="Search by name, description, or tags" autocomplete="off" disabled>
+          <div class="search-controls">
+            <div class="search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
+              <label class="visually-hidden" for="search"><span data-i18n="Search tools by name, description, or tags">Search tools by name, description, or tags</span></label>
+              <input type="search" id="search" placeholder="Search by name, description, or tags" data-i18n-placeholder="Search by name, description, or tags" autocomplete="off" disabled>
+            </div>
           </div>
           <div class="filter-toolbar">
             <div id="scopes" class="segmented-control" role="group" aria-label="Tool scope" data-i18n-aria-label="Tool scope">
@@ -42,7 +44,8 @@
               <button id="view-cards" type="button" aria-label="Cards" title="Cards" aria-pressed="true" disabled><!-- layout-grid-icon --></button>
               <button id="view-list" type="button" aria-label="List" title="List" aria-pressed="false" disabled><!-- list-icon --></button>
             </div>
-            <button type="button" id="refresh-catalog" class="refresh-catalog" aria-label="Fetch latest" data-i18n-aria-label="Fetch latest" aria-describedby="catalog-freshness" title="Fetch latest from spreadsheet" data-i18n-title="Fetch latest from spreadsheet" disabled>
+            <span id="count" class="count" role="status" aria-live="polite" aria-atomic="true"></span>
+            <button type="button" id="refresh-catalog" class="refresh-catalog" aria-label="Fetch latest" data-i18n-aria-label="Fetch latest" aria-describedby="catalog-freshness" title="Fetch latest" data-i18n-title="Fetch latest" aria-busy="true" disabled>
               <!-- refresh-cw-icon -->
               <span id="catalog-freshness" class="catalog-freshness" role="status" aria-live="polite" hidden></span>
             </button>
@@ -65,139 +68,203 @@
             </table>
           </div>
           <div id="status" class="status" role="status" aria-live="polite" hidden>
-            <h3 id="status-title">Loading…</h3>
-            <p id="status-description">Fetching the tool list.</p>
+            <h3 id="status-title"></h3>
+            <p id="status-description"></p>
             <button id="reset" class="reset-button" type="button" hidden><span data-i18n="Clear filters">Clear filters</span></button>
           </div>
         </div>
         <noscript><p><span data-i18n="Enable JavaScript to display the tool list.">Enable JavaScript to display the tool list.</span></p></noscript>
       </section>
       <section class="action-items" role="tabpanel" aria-labelledby="tab-actions" id="actions-panel" tabindex="0" hidden>
-        <ul id="action-items" class="action-items-list" aria-label="Action Items"></ul>
+        <div class="actions-toolbar">
+          <button type="button" id="actions-settings" class="action-text-button" data-i18n="Manage connections">Manage connections</button>
+          <div class="actions-summary">
+            <span id="actions-count" class="count" role="status" aria-live="polite">—</span>
+            <button type="button" id="refresh-actions" class="refresh-catalog" aria-busy="true" disabled aria-label="Fetch latest" data-i18n-aria-label="Fetch latest" title="Fetch latest" data-i18n-title="Fetch latest">
+              <!-- refresh-cw-icon -->
+              <span id="actions-freshness" class="catalog-freshness" title="Oldest retrieval time among successful connections" data-i18n-title="Oldest retrieval time among successful connections" hidden></span>
+            </button>
+          </div>
+        </div>
+        <div id="actions-status" class="action-notice" role="status" aria-live="polite" hidden></div>
+        <div id="action-items" class="action-items-list" aria-label="Action Items" aria-busy="true"></div>
+        <template id="action-external-icon"><!-- external-link-icon --></template>
       </section>
       <section id="settings-panel" class="settings-panel" role="tabpanel" aria-labelledby="tab-settings" tabindex="0" hidden>
-        <section class="display-settings" aria-labelledby="display-settings-title">
-          <form id="portal-settings-form" class="portal-settings-form" data-defaults="<?= portal.defaultsJson ?>">
-            <div class="settings-heading"><h2 id="display-settings-title"><span data-i18n="Display settings">Display settings</span></h2><p><span data-i18n="Customize the portal name and text for your work.">Customize the portal name and text for your work.</span></p></div>
-            <fieldset id="portal-settings-fields">
-              <legend class="visually-hidden"><span data-i18n="Portal display settings">Portal display settings</span></legend>
-              <div class="settings-fields-row">
-                <label class="settings-field"><span data-i18n="Portal name">Portal name</span><input id="setting-name" name="PORTAL_NAME" maxlength="80" value="<?= portal.name ?>" autocomplete="off"></label>
-                <label class="settings-field settings-icon-field"><span data-i18n="Icon">Icon</span><input id="setting-icon" name="PORTAL_ICON" maxlength="2" value="<?= portal.icon ?>" autocomplete="off" aria-describedby="icon-help"><span id="icon-help"><span data-i18n="1 character">1 character</span></span></label>
-              </div>
-              <label class="settings-field"><span data-i18n="Headline">Headline</span><input aria-describedby="intro-help" id="setting-headline" name="PORTAL_HEADLINE" maxlength="160" value="<?= portal.headline ?>" autocomplete="off"></label>
-              <label class="settings-field"><span data-i18n="Description text">Description text</span><textarea aria-describedby="intro-help" id="setting-description" name="PORTAL_DESCRIPTION" maxlength="500" rows="3"><?= portal.description ?></textarea></label>
-              <p id="intro-help" class="settings-help" data-i18n="Leave the headline or description blank to hide it. Leave both blank to give more space to your content.">Leave the headline or description blank to hide it. Leave both blank to give more space to your content.</p>
-              <div class="settings-form-actions"><button type="submit" class="settings-save"><span data-i18n="Save changes">Save changes</span></button><button type="button" id="reset-portal-settings" class="settings-reset"><span data-i18n="Restore defaults">Restore defaults</span></button></div>
-            </fieldset>
-            <p id="portal-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
-          </form>
-          <div class="cache-settings">
-            <label class="settings-field" for="catalog-cache-seconds"><span data-i18n="Catalog cache duration">Catalog cache duration</span>
-              <select id="catalog-cache-seconds" data-saved-value="<?= portal.cacheSeconds ?>" aria-describedby="cache-help cache-settings-status">
-                <option value="0" data-i18n="Disabled">Disabled</option><option value="300" data-i18n="5 minutes">5 minutes</option><option value="3600" data-i18n="1 hour">1 hour</option><option value="21600" data-i18n="6 hours (default)">6 hours (default)</option>
-              </select>
+        <div class="settings-tabs" role="tablist" aria-label="Settings sections" data-i18n-aria-label="Settings sections">
+          <button type="button" id="settings-tab-appearance" role="tab" aria-selected="true" aria-controls="settings-appearance-panel" tabindex="0" data-i18n="Appearance">Appearance</button>
+          <button type="button" id="settings-tab-tools" role="tab" aria-selected="false" aria-controls="settings-tools-panel" tabindex="-1">Tools &amp; Links</button>
+          <button type="button" id="settings-tab-actions" role="tab" aria-selected="false" aria-controls="settings-actions-panel" tabindex="-1">Action Items</button>
+        </div>
+        <div id="settings-appearance-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-appearance" tabindex="0">
+          <section class="display-settings" aria-labelledby="display-settings-title">
+            <form id="portal-settings-form" class="portal-settings-form" data-defaults="<?= portal.defaultsJson ?>">
+              <div class="settings-heading"><h2 id="display-settings-title"><span data-i18n="Portal content">Portal content</span></h2><p><span data-i18n="Customize the portal name and text for your work.">Customize the portal name and text for your work.</span></p></div>
+              <fieldset id="portal-settings-fields">
+                <legend class="visually-hidden"><span data-i18n="Portal display settings">Portal display settings</span></legend>
+                <div class="settings-fields-row">
+                  <label class="settings-field"><span data-i18n="Portal name">Portal name</span><input id="setting-name" name="PORTAL_NAME" maxlength="80" value="<?= portal.name ?>" autocomplete="off"></label>
+                  <label class="settings-field settings-icon-field"><span data-i18n="Icon">Icon</span><input id="setting-icon" name="PORTAL_ICON" maxlength="2" value="<?= portal.icon ?>" autocomplete="off" aria-describedby="icon-help"><span id="icon-help"><span data-i18n="1 character">1 character</span></span></label>
+                </div>
+                <label class="settings-field"><span data-i18n="Headline">Headline</span><input aria-describedby="intro-help" id="setting-headline" name="PORTAL_HEADLINE" maxlength="160" value="<?= portal.headline ?>" autocomplete="off"></label>
+                <label class="settings-field"><span data-i18n="Description text">Description text</span><textarea aria-describedby="intro-help" id="setting-description" name="PORTAL_DESCRIPTION" maxlength="500" rows="3"><?= portal.description ?></textarea></label>
+                <p id="intro-help" class="settings-help" data-i18n="Leave the headline or description blank to hide it. Leave both blank to give more space to your content.">Leave the headline or description blank to hide it. Leave both blank to give more space to your content.</p>
+                <div class="settings-form-actions"><button type="submit" class="settings-save"><span data-i18n="Save changes">Save changes</span></button><button type="button" id="reset-portal-settings" class="settings-reset"><span data-i18n="Restore defaults">Restore defaults</span></button></div>
+              </fieldset>
+              <p id="portal-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
+            </form>
+          </section>
+          <section class="theme-settings" aria-labelledby="theme-settings-title">
+            <div class="settings-heading"><div><h2 id="theme-settings-title"><span data-i18n="Color theme">Color theme</span></h2><p><span data-i18n="Choose a color theme. Your selection is saved automatically.">Choose a color theme. Your selection is saved automatically.</span></p></div></div>
+            <div class="theme-save-status" role="status" aria-live="polite" id="theme-status"></div>
+            <label class="theme-choice theme-auto">
+              <input class="visually-hidden" type="radio" name="portal-theme" value="auto" aria-label="Automatic theme" data-i18n-aria-label="Automatic theme">
+              <span class="theme-auto-swatches" aria-hidden="true"><i data-theme="tsuyukusa"></i><i data-theme="tetsukon"></i></span>
+              <span class="theme-auto-copy"><strong data-i18n="Automatic theme">Automatic theme</strong><span data-i18n="Follow your device: Tsuyukusa in light mode, Tetsukon in dark mode.">Follow your device: Tsuyukusa in light mode, Tetsukon in dark mode.</span></span>
+              <span class="theme-check" aria-hidden="true">✓</span>
             </label>
-            <p id="cache-help" data-i18n="Reuse the list to load faster. Fetch latest always reads the spreadsheet. Changes are saved automatically and apply to the next load.">Reuse the list to load faster. Fetch latest always reads the spreadsheet. Changes are saved automatically and apply to the next load.</p>
-            <p id="cache-settings-status" role="status" aria-live="polite"></p>
-          </div>
-          <div class="language-settings">
-            <label class="settings-field" for="portal-language"><span data-i18n="Language">Language</span>
-              <select id="portal-language" aria-describedby="language-help language-status"><option value="auto" data-i18n="Automatic (browser)">Automatic (browser)</option><option value="ja" lang="ja">日本語</option><option value="en" lang="en">English</option></select>
-            </label>
+            <fieldset class="theme-group"><legend>Light</legend><div class="theme-grid">
+              <label class="theme-choice">
+                <input class="visually-hidden" type="radio" name="portal-theme" value="tsuyukusa" aria-label="Tsuyukusa (Light)" data-i18n-aria-label="Tsuyukusa (Light)">
+                <span class="theme-preview" data-theme="tsuyukusa" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
+                <span class="theme-label"><span><span data-i18n="Tsuyukusa · 露草色">Tsuyukusa · 露草色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
+                <span class="theme-reading">TSUYUKUSA</span><span class="theme-caption"><span data-i18n="Clear blue · Default">Clear blue · Default</span></span>
+              </label>
+              <label class="theme-choice">
+                <input class="visually-hidden" type="radio" name="portal-theme" value="sakura" aria-label="Sakura (Light)" data-i18n-aria-label="Sakura (Light)">
+                <span class="theme-preview" data-theme="sakura" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
+                <span class="theme-label"><span><span data-i18n="Sakura · 桜色">Sakura · 桜色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
+                <span class="theme-reading">SAKURA</span><span class="theme-caption"><span data-i18n="Soft pink">Soft pink</span></span>
+              </label>
+              <label class="theme-choice">
+                <input class="visually-hidden" type="radio" name="portal-theme" value="wakatake" aria-label="Wakatake (Light)" data-i18n-aria-label="Wakatake (Light)">
+                <span class="theme-preview" data-theme="wakatake" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
+                <span class="theme-label"><span><span data-i18n="Wakatake · 若竹色">Wakatake · 若竹色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
+                <span class="theme-reading">WAKATAKE</span><span class="theme-caption"><span data-i18n="Fresh green">Fresh green</span></span>
+              </label>
+              <label class="theme-choice">
+                <input class="visually-hidden" type="radio" name="portal-theme" value="yamabuki" aria-label="Yamabuki (Light)" data-i18n-aria-label="Yamabuki (Light)">
+                <span class="theme-preview" data-theme="yamabuki" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
+                <span class="theme-label"><span><span data-i18n="Yamabuki · 山吹色">Yamabuki · 山吹色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
+                <span class="theme-reading">YAMABUKI</span><span class="theme-caption"><span data-i18n="Warm gold">Warm gold</span></span>
+              </label>
+              <label class="theme-choice">
+                <input class="visually-hidden" type="radio" name="portal-theme" value="ginnezu" aria-label="Ginnezu (Light)" data-i18n-aria-label="Ginnezu (Light)">
+                <span class="theme-preview" data-theme="ginnezu" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
+                <span class="theme-label"><span data-i18n="Ginnezu · 銀鼠">Ginnezu · 銀鼠</span><span class="theme-check" aria-hidden="true">✓</span></span>
+                <span class="theme-reading">GINNEZU</span><span class="theme-caption" data-i18n="Quiet silver and white">Quiet silver and white</span>
+              </label>
+            </div></fieldset>
+            <fieldset class="theme-group"><legend>Dark</legend><div class="theme-grid">
+              <label class="theme-choice">
+                <input class="visually-hidden" type="radio" name="portal-theme" value="tetsukon" aria-label="Tetsukon (Dark)" data-i18n-aria-label="Tetsukon (Dark)">
+                <span class="theme-preview" data-theme="tetsukon" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
+                <span class="theme-label"><span><span data-i18n="Tetsukon · 鉄紺">Tetsukon · 鉄紺</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
+                <span class="theme-reading">TETSUKON</span><span class="theme-caption"><span data-i18n="Quiet deep blue">Quiet deep blue</span></span>
+              </label>
+              <label class="theme-choice">
+                <input class="visually-hidden" type="radio" name="portal-theme" value="sumi" aria-label="Sumi (Dark)" data-i18n-aria-label="Sumi (Dark)">
+                <span class="theme-preview" data-theme="sumi" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
+                <span class="theme-label"><span><span data-i18n="Sumi · 墨色">Sumi · 墨色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
+                <span class="theme-reading">SUMI</span><span class="theme-caption"><span data-i18n="Calm neutrals">Calm neutrals</span></span>
+              </label>
+              <label class="theme-choice">
+                <input class="visually-hidden" type="radio" name="portal-theme" value="kuri" aria-label="Kuri (Dark)" data-i18n-aria-label="Kuri (Dark)">
+                <span class="theme-preview" data-theme="kuri" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
+                <span class="theme-label"><span><span data-i18n="Kuri · 栗色">Kuri · 栗色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
+                <span class="theme-reading">KURI</span><span class="theme-caption"><span data-i18n="Muted reddish brown">Muted reddish brown</span></span>
+              </label>
+              <label class="theme-choice">
+                <input class="visually-hidden" type="radio" name="portal-theme" value="fukamidori" aria-label="Fukamidori (Dark)" data-i18n-aria-label="Fukamidori (Dark)">
+                <span class="theme-preview" data-theme="fukamidori" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
+                <span class="theme-label"><span><span data-i18n="Fukamidori · 深緑">Fukamidori · 深緑</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
+                <span class="theme-reading">FUKAMIDORI</span><span class="theme-caption"><span data-i18n="Peaceful forest green">Peaceful forest green</span></span>
+              </label>
+              <label class="theme-choice">
+                <input class="visually-hidden" type="radio" name="portal-theme" value="daidai" aria-label="Daidai (Dark)" data-i18n-aria-label="Daidai (Dark)">
+                <span class="theme-preview" data-theme="daidai" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
+                <span class="theme-label"><span data-i18n="Daidai · 橙色">Daidai · 橙色</span><span class="theme-check" aria-hidden="true">✓</span></span>
+                <span class="theme-reading">DAIDAI</span><span class="theme-caption" data-i18n="Warm orange after dark">Warm orange after dark</span>
+              </label>
+            </div></fieldset>
+          </section>
+          <section class="language-settings" aria-labelledby="language-settings-title">
+            <div class="settings-heading"><h2 id="language-settings-title" data-i18n="Language">Language</h2></div>
+            <div class="settings-field">
+              <select id="portal-language" aria-labelledby="language-settings-title" aria-describedby="language-help language-status"><option value="auto" data-i18n="Automatic (browser)">Automatic (browser)</option><option value="ja" lang="ja">日本語</option><option value="en" lang="en">English</option></select>
+            </div>
             <p id="language-help" data-i18n="Automatic uses your browser language, with English as the fallback. Custom text and spreadsheet data keep their original language.">Automatic uses your browser language, with English as the fallback. Custom text and spreadsheet data keep their original language.</p>
             <p id="language-status" role="status" aria-live="polite"></p>
+          </section>
+        </div>
+        <div id="settings-tools-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-tools" tabindex="0" hidden>
+          <section class="display-settings" aria-labelledby="spreadsheet-settings-title">
+            <form id="spreadsheet-settings-form" class="portal-settings-form">
+              <div class="settings-heading"><h2 id="spreadsheet-settings-title" data-i18n="Spreadsheet">Spreadsheet</h2><p data-i18n="Choose the source for Tools & Links. Saved for your Google account.">Choose the source for Tools &amp; Links. Saved for your Google account.</p></div>
+              <fieldset id="spreadsheet-settings-fields">
+                <legend class="visually-hidden" data-i18n="Spreadsheet settings">Spreadsheet settings</legend>
+                <label class="settings-field"><span data-i18n="Spreadsheet ID or URL">Spreadsheet ID or URL</span><input id="setting-spreadsheet" name="SPREADSHEET_ID" value="<?= portal.spreadsheetId ?>" autocomplete="off" spellcheck="false" aria-describedby="spreadsheet-help"></label>
+                <label class="settings-field"><span data-i18n="Sheet name (optional)">Sheet name (optional)</span><input id="setting-sheet-name" name="SHEET_NAME" value="<?= portal.sheetName ?>" maxlength="100" autocomplete="off" aria-describedby="spreadsheet-help"></label>
+                <p id="spreadsheet-help" class="settings-help" data-i18n="Leave the sheet name blank to use the first sheet. The tab selected in a pasted URL is ignored. Saving does not change spreadsheet permissions.">Leave the sheet name blank to use the first sheet. The tab selected in a pasted URL is ignored. Saving does not change spreadsheet permissions.</p>
+                <div class="settings-form-actions"><button type="submit" class="settings-save" data-i18n="Save changes">Save changes</button><button type="button" id="create-spreadsheet" class="settings-reset" aria-describedby="create-spreadsheet-help" data-i18n="Create new spreadsheet">Create new spreadsheet</button><button type="button" id="reload-spreadsheet" class="settings-reset" hidden data-i18n="Reload portal">Reload portal</button></div>
+              </fieldset>
+              <p id="create-spreadsheet-help" class="settings-help" data-i18n="Create a new spreadsheet with a ready-to-use table when no spreadsheet ID is saved or entered. Existing spreadsheets are never initialized.">Create a new spreadsheet with a ready-to-use table when no spreadsheet ID is saved or entered. Existing spreadsheets are never initialized.</p>
+              <a id="created-spreadsheet-link" class="footer-link" target="_blank" rel="noopener noreferrer" hidden><span data-i18n="Open created spreadsheet">Open created spreadsheet</span> <!-- external-link-icon --></a>
+              <p id="spreadsheet-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
+            </form>
+          </section>
+            <div class="cache-settings">
+              <label class="settings-field" for="catalog-cache-seconds"><span data-i18n="Catalog cache duration">Catalog cache duration</span>
+                <select id="catalog-cache-seconds" data-saved-value="<?= portal.cacheSeconds ?>" aria-describedby="cache-help cache-settings-status">
+                  <option value="0" data-i18n="Disabled">Disabled</option><option value="300" data-i18n="5 minutes">5 minutes</option><option value="3600" data-i18n="1 hour">1 hour</option><option value="21600" data-i18n="6 hours (default)">6 hours (default)</option>
+                </select>
+              </label>
+              <p id="cache-help" data-i18n="Reuse the list to load faster. Fetch latest always reads the spreadsheet. Changes are saved automatically and apply to the next load.">Reuse the list to load faster. Fetch latest always reads the spreadsheet. Changes are saved automatically and apply to the next load.</p>
+              <p id="cache-settings-status" role="status" aria-live="polite"></p>
+            </div>
+        </div>
+        <div id="settings-actions-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-actions" tabindex="0" hidden>
+          <div class="cache-settings">
+            <label class="settings-field" for="actions-cache-seconds"><span data-i18n="Action Items cache duration">Action Items cache duration</span>
+              <select id="actions-cache-seconds" data-saved-value="<?= portal.actionsCacheSeconds ?>" aria-describedby="actions-cache-help actions-cache-settings-status">
+                <option value="0" data-i18n="Disabled">Disabled</option><option value="60" data-i18n="1 minute">1 minute</option><option value="300" data-i18n="5 minutes (default)">5 minutes (default)</option><option value="900" data-i18n="15 minutes">15 minutes</option><option value="1800" data-i18n="30 minutes">30 minutes</option><option value="3600" data-i18n="1 hour">1 hour</option><option value="21600" data-i18n="6 hours">6 hours</option>
+              </select>
+            </label>
+            <p id="actions-cache-help" data-i18n="Shared by all Action Items services and connections. Fetch latest always bypasses the cache. Changes are saved automatically and apply to the next load.">Shared by all Action Items services and connections. Fetch latest always bypasses the cache. Changes are saved automatically and apply to the next load.</p>
+            <p id="actions-cache-settings-status" role="status" aria-live="polite"></p>
           </div>
-        </section>
-        <section class="display-settings" aria-labelledby="spreadsheet-settings-title">
-          <form id="spreadsheet-settings-form" class="portal-settings-form">
-            <div class="settings-heading"><h2 id="spreadsheet-settings-title" data-i18n="Spreadsheet">Spreadsheet</h2><p data-i18n="Choose the source for Tools & Links. Saved for your Google account.">Choose the source for Tools &amp; Links. Saved for your Google account.</p></div>
-            <fieldset id="spreadsheet-settings-fields">
-              <legend class="visually-hidden" data-i18n="Spreadsheet settings">Spreadsheet settings</legend>
-              <label class="settings-field"><span data-i18n="Spreadsheet ID or URL">Spreadsheet ID or URL</span><input id="setting-spreadsheet" name="SPREADSHEET_ID" value="<?= portal.spreadsheetId ?>" autocomplete="off" spellcheck="false" aria-describedby="spreadsheet-help"></label>
-              <label class="settings-field"><span data-i18n="Sheet name (optional)">Sheet name (optional)</span><input id="setting-sheet-name" name="SHEET_NAME" value="<?= portal.sheetName ?>" maxlength="100" autocomplete="off" aria-describedby="spreadsheet-help"></label>
-              <p id="spreadsheet-help" class="settings-help" data-i18n="Leave the sheet name blank to use the first sheet. The tab selected in a pasted URL is ignored. Saving does not change spreadsheet permissions.">Leave the sheet name blank to use the first sheet. The tab selected in a pasted URL is ignored. Saving does not change spreadsheet permissions.</p>
-              <div class="settings-form-actions"><button type="submit" class="settings-save" data-i18n="Save changes">Save changes</button><button type="button" id="create-spreadsheet" class="settings-reset" aria-describedby="create-spreadsheet-help" data-i18n="Create new spreadsheet">Create new spreadsheet</button><button type="button" id="reload-spreadsheet" class="settings-reset" hidden data-i18n="Reload portal">Reload portal</button></div>
-            </fieldset>
-            <p id="create-spreadsheet-help" class="settings-help" data-i18n="Create a new spreadsheet with a ready-to-use table when no spreadsheet ID is saved or entered. Existing spreadsheets are never initialized.">Create a new spreadsheet with a ready-to-use table when no spreadsheet ID is saved or entered. Existing spreadsheets are never initialized.</p>
-            <a id="created-spreadsheet-link" class="footer-link" target="_blank" rel="noopener noreferrer" hidden><span data-i18n="Open created spreadsheet">Open created spreadsheet</span> <!-- external-link-icon --></a>
-            <p id="spreadsheet-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
-          </form>
-        </section>
-        <section class="theme-settings" aria-labelledby="theme-settings-title">
-          <div class="settings-heading"><div><h2 id="theme-settings-title"><span data-i18n="Color theme">Color theme</span></h2><p><span data-i18n="Choose a color theme. Your selection is saved automatically.">Choose a color theme. Your selection is saved automatically.</span></p></div></div>
-          <div class="theme-save-status" role="status" aria-live="polite" id="theme-status"></div>
-          <label class="theme-choice theme-auto">
-            <input class="visually-hidden" type="radio" name="portal-theme" value="auto" aria-label="Automatic theme" data-i18n-aria-label="Automatic theme">
-            <span class="theme-auto-swatches" aria-hidden="true"><i data-theme="tsuyukusa"></i><i data-theme="tetsukon"></i></span>
-            <span class="theme-auto-copy"><strong data-i18n="Automatic theme">Automatic theme</strong><span data-i18n="Follow your device: Tsuyukusa in light mode, Tetsukon in dark mode.">Follow your device: Tsuyukusa in light mode, Tetsukon in dark mode.</span></span>
-            <span class="theme-check" aria-hidden="true">✓</span>
-          </label>
-          <fieldset class="theme-group"><legend>Light</legend><div class="theme-grid">
-            <label class="theme-choice">
-              <input class="visually-hidden" type="radio" name="portal-theme" value="tsuyukusa" aria-label="Tsuyukusa (Light)" data-i18n-aria-label="Tsuyukusa (Light)">
-              <span class="theme-preview" data-theme="tsuyukusa" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-              <span class="theme-label"><span><span data-i18n="Tsuyukusa · 露草色">Tsuyukusa · 露草色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
-              <span class="theme-reading">TSUYUKUSA</span><span class="theme-caption"><span data-i18n="Clear blue · Default">Clear blue · Default</span></span>
-            </label>
-            <label class="theme-choice">
-              <input class="visually-hidden" type="radio" name="portal-theme" value="sakura" aria-label="Sakura (Light)" data-i18n-aria-label="Sakura (Light)">
-              <span class="theme-preview" data-theme="sakura" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-              <span class="theme-label"><span><span data-i18n="Sakura · 桜色">Sakura · 桜色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
-              <span class="theme-reading">SAKURA</span><span class="theme-caption"><span data-i18n="Soft pink">Soft pink</span></span>
-            </label>
-            <label class="theme-choice">
-              <input class="visually-hidden" type="radio" name="portal-theme" value="wakatake" aria-label="Wakatake (Light)" data-i18n-aria-label="Wakatake (Light)">
-              <span class="theme-preview" data-theme="wakatake" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-              <span class="theme-label"><span><span data-i18n="Wakatake · 若竹色">Wakatake · 若竹色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
-              <span class="theme-reading">WAKATAKE</span><span class="theme-caption"><span data-i18n="Fresh green">Fresh green</span></span>
-            </label>
-            <label class="theme-choice">
-              <input class="visually-hidden" type="radio" name="portal-theme" value="yamabuki" aria-label="Yamabuki (Light)" data-i18n-aria-label="Yamabuki (Light)">
-              <span class="theme-preview" data-theme="yamabuki" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-              <span class="theme-label"><span><span data-i18n="Yamabuki · 山吹色">Yamabuki · 山吹色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
-              <span class="theme-reading">YAMABUKI</span><span class="theme-caption"><span data-i18n="Warm gold">Warm gold</span></span>
-            </label>
-            <label class="theme-choice">
-              <input class="visually-hidden" type="radio" name="portal-theme" value="ginnezu" aria-label="Ginnezu (Light)" data-i18n-aria-label="Ginnezu (Light)">
-              <span class="theme-preview" data-theme="ginnezu" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-              <span class="theme-label"><span data-i18n="Ginnezu · 銀鼠">Ginnezu · 銀鼠</span><span class="theme-check" aria-hidden="true">✓</span></span>
-              <span class="theme-reading">GINNEZU</span><span class="theme-caption" data-i18n="Quiet silver and white">Quiet silver and white</span>
-            </label>
-          </div></fieldset>
-          <fieldset class="theme-group"><legend>Dark</legend><div class="theme-grid">
-            <label class="theme-choice">
-              <input class="visually-hidden" type="radio" name="portal-theme" value="tetsukon" aria-label="Tetsukon (Dark)" data-i18n-aria-label="Tetsukon (Dark)">
-              <span class="theme-preview" data-theme="tetsukon" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-              <span class="theme-label"><span><span data-i18n="Tetsukon · 鉄紺">Tetsukon · 鉄紺</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
-              <span class="theme-reading">TETSUKON</span><span class="theme-caption"><span data-i18n="Quiet deep blue">Quiet deep blue</span></span>
-            </label>
-            <label class="theme-choice">
-              <input class="visually-hidden" type="radio" name="portal-theme" value="sumi" aria-label="Sumi (Dark)" data-i18n-aria-label="Sumi (Dark)">
-              <span class="theme-preview" data-theme="sumi" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-              <span class="theme-label"><span><span data-i18n="Sumi · 墨色">Sumi · 墨色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
-              <span class="theme-reading">SUMI</span><span class="theme-caption"><span data-i18n="Calm neutrals">Calm neutrals</span></span>
-            </label>
-            <label class="theme-choice">
-              <input class="visually-hidden" type="radio" name="portal-theme" value="kuri" aria-label="Kuri (Dark)" data-i18n-aria-label="Kuri (Dark)">
-              <span class="theme-preview" data-theme="kuri" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-              <span class="theme-label"><span><span data-i18n="Kuri · 栗色">Kuri · 栗色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
-              <span class="theme-reading">KURI</span><span class="theme-caption"><span data-i18n="Muted reddish brown">Muted reddish brown</span></span>
-            </label>
-            <label class="theme-choice">
-              <input class="visually-hidden" type="radio" name="portal-theme" value="fukamidori" aria-label="Fukamidori (Dark)" data-i18n-aria-label="Fukamidori (Dark)">
-              <span class="theme-preview" data-theme="fukamidori" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-              <span class="theme-label"><span><span data-i18n="Fukamidori · 深緑">Fukamidori · 深緑</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
-              <span class="theme-reading">FUKAMIDORI</span><span class="theme-caption"><span data-i18n="Peaceful forest green">Peaceful forest green</span></span>
-            </label>
-            <label class="theme-choice">
-              <input class="visually-hidden" type="radio" name="portal-theme" value="daidai" aria-label="Daidai (Dark)" data-i18n-aria-label="Daidai (Dark)">
-              <span class="theme-preview" data-theme="daidai" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-              <span class="theme-label"><span data-i18n="Daidai · 橙色">Daidai · 橙色</span><span class="theme-check" aria-hidden="true">✓</span></span>
-              <span class="theme-reading">DAIDAI</span><span class="theme-caption" data-i18n="Warm orange after dark">Warm orange after dark</span>
-            </label>
-          </div></fieldset>
-        </section>
+          <section class="display-settings github-settings" aria-labelledby="github-settings-title">
+            <div class="settings-heading"><h2 id="github-settings-title">GitHub</h2><p data-i18n="Connect GitHub.com accounts to show assigned issues, review requests, and changes requested on your PRs.">Connect GitHub.com accounts to show assigned issues, review requests, and changes requested on your PRs.</p></div>
+            <p class="settings-help" data-i18n="Use a fine-grained personal access token restricted to the repositories you need. Tokens are saved in GAS User Properties and are never shown again.">Use a fine-grained personal access token restricted to the repositories you need. Tokens are saved in GAS User Properties and are never shown again.</p>
+            <details class="github-pat-help settings-help">
+              <summary data-i18n="PAT setup and permissions">PAT setup and permissions</summary>
+              <ul>
+                <li data-i18n="Token name: any recognizable name (e.g. My Portal).">Token name: any recognizable name (e.g. My Portal).</li>
+                <li data-i18n="Resource owner: your account for personal use; the company organization for work.">Resource owner: your account for personal use; the company organization for work.</li>
+                <li data-i18n="Expiration: choose an expiration date.">Expiration: choose an expiration date.</li>
+                <li data-i18n="Repository access: Only select repositories → select the repositories you need.">Repository access: Only select repositories → select the repositories you need.</li>
+                <li id="github-pat-permissions" data-i18n="Permissions: Issues and Pull requests — Read-only. Metadata is included automatically.">Permissions: Issues and Pull requests — Read-only. Metadata is included automatically.</li>
+              </ul>
+              <p data-i18n="Organization approval may be required. The portal’s owner field is only a search filter.">Organization approval may be required. The portal’s owner field is only a search filter.</p>
+              <div class="github-connection-controls"><a class="footer-link" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer"><span data-i18n="Create a fine-grained PAT">Create a fine-grained PAT</span> <!-- external-link-icon --></a><a class="footer-link" href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens" target="_blank" rel="noopener noreferrer"><span data-i18n="GitHub token documentation">GitHub token documentation</span> <!-- external-link-icon --></a></div>
+            </details>
+            <div id="github-settings-loading" class="refresh-catalog actions-loading" role="status" aria-label="Loading…" data-i18n-aria-label="Loading…" aria-busy="true" hidden><!-- refresh-cw-icon --></div>
+            <ul id="github-connections" class="github-connections"></ul>
+            <button type="button" id="add-github" class="action-text-button" data-i18n="Add connection" disabled>Add connection</button>
+            <form id="github-settings-form" class="portal-settings-form" hidden>
+              <fieldset id="github-settings-fields">
+                <legend class="visually-hidden" data-i18n="GitHub connection">GitHub connection</legend>
+                <label class="settings-field"><span data-i18n="Fine-grained personal access token">Fine-grained personal access token</span><input type="password" id="github-token" maxlength="255" autocomplete="new-password" spellcheck="false" placeholder="github_pat_…" aria-describedby="github-token-help github-pat-permissions"></label>
+                <p id="github-token-help" class="settings-help" data-i18n="When editing, leave the token empty to keep the saved token. Never enter a real token in local preview.">When editing, leave the token empty to keep the saved token. Never enter a real token in local preview.</p>
+                <label class="settings-field"><span data-i18n="Organization or owner (optional)">Organization or owner (optional)</span><input id="github-owner" maxlength="39" autocomplete="off" placeholder="my-organization"></label>
+                <p class="settings-help" data-i18n="Connections are shown as owner@GitHub-user. A blank owner appears as * and searches all accessible repositories, including public repositories owned by others.">Connections are shown as owner@GitHub-user. A blank owner appears as * and searches all accessible repositories, including public repositories owned by others.</p>
+                <div class="settings-form-actions"><button type="submit" class="settings-save" data-i18n="Save connection">Save connection</button><button type="button" id="cancel-github" class="settings-reset" data-i18n="Cancel">Cancel</button></div>
+              </fieldset>
+            </form>
+            <p id="github-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
+            <button type="button" id="retry-github-settings" class="action-text-button" hidden data-i18n="Try again">Try again</button>
+          </section>
+        </div>
       </section>
     </main>
     <footer class="site-footer">

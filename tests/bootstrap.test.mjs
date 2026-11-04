@@ -46,7 +46,8 @@ test('Render embedded data immediately and issue a forced RPC only when explicit
   document.querySelector('#refresh-catalog').click();
   assert.equal(requests.length, 1);
   assert.equal(requests[0].forceRefresh, true);
-  assert.equal(document.querySelector('#status').hidden, false);
+  assert.equal(document.querySelector('#status').hidden, true);
+  assert.equal(document.querySelector('#refresh-catalog').getAttribute('aria-busy'), 'true');
   requests[0].success(catalog);
   assert.equal(document.querySelectorAll('#tool-rows > tr').length, 1);
   assert.equal(document.querySelector('#search').value, 'guide');

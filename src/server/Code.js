@@ -79,6 +79,7 @@ function getPortalContent_(properties) {
     language,
     languagePreference,
     cacheSeconds: String(normalizeCatalogCacheTtl_(properties.CATALOG_CACHE_SECONDS)),
+    actionsCacheSeconds: String(normalizeActionsCacheTtl_(properties.ACTIONS_CACHE_SECONDS)),
     defaultsJson: JSON.stringify(defaults),
     icon: Array.from(normalizePortalIcon_(properties.PORTAL_ICON?.trim() || defaults.PORTAL_ICON))[0],
     brandLead: split < 0 ? name : name.slice(0, split),
@@ -149,7 +150,7 @@ function initializePropertyStore_(store, defaults) {
 function initializeUserProperties_() {
   return initializePropertyStore_(PropertiesService.getUserProperties(), {
     ...getPortalPropertyDefaults_(),
-    PORTAL_THEME: 'auto', PORTAL_LANGUAGE: 'auto', CATALOG_CACHE_SECONDS: '21600',
+    PORTAL_THEME: 'auto', PORTAL_LANGUAGE: 'auto', CATALOG_CACHE_SECONDS: '21600', ACTIONS_CACHE_SECONDS: '300',
     SPREADSHEET_ID: '', SHEET_NAME: '',
   });
 }
@@ -311,6 +312,23 @@ function saveCatalogCacheTtl(seconds) {
 }
 
 
+/** Shared duration for all Action Items providers; kept separate from the catalog. @param {unknown} value */
+function normalizeActionsCacheTtl_(value) {
+  return ['0', '60', '300', '900', '1800', '3600', '21600'].includes(String(value)) ? Number(value) : 300;
+}
+
+/** @param {unknown} seconds */
+function saveActionsCacheTtl(seconds) {
+  if (typeof seconds !== 'number' || ![0, 60, 300, 900, 1800, 3600, 21600].includes(seconds)) return { ok: false };
+  try {
+    withPortalPropertiesLock_(() => PropertiesService.getUserProperties().setProperty('ACTIONS_CACHE_SECONDS', String(seconds)));
+    return { ok: true, seconds };
+  } catch {
+    console.error('ACTIONS_CACHE_SETTINGS_SAVE_FAILED');
+    return { ok: false };
+  }
+}
+
 /** Escape JSON for a non-executable script element; never embed raw spreadsheet text.
  * @param {unknown} catalog @returns {string}
  */
@@ -361,7 +379,7 @@ function createPortalSpreadsheet(browserLanguage) {
       const name = store.getProperty('PORTAL_NAME')?.trim() || 'My Portal';
       /** @type {GoogleAppsScript.Sheets.Schema.Spreadsheet} */
       const resource = {
-        properties: { title: name + ' — Tools & Links' },
+        properties: { title: name },
         sheets: [{
           // Create only A:H; unused I:Z columns do not exist, rather than being hidden.
           properties: { sheetId: 0, title: 'Tools', gridProperties: { rowCount: 101, columnCount: columns.length, frozenRowCount: 1 } },
