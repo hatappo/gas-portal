@@ -8,7 +8,7 @@ import { JSDOM } from 'jsdom';
 import { init } from '../lib/init.mjs';
 import { build, buildPreview } from '../lib/build.mjs';
 import { GAS_FILES, packageInfo, readConfig, saveConfig, validateConfig } from '../lib/config.mjs';
-import { deploy, login, push, runClasp } from '../lib/remote.mjs';
+import { browse, deploy, login, push, runClasp } from '../lib/remote.mjs';
 
 function fixture(t, name = 'work-a') {
   const root = mkdtempSync(path.join(tmpdir(), 'gas-portal-' + name + '-'));
@@ -31,6 +31,8 @@ test("Pin the dependency on init and preserve scripts, configuration, and ignore
   assert.equal(pkg.devDependencies['gas-portal'], `https://github.com/hatappo/gas-portal/releases/download/v${packageInfo.version}/gas-portal-${packageInfo.version}.tgz`);
   assert.equal(pkg.scripts.deploy, 'portal deploy');
   assert.equal(pkg.scripts.ship, 'npm run push && npm run deploy');
+  assert.equal(pkg.scripts.browse, 'portal browse');
+  pkg.scripts.browse = 'custom-browse';
   pkg.scripts.ship = 'custom-publish';
   pkg.scripts.build = 'custom-build';
   writeFileSync(path.join(root, 'package.json'), JSON.stringify(pkg));
@@ -44,6 +46,7 @@ test("Pin the dependency on init and preserve scripts, configuration, and ignore
   assert.equal(readConfig(root).scriptId, 'work-a-script');
   assert.equal(JSON.parse(readFileSync(path.join(root, 'package.json'))).scripts.build, 'custom-build');
   assert.equal(JSON.parse(readFileSync(path.join(root, 'package.json'))).scripts.ship, 'custom-publish');
+  assert.equal(JSON.parse(readFileSync(path.join(root, 'package.json'))).scripts.browse, 'custom-browse');
 });
 
 test("Preserve existing Release URLs and directory dependencies in either dependency section", (t) => {
@@ -244,4 +247,47 @@ test('Add ship to existing consumers and stop before deployment if push fails', 
     assert.equal(result.status, exitCode, result.stdout + result.stderr);
     assert.equal(readFileSync(log, 'utf8'), expected);
   }
+});
+
+
+test('Browse selects the configured or sole versioned deployment without pushing, deploying, or saving config', (t) => {
+  const root = fixture(t);
+  const initialConfig = readFileSync(path.join(root, 'portal.config.json'), 'utf8');
+  const single = stub();
+  assert.equal(browse(root, {}, single.run), 'web');
+  assert.deepEqual(single.calls.map((call) => call.args), [['--json', 'list-deployments'], ['open-web-app', 'web']]);
+  assert.equal(single.calls[1].config.authProfile, 'work-a');
+  assert.equal(readFileSync(path.join(root, 'portal.config.json'), 'utf8'), initialConfig);
+  const list = [{ deploymentId: 'head' }, { deploymentId: 'one', versionNumber: 1 }, { deploymentId: 'two', versionNumber: 2 }];
+  saveConfig(root, { ...readConfig(root), deploymentId: 'two' });
+  const configured = stub(list);
+  assert.equal(browse(root, {}, configured.run), 'two');
+  const override = stub(list);
+  assert.equal(browse(root, { deploymentId: 'one' }, override.run), 'one');
+  assert.equal(readConfig(root).deploymentId, 'two');
+});
+
+test('Browse rejects missing, ambiguous, HEAD, and foreign deployments and propagates clasp failures', (t) => {
+  const root = fixture(t);
+  for (const [list, options, error] of [
+    [[{ deploymentId: 'head' }], {}, /Create the first web app/],
+    [[{ deploymentId: 'one', versionNumber: 1 }, { deploymentId: 'two', versionNumber: 2 }], {}, /Multiple/],
+    [[{ deploymentId: 'head' }, { deploymentId: 'web', versionNumber: 1 }], { deploymentId: 'head' }, /not a versioned/],
+    [[{ deploymentId: 'web', versionNumber: 1 }], { deploymentId: 'foreign' }, /not a versioned/],
+  ]) {
+    const remote = stub(list);
+    assert.throws(() => browse(root, options, remote.run), error);
+    assert.equal(remote.calls.some((call) => call.args[0] === 'open-web-app'), false);
+  }
+  const invalid = stub();
+  assert.throws(() => browse(root, { deploymentId: 'https://evil.test' }, invalid.run), /Invalid deploymentId/);
+  assert.equal(invalid.calls.length, 0);
+  const failed = stub(undefined, 'open-web-app');
+  assert.throws(() => browse(root, {}, failed.run), /remote failed/);
+  const pkgFile = path.join(root, 'package.json');
+  const pkg = JSON.parse(readFileSync(pkgFile));
+  delete pkg.scripts.browse;
+  writeFileSync(pkgFile, JSON.stringify(pkg));
+  init(root);
+  assert.equal(JSON.parse(readFileSync(pkgFile)).scripts.browse, 'portal browse');
 });

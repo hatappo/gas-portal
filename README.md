@@ -2,7 +2,7 @@
 
 A personal work portal built with Google Apps Script, with a CLI for building, previewing, and deploying separate work environments.
 
-Display links from a spreadsheet as cards or a list. Connect an existing spreadsheet or create a new one with a typed table and column notes from Settings. Search by name, description, or tags; filter internal and external tools; add related links; and customize the appearance with ten color themes and editable display text. The settings tab lets you switch between Japanese and English; your language preference is saved in User Properties. The initial selection follows browser preferences, with English as the fallback. The Action Items tab is currently empty and reserved for future integrations.
+Display links from a spreadsheet as cards or a list. Connect an existing spreadsheet or create a new one with a typed table and column notes from Settings. Search by name, description, or tags; filter internal and external tools; add related links; and customize the appearance with ten color themes and editable display text. The settings tab lets you switch between Japanese and English; your language preference is saved in User Properties. The initial selection follows browser preferences, with English as the fallback. Action Items shows assigned GitHub issues, direct/team review requests, and changes requested on your own open PRs through user-managed fine-grained tokens. Configure up to three connections in Settings. Action Items combines their results into one deduplicated list with service labels and a single refresh button. Connections load in parallel, independently of the tool catalog, and share a configurable cache duration (five minutes by default). See [GitHub setup](docs/usage.md#github-action-items) for permissions, filters, and limitations.
 
 **Consumer projects only need configuration and a package dependency.** The CLI generates GAS code under `.portal/`. Each work environment can use its own Google account, Apps Script project, and spreadsheet.
 
@@ -69,9 +69,12 @@ Authentication tokens remain in clasp's standard credential store. Every remote 
 | `portal status` | Show the target project and authentication status |
 | `portal build` | Generate seven GAS files from bundled assets, without network access |
 | `portal preview [--port 4174]` | Serve mock data with Vite, without contacting GAS or Sheets |
+| `portal browse [--deployment-id ID]` | Open the published web app in the default browser without pushing or deploying |
 | `portal push` | Build and upload the code to GAS; does not update the published version |
 | `portal deployments` | List deployments for the target GAS project |
 | `portal deploy [-d TEXT] [--deployment-id ID]` | Create a version from code already saved in GAS and update an existing deployment |
+
+`portal init` generates `npm run browse` to open the deployed web app. It uses the configured `deploymentId`, or discovers the only versioned deployment using `scriptId`. Multiple deployments require `--deployment-id ID`; the target must have a web app entry point. This uses the selected clasp authentication profile to look up the URL; the browser uses its own signed-in Google session. Rerun `portal init` to add the script to an existing consumer.
 
 `portal init` also generates `npm run ship`, an alias for `npm run push && npm run deploy`. It uploads first and updates the deployment only after a successful push. Run `portal init` again to add this alias to an existing consumer; existing scripts are preserved.
 
@@ -94,7 +97,7 @@ Application source lives in `src/`; the CLI lives in `bin/` and `lib/`. `npm run
 
 To preview the GAS footer link during development, set `scriptId` in an untracked `.clasp.json`. The optional `SPREADSHEET_ID` environment variable accepts an ID or Google Sheets URL to preview the spreadsheet setting and footer link. Neither value is embedded in packaged assets.
 
-`npm run dev` provides HMR for application development. The consumer's `portal preview` shows the installed package's compiled output. Restart it after changing configuration or rebuilding the package. Preview settings are stored in browser localStorage and isolated by consumer directory.
+`npm run dev` provides HMR for application development. With a local checkout dependency, the consumer's `portal preview` also serves source directly through Vite: HTML, CSS, and browser code changes appear without rebuilding or restarting. Release packages use bundled output and reread it on reload. Consumer configuration changes trigger a reload. Restart after changing CLI or preview-server scripts. Preview settings are stored in browser localStorage and isolated by consumer directory. Demo entries remain visible after testing spreadsheet creation; use `?state=empty` to preview an empty list.
 
 The GAS build uses Terser to keep URLs and multiline text in quoted string literals, avoiding HtmlService parsing issues with minifier-generated template literals.
 
@@ -114,7 +117,7 @@ npm install --save-dev --install-links=false ../../hobby/gas-portal
 npm run preview
 ```
 
-Add `install-links=false` to the consumer's `.npmrc` to keep the dependency as a symbolic link. Running npm ci in the consumer does not install dependencies in the linked repository. After editing application source, rebuild in this repository and restart the consumer's preview. CLI changes are available directly. A directory dependency does not pin source contents in the lockfile; use release tarballs for regular work environments.
+Add `install-links=false` to the consumer's `.npmrc` to keep the dependency as a symbolic link. Running npm ci in the consumer does not install dependencies in the linked repository. The consumer preview detects the linked source checkout and uses Vite HMR. Rebuild in this repository before `build`, `push`, or `ship` to update the packaged GAS output. Restart the preview after CLI or preview-server script changes. A directory dependency does not pin source contents in the lockfile; use release tarballs for regular work environments.
 
 ## Releases
 
