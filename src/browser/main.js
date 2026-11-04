@@ -6,3 +6,5 @@ import './theme.js';
 import './settings.js';
 import './cache-settings.js';
 import './spreadsheet-settings.js';
+import './action-items.js';
+import './github.js';

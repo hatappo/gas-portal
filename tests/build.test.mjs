@@ -27,7 +27,7 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   assert.match(html, /class="external-link-icon"/);
   assert.match(html, /Copyright \(c\) 2026 Lucide Icons and Contributors/);
   assert.match(html, /Copyright \(c\) 2013-present Cole Bemis/);
-  for (const icon of ['external-link', 'refresh-cw', 'layout-grid', 'list']) {
+  for (const icon of ['external-link', 'refresh-cw', 'layout-grid', 'list', 'tool-case', 'list-checks', 'settings']) {
     assert.match(html, new RegExp(`class="${icon}-icon"`));
     assert.doesNotMatch(html, new RegExp(`<!-- ${icon}-icon -->`));
   }
@@ -97,6 +97,19 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   app.settingsRequests[0].success({ ok: true, settings: { PORTAL_NAME: 'Built Portal', PORTAL_ICON: 'B', PORTAL_HEADLINE: 'Built headline', PORTAL_DESCRIPTION: 'Built description' } });
   assert.equal(app.document.title, 'Built Portal');
   assert.equal(app.document.querySelector('#page-title').textContent, 'Built headline');
+  // Node accepts these operators, but GAS rejects them. Fail before replacing output.
+  for (const relative of ['src/server/GitHub.js', 'src/shared/i18n.js']) {
+    const sourcePath = path.join(root, relative);
+    const original = readFileSync(sourcePath, 'utf8');
+    for (const operator of ['||=', '&&=', '??=']) {
+      writeFileSync(sourcePath, original + `\nlet syntaxProbe = false; syntaxProbe ${operator} true;\n`);
+      const rejected = build();
+      assert.notEqual(rejected.status, 0);
+      assert.match(rejected.stderr, /GAS syntax check \(ES2020\)/);
+      assert.equal(readFileSync(path.join(root, 'dist/Client.html'), 'utf8'), bundledClient);
+    }
+    writeFileSync(sourcePath, original);
+  }
   const clientSource = path.join(root, 'src/browser/client.js');
   const validClient = readFileSync(clientSource, 'utf8');
   writeFileSync(clientSource, 'function broken(');

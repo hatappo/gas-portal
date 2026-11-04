@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
 import { init } from '../lib/init.mjs';
-import { build, buildPreview } from '../lib/build.mjs';
+import { build } from '../lib/build.mjs';
+import { createPreviewServer } from '../lib/preview.mjs';
 import { packageInfo } from '../lib/config.mjs';
-import { deploy, deployments, login, push, status } from '../lib/remote.mjs';
+import { browse, deploy, deployments, login, push, status } from '../lib/remote.mjs';
 
 const help = `gas-portal ${packageInfo.version}
 Usage: portal <command> [options]
@@ -15,6 +16,8 @@ Usage: portal <command> [options]
   build            Generate GAS code in .portal/dist (offline)
   preview [--port NUMBER]
                    Preview mock data locally (default port: 4173)
+  browse [--deployment-id ID]
+                   Open the published web app in your default browser
   push             Build and upload to GAS (without deploying)
   deployments      List deployments for the target GAS project
   deploy [--deployment-id ID] [--description TEXT]
@@ -30,6 +33,7 @@ export async function main(args = process.argv.slice(2), root = process.cwd()) {
   const definitions = {
     init: { 'script-id': { type: 'string' }, 'auth-profile': { type: 'string' }, 'deployment-id': { type: 'string' } },
     preview: { port: { type: 'string' } },
+    browse: { 'deployment-id': { type: 'string' } },
     deploy: { 'deployment-id': { type: 'string' }, description: { type: 'string', short: 'd' } },
     build: {}, push: {}, login: {}, status: {}, deployments: {},
   };
@@ -44,18 +48,15 @@ export async function main(args = process.argv.slice(2), root = process.cwd()) {
   } else if (command === 'preview') {
     const port = Number(values.port ?? process.env.PORT ?? 4173);
     if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('port must be an integer between 1 and 65535.');
-    const previewRoot = buildPreview(root);
-    const { createServer } = await import('vite');
-    const server = await createServer({ configFile: false, root: previewRoot, publicDir: false, appType: 'mpa',
-      server: { host: '127.0.0.1', port, strictPort: true, fs: { allow: [previewRoot] } },
-    });
+    const server = await createPreviewServer(root, { port });
     try { await server.listen(); } catch (error) { await server.close(); throw error; }
     server.printUrls();
     console.log('Showing mock data only. No connection to Google or production properties.');
     const shutdown = async () => { await server.close(); process.exit(0); };
     process.once('SIGINT', shutdown);
     process.once('SIGTERM', shutdown);
-  } else if (command === 'deploy') deploy(root, { deploymentId: values['deployment-id'], description: values.description });
+  } else if (command === 'browse') browse(root, { deploymentId: values['deployment-id'] });
+  else if (command === 'deploy') deploy(root, { deploymentId: values['deployment-id'], description: values.description });
   else ({ push, login, status, deployments })[command](root);
 }
 

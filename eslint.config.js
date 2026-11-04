@@ -11,6 +11,7 @@ export default [
       sourceType: 'script',
       globals: {
         HtmlService: 'readonly',
+        UrlFetchApp: 'readonly',
         ScriptApp: 'readonly',
         LockService: 'readonly',
         Sheets: 'readonly',
@@ -19,9 +20,12 @@ export default [
         PropertiesService: 'readonly',
       },
     },
-    rules: { 'no-unused-vars': ['error', { varsIgnorePattern: '^(doGet|getCatalog|saveCatalogCacheTtl|normalizeCatalogCacheTtl_|readCachedSheetCatalog_|saveTheme|saveLanguage|include_|parseCatalog_|readSheetCatalog_|initializeScriptProperties|initializeProperties|savePortalSettings|saveSpreadsheetSettings|createPortalSpreadsheet|resetPortalSettings)$' }] },
+    rules: { 'no-unused-vars': ['error', { varsIgnorePattern: '^(getGitHubConnections|saveGitHubConnection|disconnectGitHub|getGitHubActionItems|doGet|getCatalog|saveCatalogCacheTtl|saveActionsCacheTtl|normalizeCatalogCacheTtl_|readCachedSheetCatalog_|saveTheme|saveLanguage|include_|parseCatalog_|readSheetCatalog_|initializeScriptProperties|initializeProperties|savePortalSettings|saveSpreadsheetSettings|createPortalSpreadsheet|resetPortalSettings)$' }] },
   },
+  // GAS rejects newer syntax such as logical assignment even when Node accepts it.
+  { files: ['src/server/*.js', 'src/shared/*.js'], languageOptions: { ecmaVersion: 2020, sourceType: 'script' } },
   { files: ['src/server/Code.js'], languageOptions: { globals: { readCachedSheetCatalog_: 'readonly' } } },
+  { files: ['src/server/GitHub.js'], languageOptions: { globals: { normalizeActionsCacheTtl_: 'readonly' } } },
   { files: ['src/server/SheetCatalog.js'], languageOptions: { globals: { parseCatalog_: 'readonly', normalizeCatalogCacheTtl_: 'readonly', getPortalUserProperties_: 'readonly', normalizeSpreadsheetId_: 'readonly' } } },
   {
     files: ['src/browser/*.js'],

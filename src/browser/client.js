@@ -61,6 +61,19 @@
     { hash: 'actions', button: element('tab-actions'), panel: element('actions-panel') },
     { hash: 'settings', button: element('tab-settings'), panel: element('settings-panel') },
   ];
+  const settingsTabs = ['appearance', 'tools', 'actions'].map((hash) => ({
+    hash, button: element('settings-tab-' + hash), panel: element('settings-' + hash + '-panel'),
+  }));
+  let activeSettingsTab = 0;
+  /** @param {number} index */
+  function selectSettingsTab(index) {
+    activeSettingsTab = index;
+    settingsTabs.forEach(({ button, panel }, current) => {
+      button.setAttribute('aria-selected', String(current === index));
+      button.tabIndex = current === index ? 0 : -1;
+      panel.hidden = current !== index;
+    });
+  }
   let activeTab = 0;
   /** @param {number} index */
   function selectPortalTab(index) {
@@ -74,6 +87,7 @@
       panel.hidden = current !== index;
     });
     panelAnimation = animateAppearance(portalTabs[index].panel);
+    document.dispatchEvent(new CustomEvent('portal:tabchange', { detail: portalTabs[index].hash }));
   }
   // GAS renders this code in a sandbox iframe. Its bridge controls the public URL;
   // the local preview uses the browser history API instead.
@@ -88,15 +102,19 @@
     routeHash = typeof hash === 'string' ? hash.replace(/^#/, '') : '';
     // Preserve the skip-to-content link without treating it as a tab route.
     if (routeHash === 'main') return;
-    const index = portalTabs.findIndex((tab) => tab.hash === routeHash);
+    const [main, section] = routeHash.split('/');
+    if (main === 'settings') {
+      const sectionIndex = settingsTabs.findIndex((tab) => tab.hash === section);
+      selectSettingsTab(sectionIndex < 0 ? 0 : sectionIndex);
+    }
+    const index = portalTabs.findIndex((tab) => tab.hash === (main === 'settings' ? main : routeHash));
     selectPortalTab(index < 0 ? 0 : index);
   }
 
-  /** @param {number} index */
-  function navigatePortalTab(index) {
+  /** @param {number} index @param {string} [hash] */
+  function navigatePortalTab(index, hash = index === 2 && activeSettingsTab !== 0 ? 'settings/' + settingsTabs[activeSettingsTab].hash : portalTabs[index].hash) {
     navigationRevision++;
     selectPortalTab(index);
-    const hash = portalTabs[index].hash;
     if (routeHash === hash) return;
     try {
       if (useGasHistory) gasHistory?.push(null, null, hash);
@@ -125,6 +143,25 @@
     window.addEventListener('hashchange', syncRoute);
     applyRoute(window.location.hash);
   }
+
+  settingsTabs.forEach(({ button }, index) => {
+    const navigate = (/** @type {number} */ next) => {
+      selectSettingsTab(next);
+      navigatePortalTab(2, 'settings/' + settingsTabs[next].hash);
+    };
+    button.addEventListener('click', () => navigate(index));
+    button.addEventListener('keydown', (event) => {
+      let next;
+      if (event.key === 'ArrowRight') next = (index + 1) % settingsTabs.length;
+      else if (event.key === 'ArrowLeft') next = (index + settingsTabs.length - 1) % settingsTabs.length;
+      else if (event.key === 'Home') next = 0;
+      else if (event.key === 'End') next = settingsTabs.length - 1;
+      else return;
+      event.preventDefault();
+      navigate(next);
+      settingsTabs[next].button.focus();
+    });
+  });
 
   portalTabs.forEach(({ button }, index) => {
     button.addEventListener('click', () => navigatePortalTab(index));
@@ -300,14 +337,16 @@
     rows.replaceChildren();
     list.hidden = view !== 'cards' || visible.length === 0;
     element('table-view').hidden = view !== 'list' || visible.length === 0;
-    element('count').textContent = `${visible.length} / ${tools.length}`;
+    const count = element('count');
+    count.style.setProperty('--count-digits', String(String(tools.length).length));
+    count.textContent = t('{visible} / {total} items', { visible: visible.length, total: tools.length });
     visible.forEach((tool) => view === 'cards' ? list.append(card(tool)) : rows.append(tableRow(tool)));
     element('status').hidden = visible.length > 0;
     if (tools.length === 0) {
-      showStatus(issues.length ? t("No tools can be displayed") : t("No tools have been added yet"),
+      showStatus(issues.length ? t("No tools can be displayed") : t('No items to display'),
         issues.length ? t("Fix the spreadsheet using the issues listed above.") : t("Add tools to the spreadsheet to display them here."));
     } else if (visible.length === 0) {
-      showStatus(t("No matching tools"), t("Try a different keyword, scope, or tag."), true);
+      showStatus(t('No items to display'), t("Try a different keyword, scope, or tag."), true);
     }
     animateResults(JSON.stringify([view, visible.map((tool) => tool.id)]));
   }
@@ -315,6 +354,7 @@
   /** @param {boolean} value */
   function setLoading(value) {
     refresh.disabled = value;
+    refresh.setAttribute('aria-busy', String(value));
     setControlsDisabled(value);
     element('directory').setAttribute('aria-busy', String(value));
   }
@@ -327,7 +367,8 @@
     });
   }
 
-  function clearResults() {
+  /** @param {boolean} [preserveCount] */
+  function clearResults(preserveCount = false) {
     resultAnimation?.cancel();
     resultSignature = '';
     element('tools').replaceChildren();
@@ -337,7 +378,7 @@
     element('tags').replaceChildren();
     element('tag-filter').hidden = true;
     element('warnings').hidden = true;
-    element('count').textContent = '';
+    if (!preserveCount) element('count').textContent = '';
   }
 
   /** @param {string | undefined} message */
@@ -410,12 +451,15 @@
   /** @param {boolean} [forceRefresh] */
   function loadCatalog(forceRefresh = false) {
     catalogReady = false;
-    freshness = undefined;
-    renderFreshness();
+    // Keep the previous summary while loading and reserve its width even if the next
+    // timestamp is shorter (for example, a cache hit followed by a live refresh).
+    refresh.style.minWidth = Math.max(44, Math.ceil(refresh.getBoundingClientRect().width)) + 'px';
     setLoading(true);
     const current = ++generation;
-    clearResults();
-    showStatus(t("Loading…"), t("Fetching the tool list."));
+    clearResults(true);
+    element('status').hidden = true;
+    element('status-title').textContent = '';
+    element('status-description').textContent = '';
     // Stop waiting after the timeout and ignore late responses.
     const timeout = window.setTimeout(() => {
       if (current !== generation) return;

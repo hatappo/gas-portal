@@ -101,3 +101,58 @@ test('The skip link hash keeps the current tab and unavailable history does not 
   app.document.getElementById('tab-actions').click();
   assert.equal(selected(app.document), 'tab-actions');
 });
+
+test('Settings subroutes open the correct panel and safely handle legacy or unknown section links', (t) => {
+  for (const [hash, section] of [['settings', 'appearance'], ['settings/appearance', 'appearance'], ['settings/tools', 'tools'], ['settings/actions', 'actions'], ['settings/missing', 'appearance']]) {
+    const app = browser((window) => window.history.replaceState(null, '', '#' + hash));
+    t.after(() => app.dom.window.close());
+    assert.equal(selected(app.document), 'tab-settings');
+    assert.equal(app.document.querySelector('.settings-tabs [aria-selected="true"]').id, 'settings-tab-' + section);
+    assert.equal(app.document.querySelectorAll('.settings-subpanel:not([hidden])').length, 1);
+    assert.equal(app.document.getElementById('settings-' + section + '-panel').hidden, false);
+    assert.equal(app.dom.window.history.length, 1);
+  }
+});
+
+test('Settings keyboard navigation and history preserve drafts and keep parent tab selection separate', async (t) => {
+  const app = browser((window) => window.history.replaceState(null, '', '#settings/appearance'));
+  t.after(() => app.dom.window.close());
+  const { document: doc, dom: { window } } = app;
+  doc.getElementById('setting-name').value = 'Draft title';
+  doc.getElementById('settings-tab-appearance').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+  assert.equal(window.location.hash, '#settings/tools');
+  assert.equal(doc.activeElement.id, 'settings-tab-tools');
+  assert.equal(selected(doc), 'tab-settings');
+  doc.getElementById('setting-sheet-name').value = 'Draft sheet';
+  doc.getElementById('settings-tab-tools').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+  assert.equal(window.location.hash, '#settings/actions');
+  const length = window.history.length;
+  doc.getElementById('settings-tab-actions').click();
+  assert.equal(window.history.length, length);
+  const back = new Promise((resolve) => window.addEventListener('popstate', resolve, { once: true }));
+  window.history.back(); await back;
+  assert.equal(doc.getElementById('settings-tools-panel').hidden, false);
+  assert.equal(doc.getElementById('setting-name').value, 'Draft title');
+  assert.equal(doc.getElementById('setting-sheet-name').value, 'Draft sheet');
+  doc.getElementById('tab-tools').click(); doc.getElementById('tab-settings').click();
+  assert.equal(window.location.hash, '#settings/tools');
+  doc.getElementById('settings-tab-tools').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+  assert.equal(window.location.hash, '#settings/appearance');
+  doc.getElementById('settings-tab-appearance').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+  assert.equal(window.location.hash, '#settings/actions');
+});
+
+test('GAS subtab links use the outer history bridge and Manage connections opens Action Items settings', (t) => {
+  const app = gasBrowser(t);
+  app.initial('settings/tools');
+  assert.equal(app.document.getElementById('settings-tools-panel').hidden, false);
+  app.document.getElementById('tab-actions').click();
+  app.document.getElementById('actions-settings').click();
+  assert.equal(app.document.getElementById('settings-actions-panel').hidden, false);
+  assert.equal(app.document.activeElement.id, 'settings-tab-actions');
+  assert.equal(app.pushes.at(-1)[2], 'settings/actions');
+  const count = app.pushes.length;
+  app.pop('settings/appearance');
+  assert.equal(app.document.getElementById('settings-appearance-panel').hidden, false);
+  assert.equal(app.pushes.length, count);
+});

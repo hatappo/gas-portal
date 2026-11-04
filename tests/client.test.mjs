@@ -109,7 +109,10 @@ test("Disable controls while loading or after failure and offer a forced refresh
 test("Replace loading state with tools that open in new tabs", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
-  assert.match(document.querySelector('#status-title').textContent, /読み込み/);
+  assert.equal(document.querySelector('#status').hidden, true);
+  assert.equal(document.querySelector('#status-title').textContent, '');
+  assert.equal(document.querySelector('#status-description').textContent, '');
+  assert.equal(document.querySelector('#refresh-catalog').getAttribute('aria-busy'), 'true');
   requests[0].success(catalog);
   const links = document.querySelectorAll('#tools a');
   assert.equal(links.length, 2);
@@ -128,7 +131,7 @@ test("Normalize full-width characters, case, and whitespace while combining tags
   assert.equal(document.querySelectorAll('#tools a').length, 1);
   [...document.querySelectorAll('#tags button')].find((button) => button.textContent === '業務').click();
   assert.equal(document.querySelectorAll('#tools a').length, 0);
-  assert.match(document.querySelector('#status-title').textContent, /見つかりません/);
+  assert.match(document.querySelector('#status-title').textContent, /表示する項目がありません/);
   document.querySelector('#reset').click();
   assert.equal(document.querySelectorAll('#tools a').length, 2);
 });
@@ -147,7 +150,7 @@ test("Distinguish an empty catalog from entries excluded due to data issues", (t
     const { dom, document, requests } = browser();
     t.after(() => dom.window.close());
     requests[0].success({ ok: true, tools: [], issues });
-    assert.match(document.querySelector('#status-title').textContent, issues.length ? /表示できる/ : /登録されていません/);
+    assert.match(document.querySelector('#status-title').textContent, issues.length ? /表示できる/ : /表示する項目がありません/);
     assert.equal(document.querySelector('#warnings').hidden, issues.length === 0);
   }
 });
@@ -391,4 +394,61 @@ test("Support arrow, Home, and End navigation without changing tabs on loading o
       assert.equal(document.getElementById(button.getAttribute('aria-controls')).getAttribute('aria-labelledby'), button.id);
     }
   }
+});
+
+test('Show stable filtered and total counts after the filter controls in both languages', (t) => {
+  const { dom, document, requests } = browser();
+  t.after(() => dom.window.close());
+  const count = document.getElementById('count');
+  assert.equal(document.querySelector('#tab-tools #count'), null);
+  assert.ok(count.previousElementSibling.classList.contains('view-switch'));
+  assert.equal(count.parentElement.className, 'filter-toolbar');
+  assert.equal(count.closest('#directory').id, 'directory');
+  assert.equal(count.textContent, '');
+  requests[0].success({ ...catalog, tools: [
+    { ...catalog.tools[0], name: 'Alpha', scope: 'internal', tags: ['Work'] },
+    { ...catalog.tools[1], name: 'Beta', scope: 'external', tags: ['Work'] },
+  ] });
+  assert.equal(count.textContent, '2 / 2 件');
+  assert.equal(count.style.getPropertyValue('--count-digits'), '1');
+  document.getElementById('scope-internal').click();
+  assert.equal(count.textContent, '1 / 2 件');
+  document.getElementById('scope-all').click();
+  [...document.querySelectorAll('#tags button')].find((button) => button.textContent === 'Work').click();
+  assert.equal(count.textContent, '2 / 2 件', 'An active filter is shown even when all items match');
+  const search = document.getElementById('search');
+  search.value = 'not-found'; search.dispatchEvent(new dom.window.Event('input'));
+  assert.equal(count.textContent, '0 / 2 件');
+  document.documentElement.lang = 'en';
+  document.dispatchEvent(new dom.window.Event('portal:languagechange'));
+  assert.equal(count.textContent, '0 / 2 items');
+  document.getElementById('reset').click();
+  assert.equal(count.textContent, '2 / 2 items');
+  assert.equal(count.style.getPropertyValue('--count-digits'), '1');
+});
+
+test('Use only the refresh spinner during initial loading, refresh, and retry after errors', (t) => {
+  const { dom, document, requests } = browser();
+  t.after(() => dom.window.close());
+  const refresh = document.getElementById('refresh-catalog');
+  const status = document.getElementById('status');
+  const assertLoading = () => {
+    assert.equal(refresh.getAttribute('aria-busy'), 'true');
+    assert.equal(refresh.disabled, true);
+    assert.equal(status.hidden, true);
+    assert.equal(document.getElementById('status-title').textContent, '');
+    assert.equal(document.getElementById('status-description').textContent, '');
+  };
+  assertLoading();
+  requests[0].success(catalog);
+  assert.equal(refresh.getAttribute('aria-busy'), 'false');
+  refresh.click(); assertLoading();
+  requests[1].failure();
+  assert.equal(status.hidden, false);
+  assert.match(status.textContent, /取得できません/);
+  refresh.click(); assertLoading();
+  requests[2].success({ ok: true, tools: [], issues: [] });
+  assert.equal(refresh.getAttribute('aria-busy'), 'false');
+  assert.equal(status.hidden, false);
+  assert.match(status.textContent, /表示する項目がありません/);
 });

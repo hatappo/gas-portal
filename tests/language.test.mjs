@@ -82,7 +82,9 @@ test('Switch labels, accessibility text, warnings, and default content without l
   assert.equal(doc.documentElement.lang, 'en');
   assert.equal(doc.getElementById('tab-settings').getAttribute('aria-label'), 'Settings');
   assert.equal(doc.getElementById('refresh-catalog').getAttribute('aria-label'), 'Fetch latest');
-  assert.equal(doc.getElementById('refresh-catalog').title, 'Fetch latest from spreadsheet');
+  assert.equal(doc.getElementById('refresh-catalog').title, 'Fetch latest');
+  assert.equal(doc.getElementById('refresh-actions').title, 'Fetch latest');
+  assert.equal(doc.getElementById('refresh-actions').getAttribute('aria-label'), 'Fetch latest');
   assert.equal(doc.getElementById('search').placeholder, 'Search by name, description, or tags');
   assert.equal(doc.getElementById('search').value, 'Guide');
   assert.equal(doc.getElementById('view-list').getAttribute('aria-pressed'), 'true');
@@ -97,7 +99,9 @@ test('Switch labels, accessibility text, warnings, and default content without l
   app.languageRequests[1].success({ ok: true, language: 'ja' });
   assert.equal(doc.getElementById('tab-settings').getAttribute('aria-label'), '設定');
   assert.equal(doc.getElementById('refresh-catalog').getAttribute('aria-label'), '最新データを取得');
-  assert.equal(doc.getElementById('refresh-catalog').title, 'キャッシュを使わずシートから最新データを取得');
+  assert.equal(doc.getElementById('refresh-catalog').title, '最新データを取得');
+  assert.equal(doc.getElementById('refresh-actions').title, '最新データを取得');
+  assert.equal(doc.getElementById('refresh-actions').getAttribute('aria-label'), '最新データを取得');
   assert.equal(doc.getElementById('setting-headline').value, 'Unsaved custom headline');
   assert.match(doc.getElementById('tool-rows').textContent, /Guide.*社内/);
 });
@@ -210,4 +214,17 @@ test('Keep optional intro text empty regardless of resolved or saved language', 
   assert.equal(response.settings.PORTAL_HEADLINE, '');
   const explicit = server({ userProperties: { PORTAL_LANGUAGE: 'en' } });
   assert.equal(explicit.context.savePortalSettings(request.settings, 'ja').settings.PORTAL_HEADLINE, '');
+});
+
+test('Give language its own section at the same heading level as portal content and color theme', (t) => {
+  const app = browser();
+  t.after(() => app.dom.window.close());
+  const panel = app.document.getElementById('settings-appearance-panel');
+  const headings = [...panel.querySelectorAll('h2')];
+  assert.deepEqual(headings.map((heading) => heading.textContent), ['ポータルの表示内容', 'カラーテーマ', '表示言語']);
+  const language = app.document.querySelector('.language-settings');
+  assert.equal(language.tagName, 'SECTION');
+  assert.equal(language.parentElement, panel);
+  assert.equal(app.document.getElementById('portal-language').getAttribute('aria-labelledby'), 'language-settings-title');
+  assert.equal(language.getAttribute('aria-labelledby'), 'language-settings-title');
 });

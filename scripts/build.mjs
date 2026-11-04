@@ -3,16 +3,29 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import vm from 'node:vm';
 import { build } from 'vite';
+import { Linter } from 'eslint';
 import { withPortalAssets } from './portal-html.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const dist = path.join(root, 'dist');
+// Use a conservative syntax baseline for GAS, independently of the local Node version.
+// This checks grammar only; GAS service availability still requires runtime validation.
+const gasSyntax = new Linter();
+function checkGasSyntax(code, filename) {
+  const errors = gasSyntax.verify(code, { languageOptions: { ecmaVersion: 2020, sourceType: 'script' } }, { allowInlineConfig: false }).filter((message) => message.fatal);
+  if (errors.length) {
+    const error = errors[0];
+    throw new Error(`${filename}:${error.line}:${error.column}: GAS syntax check (ES2020): ${error.message}`);
+  }
+}
 // Check syntax before replacing output. Building does not access the spreadsheet.
 const i18n = readFileSync(path.join(root, 'src/shared/i18n.js'), 'utf8');
-new vm.Script(i18n);
+checkGasSyntax(i18n, 'i18n.js');
 const serverFiles = ['Code.js', 'Catalog.js', 'SheetCatalog.js'];
+const github = readFileSync(path.join(root, 'src/server/GitHub.js'), 'utf8');
+checkGasSyntax(github, 'GitHub.js');
 for (const file of serverFiles) {
-  new vm.Script(readFileSync(path.join(root, 'src/server', file), 'utf8'), { filename: file });
+  checkGasSyntax(readFileSync(path.join(root, 'src/server', file), 'utf8'), file);
 }
 // GAS embeds JS/CSS as HTML. Keep Vite output in memory and update dist only after success.
 const bundle = await build({
@@ -48,7 +61,7 @@ for (const file of ['appsscript.json']) {
 }
 writeFileSync(path.join(dist, 'Index.html'), index);
 for (const file of serverFiles) {
-  writeFileSync(path.join(dist, file), (file === 'Code.js' ? i18n + '\n' : '') + readFileSync(path.join(root, 'src/server', file), 'utf8'));
+  writeFileSync(path.join(dist, file), (file === 'Code.js' ? i18n + '\n' + github + '\n' : '') + readFileSync(path.join(root, 'src/server', file), 'utf8'));
 }
 writeFileSync(path.join(dist, 'Styles.html'), `<style>\n${css}\n</style>\n`);
 writeFileSync(path.join(dist, 'Client.html'), `<script>\n${client}\n</script>\n`);

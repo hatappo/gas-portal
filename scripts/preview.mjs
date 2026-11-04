@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import vm from 'node:vm';
+import { createGitHubPreview } from './github-preview.mjs';
 import { withPreviewProject, withPreviewContent } from './preview-project.mjs';
 import { withPortalAssets } from './portal-html.mjs';
 
@@ -33,6 +34,7 @@ export function renderPreview(html, root, options = {}) {
   // Use the optional environment value for the source field and footer; do not contact Sheets.
   const portal = context.getPortalContent_({ SPREADSHEET_ID: options.spreadsheetId ?? process.env.SPREADSHEET_ID ?? '' });
   return withPreviewContent(withPreviewProject(withPortalAssets(html, root), options.configPath ?? path.join(root, '.clasp.json')), portal)
+    .replace('placeholder="github_pat_…"', 'placeholder="demo"')
     .replace('<?!= initialCatalogJson ?>', () => context.serializeCatalog_(catalog))
     .replace('<!-- preview-label -->', '<p class="preview-label"><span>LOCAL PREVIEW</span> · <span data-i18n="Mock data">Mock data</span></p>')
     .replace('<script type="module" src="/browser/main.js"></script>', () => `<script>
@@ -87,6 +89,10 @@ export function renderPreview(html, root, options = {}) {
       let previewCacheSeconds = 21600;
       try { previewCacheSeconds = normalizeCatalogCacheTtl_(localStorage.getItem('portal-preview-cache-seconds')); } catch { /* Use defaults. */ }
       if (typeof document !== 'undefined') document.getElementById('catalog-cache-seconds').dataset.savedValue = String(previewCacheSeconds);
+      const normalizeActionsCacheTtl_ = ${context.normalizeActionsCacheTtl_.toString()};
+      let previewActionsCacheSeconds = 300;
+      try { previewActionsCacheSeconds = normalizeActionsCacheTtl_(localStorage.getItem('portal-preview-actions-cache-seconds')); } catch { /* Use defaults. */ }
+      if (typeof document !== 'undefined') document.getElementById('actions-cache-seconds').dataset.savedValue = String(previewActionsCacheSeconds);
       const demo = ${serialize(demo)};
       const catalog = ${serialize(catalog)};
       const scenario = new URLSearchParams(location.search).get('state');
@@ -113,14 +119,16 @@ export function renderPreview(html, root, options = {}) {
         if (!cached && previewCacheSeconds > 0) {
           try { localStorage.setItem('portal-preview-catalog', JSON.stringify({fetchedAt, seconds:previewCacheSeconds})); } catch { /* Still return mock data. */ }
         }
-        return {...catalog, ...(previewSource.SPREADSHEET_ID === 'preview-created-sheet' ? {tools:[], issues:[]} : {}), cache:{hit:Boolean(cached), fetchedAt}};
+        return {...catalog, cache:{hit:Boolean(cached), fetchedAt}};
       }
       // Production embeds data during doGet; preview simulates this without an initial RPC.
       if (typeof document !== 'undefined') {
         const initial = document.getElementById('initial-catalog');
         if (initial) initial.textContent = JSON.stringify(readPreviewCatalog());
       }
+      const createGitHubPreview = ${createGitHubPreview.toString()};
       const google = {script: {run: {
+        ...createGitHubPreview(new URLSearchParams(location.search).get('github'), () => previewActionsCacheSeconds),
         withSuccessHandler(fn) {return {...this, success: fn};},
         withFailureHandler(fn) {return {...this, failure: fn};},
         savePortalSettings(input, browserLanguage) {setTimeout(() => {
@@ -165,6 +173,14 @@ export function renderPreview(html, root, options = {}) {
             this.success({ok:true, theme});
           } catch { this.failure(); }
         }, 200);},
+        saveActionsCacheTtl(seconds) {setTimeout(() => {
+          if (typeof seconds !== 'number' || ![0, 60, 300, 900, 1800, 3600, 21600].includes(seconds)) return this.success({ok:false});
+          try {
+            localStorage.setItem('portal-preview-actions-cache-seconds', String(seconds));
+            previewActionsCacheSeconds = seconds;
+            this.success({ok:true, seconds});
+          } catch { this.failure(); }
+        }, 200);},
         saveCatalogCacheTtl(seconds) {setTimeout(() => {
           if (typeof seconds !== 'number' || ![0, 300, 3600, 21600].includes(seconds)) return this.success({ok:false});
           try {
@@ -182,21 +198,24 @@ export function renderPreview(html, root, options = {}) {
 }
 
 /** Replace GAS templates and RPC locally. Vite handles serving and HMR. */
-export function gasPreview(root) {
+export function gasPreview(root, options = {}) {
   return {
     name: 'gas-preview',
     apply: 'serve',
     transformIndexHtml: {
       order: 'pre',
       handler(html, context) {
-        return context.path === '/Index.html' ? renderPreview(html, root) : html;
+        if (context.path !== '/Index.html') return html;
+        const prepared = options.prepareHtml ? options.prepareHtml(html) : html;
+        const rendered = renderPreview(prepared, root, options);
+        return options.finishHtml ? options.finishHtml(rendered) : rendered;
       },
     },
     configureServer(server) {
-      const configPath = path.join(root, '.clasp.json');
-      server.watcher.add(configPath);
+      const configPath = options.configPath ?? path.join(root, '.clasp.json');
+      server.watcher.add([configPath, path.join(root, 'src/server'), path.join(root, 'src/assets'), path.join(root, 'src/shared')]);
       server.watcher.on('change', (file) => {
-        if (file === configPath || file.startsWith(path.join(root, 'src/server/')) || file.startsWith(path.join(root, 'src/assets/'))) {
+        if (file === configPath || file.startsWith(path.join(root, 'src/server/')) || file.startsWith(path.join(root, 'src/assets/')) || file.startsWith(path.join(root, 'src/shared/'))) {
           server.ws.send({ type: 'full-reload' });
         }
       });

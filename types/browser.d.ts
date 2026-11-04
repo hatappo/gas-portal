@@ -25,13 +25,25 @@ type SpreadsheetSettingsResponse = { ok: true; settings: SpreadsheetSettings } |
 type SpreadsheetCreationResponse =
   | { ok: true; spreadsheetId: string }
   | { ok: false; error: string; spreadsheetId?: string; connected?: boolean };
+interface GitHubConnectionInfo { id: string; label: string; login: string; owner: string }
+interface GitHubConnectionInput { id: string; token: string; owner: string }
+interface GitHubActionItem { id: string; title: string; url: string; repository: string; number: number; updatedAt: string; kind: string; reasons: string[] }
+interface GitHubActionGroup { kind: string; items: GitHubActionItem[]; total: number; partial: boolean; error: string; searchUrl: string }
+type GitHubActionsResponse = { ok: true; groups: GitHubActionGroup[]; fetchedAt: number; cached: boolean } | { ok: false; error: string };
+type GitHubConnectionsResponse = { ok: true; connections: GitHubConnectionInfo[] } | { ok: false; error: string };
+type GitHubSaveResponse = { ok: true; connection: GitHubConnectionInfo } | { ok: false; error: string };
 interface GasRunner {
+  getGitHubConnections(): void;
+  saveGitHubConnection(input: GitHubConnectionInput): void;
+  disconnectGitHub(id: string): void;
+  getGitHubActionItems(id: string, forceRefresh?: boolean): void;
   createPortalSpreadsheet(browserLanguage?: string): void;
   saveSpreadsheetSettings(settings: SpreadsheetSettings): void;
   withSuccessHandler<T>(callback: (response: T) => void): GasRunner;
   withFailureHandler(callback: () => void): GasRunner;
   getCatalog(forceRefresh?: boolean): void;
   saveCatalogCacheTtl(seconds: number): void;
+  saveActionsCacheTtl(seconds: number): void;
   saveLanguage(language: string): void;
   saveTheme(theme: string): void;
   savePortalSettings(settings: PortalSettings, browserLanguage?: string): void;
@@ -47,3 +59,17 @@ declare const google: { script: {
   history?: GasHistory;
   url?: { getLocation(callback: (location: GasLocation) => void): void };
 } };
+
+interface ActionItem {
+  service: string; serviceLabel: string; id: string; title: string; url: string;
+  context: string; updatedAt: string; reasons: string[];
+}
+interface ActionNotice { message: string; reason?: string; url?: string }
+interface ActionResult { items: ActionItem[]; notices: ActionNotice[]; fetchedAt?: number; cached?: boolean }
+interface ActionSource { id: string; label: string; serviceLabel: string; load(force: boolean, done: (result: ActionResult) => void): void }
+interface Window {
+  PortalActions: {
+    setProviderState(provider: string, state: {ready: boolean; loading: boolean; error: string}): void;
+    setSources(provider: string, sources: ActionSource[]): void;
+  };
+}

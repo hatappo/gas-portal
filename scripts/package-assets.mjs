@@ -15,7 +15,7 @@ if (/<\?/.test(preview)) throw new Error('The preview contains unresolved GAS te
 rmSync(path.join(root, 'assets'), { recursive: true, force: true });
 mkdirSync(path.join(root, 'assets/preview'), { recursive: true });
 cpSync(path.join(root, 'dist'), path.join(root, 'assets/gas'), { recursive: true });
-for (const name of ['external-link', 'refresh-cw', 'layout-grid', 'list']) {
+for (const name of ['external-link', 'refresh-cw', 'layout-grid', 'list', 'tool-case', 'list-checks', 'settings']) {
   cpSync(path.join(root, `src/assets/${name}.svg`), path.join(root, `assets/${name}.svg`));
 }
 cpSync(path.join(root, 'src/mobile.html'), path.join(root, 'assets/preview/mobile.html'));
