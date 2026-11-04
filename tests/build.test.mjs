@@ -5,7 +5,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { browser, catalog } from './helpers.mjs';
+import { browser, catalog, server } from './helpers.mjs';
+import ts from 'typescript';
 
 test("Build stays offline, removes stale data, and preserves output after syntax errors", (t) => {
   const root = mkdtempSync(path.join(tmpdir(), 'gas-portal-build-'));
@@ -53,11 +54,26 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   ]);
   const bundledClient = readFileSync(path.join(root, 'dist/Client.html'), 'utf8');
   const bundledStyles = readFileSync(path.join(root, 'dist/Styles.html'), 'utf8');
+  // HtmlService reparses inline scripts. URL-bearing or multiline template literals
+  // must not be introduced by minification, even when the JS is valid in a browser.
+  const clientCode = bundledClient.replace(/^<script>\s*/, '').replace(/\s*<\/script>\s*$/, '');
+  const parsedClient = ts.createSourceFile('Client.js', clientCode, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const unsafeTemplates = [];
+  function inspect(node) {
+    if ((ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateExpression(node)) && /:\/\/|[\r\n]/.test(node.getText(parsedClient))) unsafeTemplates.push(node.getText(parsedClient));
+    ts.forEachChild(node, inspect);
+  }
+  inspect(parsedClient);
+  assert.deepEqual(unsafeTemplates, [], 'GAS inline scripts must avoid URL-bearing and multiline template literals');
   assert.doesNotMatch(bundledClient + bundledStyles, /@vite|LOCAL PREVIEW|__preview|demo-address/);
   assert.match(bundledStyles, /--theme-color/);
   assert.doesNotMatch(html, /type="module"|browser\/main.js/);
   const app = browser((window) => { window.document.getElementById('initial-catalog').textContent = JSON.stringify(catalog); }, bundledClient.replace(/^<script>\s*/, '').replace(/\s*<\/script>\s*$/, ''), html);
   t.after(() => app.dom.window.close());
+  const { context } = server();
+  const englishNote = context.portalSpreadsheetColumns_('en').find((column) => column.name === 'relatedLinks').note;
+  const japaneseNote = context.portalSpreadsheetColumns_('ja').find((column) => column.name === 'relatedLinks').note;
+  assert.equal(app.dom.window.PortalI18n.t(englishNote, 'ja'), japaneseNote, 'Minification preserves note URLs, Unicode, and line breaks');
   assert.equal(app.requests.length, 0, 'The built client renders embedded data without an initial RPC');
   assert.equal(app.document.querySelectorAll('#tools > li').length, 2);
   for (const [id, label] of [['view-cards', 'Cards'], ['view-list', 'List']]) {
