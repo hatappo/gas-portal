@@ -5,7 +5,7 @@ import { entry, server, plain, sheetRows } from './helpers.mjs';
 
 test("Read the configured sheet regardless of position and preserve the RPC shape", () => {
   const { context, calls } = server({
-    properties: { SPREADSHEET_ID: ' test-id ', SHEET_NAME: "仕事's リンク" },
+    userProperties: { SPREADSHEET_ID: ' test-id ', SHEET_NAME: "仕事's リンク" },
     sheetProperties: [{ title: 'Other', index: 0 }, { title: "仕事's リンク", index: 1 }],
   });
   const { cache, ...response } = plain(context.getCatalog());
@@ -44,12 +44,11 @@ test("Report missing services, sheets, and headers safely", () => {
 
 test("Reject missing properties and invalid IDs before calling the API", () => {
   for (const [properties, expected] of [
-    [{}, /SPREADSHEET_ID/],
-    [{ SPREADSHEET_ID: 'https://docs.google.com/spreadsheets/d/test/edit' }, /SPREADSHEET_ID/],
-    [{ SPREADSHEET_ID: 'test' }, /SHEET_NAME/],
-    [{ SPREADSHEET_ID: 'test', SHEET_NAME: ' ' }, /SHEET_NAME/],
+    [{}, /設定画面/],
+    [{ SPREADSHEET_ID: 'https://docs.google.com.evil.test/spreadsheets/d/test/edit' }, /設定画面/],
+    [{ SPREADSHEET_ID: 'bad/id' }, /設定画面/],
   ]) {
-    const { context, calls } = server({ properties });
+    const { context, calls } = server({ userProperties: properties });
     assert.match(context.getCatalog().error, expected);
     assert.equal(calls.length, 0);
   }
@@ -63,10 +62,10 @@ test("Do not expose API error details or file IDs", () => {
   assert.match(result.error, /共有設定・認可/);
 });
 
-test("Use deployer execution, private access, and read-only Sheets authorization", () => {
+test("Use private deployer execution with read-only Sheets access and per-file creation access", () => {
   const manifest = JSON.parse(readFileSync('src/appsscript.json', 'utf8'));
   assert.deepEqual(manifest.webapp, { access: 'MYSELF', executeAs: 'USER_DEPLOYING' });
-  assert.deepEqual(manifest.oauthScopes, ['https://www.googleapis.com/auth/spreadsheets.readonly']);
+  assert.deepEqual(manifest.oauthScopes, ['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/drive.file']);
   assert.deepEqual(manifest.dependencies.enabledAdvancedServices, [{ userSymbol: 'Sheets', serviceId: 'sheets', version: 'v4' }]);
 });
 
@@ -91,10 +90,10 @@ test("Generate the editor URL from the current project and set the page title", 
 test("Generate spreadsheet links only for valid configured IDs", () => {
   const { context } = server();
   for (const id of ['', '   ', 'https://example.com', 'bad/id', '"><img src=x>']) {
-    assert.equal(context.getPortalContent_({}, { SPREADSHEET_ID: id }).spreadsheetUrl, '');
+    assert.equal(context.getPortalContent_({ SPREADSHEET_ID: id }).spreadsheetUrl, '');
   }
   for (const id of ['first-sheet', 'second_sheet']) {
-    assert.equal(context.getPortalContent_({}, { SPREADSHEET_ID: ` ${id} ` }).spreadsheetUrl,
+    assert.equal(context.getPortalContent_({ SPREADSHEET_ID: ` ${id} ` }).spreadsheetUrl,
       `https://docs.google.com/spreadsheets/d/${id}/edit`);
   }
 });

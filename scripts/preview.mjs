@@ -30,8 +30,8 @@ export function renderPreview(html, root, options = {}) {
   const catalog = { ok: true, ...context.parseCatalog_(demo.tools) };
   // Prevent embedded data from closing the script element.
   const serialize = (value) => JSON.stringify(value).replace(/</g, '\\u003c');
-  // Use optional environment variables only for footer links; do not contact Sheets.
-  const portal = context.getPortalContent_({}, { SPREADSHEET_ID: options.spreadsheetId ?? process.env.SPREADSHEET_ID ?? '' });
+  // Use the optional environment value for the source field and footer; do not contact Sheets.
+  const portal = context.getPortalContent_({ SPREADSHEET_ID: options.spreadsheetId ?? process.env.SPREADSHEET_ID ?? '' });
   return withPreviewContent(withPreviewProject(withPortalAssets(html, root), options.configPath ?? path.join(root, '.clasp.json')), portal)
     .replace('<?!= initialCatalogJson ?>', () => context.serializeCatalog_(catalog))
     .replace('<!-- preview-label -->', '<p class="preview-label"><span>LOCAL PREVIEW</span> · <span data-i18n="Mock data">Mock data</span></p>')
@@ -56,6 +56,32 @@ export function renderPreview(html, root, options = {}) {
           });
         }
       } catch { /* Use HTML defaults when stored values are invalid or browser storage is unavailable. */ }
+      const normalizeSpreadsheetId_ = ${context.normalizeSpreadsheetId_.toString()};
+      const validateSpreadsheetSettings_ = ${context.validateSpreadsheetSettings_.toString()};
+      let previewSource = ${serialize({ SPREADSHEET_ID: portal.spreadsheetId, SHEET_NAME: portal.sheetName })};
+      try {
+        const stored = localStorage.getItem('portal-preview-source');
+        if (stored) previewSource = validateSpreadsheetSettings_(JSON.parse(stored));
+      } catch { /* Invalid storage falls back to the preview defaults. */ }
+      if (typeof document !== 'undefined') {
+        document.getElementById('setting-spreadsheet').value = previewSource.SPREADSHEET_ID;
+        document.getElementById('setting-sheet-name').value = previewSource.SHEET_NAME;
+      }
+      // Mirror production footer rendering after restoring the local source.
+      if (typeof document !== 'undefined') {
+        const id = normalizeSpreadsheetId_(document.getElementById('setting-spreadsheet').value);
+        let link = document.querySelector('.spreadsheet-link');
+        if (id) {
+          if (!link) {
+            link = document.querySelector('.project-link').cloneNode(true);
+            link.className = 'footer-link spreadsheet-link';
+            link.firstChild.textContent = 'Spreadsheet ';
+            document.querySelector('.project-link').after(link);
+          }
+          link.href = 'https://docs.google.com/spreadsheets/d/' + id + '/edit';
+          link.hidden = false;
+        } else { link?.remove(); }
+      }
       const normalizeCatalogCacheTtl_ = ${context.normalizeCatalogCacheTtl_.toString()};
       let previewCacheSeconds = 21600;
       try { previewCacheSeconds = normalizeCatalogCacheTtl_(localStorage.getItem('portal-preview-cache-seconds')); } catch { /* Use defaults. */ }
@@ -86,7 +112,7 @@ export function renderPreview(html, root, options = {}) {
         if (!cached && previewCacheSeconds > 0) {
           try { localStorage.setItem('portal-preview-catalog', JSON.stringify({fetchedAt, seconds:previewCacheSeconds})); } catch { /* Still return mock data. */ }
         }
-        return {...catalog, cache:{hit:Boolean(cached), fetchedAt}};
+        return {...catalog, ...(previewSource.SPREADSHEET_ID === 'preview-created-sheet' ? {tools:[], issues:[]} : {}), cache:{hit:Boolean(cached), fetchedAt}};
       }
       // Production embeds data during doGet; preview simulates this without an initial RPC.
       if (typeof document !== 'undefined') {
@@ -103,6 +129,25 @@ export function renderPreview(html, root, options = {}) {
             this.success({ok:true, settings});
           } catch (error) { this.success({ok:false, error:error.message}); }
         }, 200);},
+        saveSpreadsheetSettings(input) {setTimeout(() => {
+          try {
+            const settings = validateSpreadsheetSettings_(input);
+            localStorage.setItem('portal-preview-source', JSON.stringify(settings));
+            previewSource = settings;
+            localStorage.removeItem('portal-preview-catalog');
+            this.success({ok:true, settings});
+          } catch (error) { this.success({ok:false, error:error.message}); }
+        }, 200);},
+        createPortalSpreadsheet() {setTimeout(() => {
+          if (previewSource.SPREADSHEET_ID.trim()) return this.success({ok:false, error:PortalI18n.t('A spreadsheet ID is already configured. No spreadsheet was created.', previewLanguage)});
+          try {
+            const next = {...previewSource, SPREADSHEET_ID:'preview-created-sheet'};
+            localStorage.setItem('portal-preview-source', JSON.stringify(next));
+            previewSource = next;
+            localStorage.removeItem('portal-preview-catalog');
+            this.success({ok:true, spreadsheetId:next.SPREADSHEET_ID});
+          } catch { this.failure(); }
+        }, 350);},
         resetPortalSettings() {this.savePortalSettings(getPortalPropertyDefaults_(previewLanguage));},
         saveLanguage(language) {setTimeout(() => {
           if (!['auto', 'ja', 'en'].includes(language)) return this.success({ok:false});

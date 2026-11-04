@@ -19,10 +19,10 @@ export default [
         PropertiesService: 'readonly',
       },
     },
-    rules: { 'no-unused-vars': ['error', { varsIgnorePattern: '^(doGet|getCatalog|saveCatalogCacheTtl|normalizeCatalogCacheTtl_|readCachedSheetCatalog_|saveTheme|saveLanguage|include_|parseCatalog_|readSheetCatalog_|initializeScriptProperties|initializeProperties|savePortalSettings|resetPortalSettings)$' }] },
+    rules: { 'no-unused-vars': ['error', { varsIgnorePattern: '^(doGet|getCatalog|saveCatalogCacheTtl|normalizeCatalogCacheTtl_|readCachedSheetCatalog_|saveTheme|saveLanguage|include_|parseCatalog_|readSheetCatalog_|initializeScriptProperties|initializeProperties|savePortalSettings|saveSpreadsheetSettings|createPortalSpreadsheet|resetPortalSettings)$' }] },
   },
   { files: ['src/server/Code.js'], languageOptions: { globals: { readCachedSheetCatalog_: 'readonly' } } },
-  { files: ['src/server/SheetCatalog.js'], languageOptions: { globals: { parseCatalog_: 'readonly', normalizeCatalogCacheTtl_: 'readonly' } } },
+  { files: ['src/server/SheetCatalog.js'], languageOptions: { globals: { parseCatalog_: 'readonly', normalizeCatalogCacheTtl_: 'readonly', getPortalUserProperties_: 'readonly', normalizeSpreadsheetId_: 'readonly' } } },
   {
     files: ['src/browser/*.js'],
     languageOptions: { sourceType: 'module', globals: { ...globals.browser, google: 'readonly' } },
