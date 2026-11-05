@@ -12,7 +12,7 @@ test("Read the configured sheet regardless of position and preserve the RPC shap
   assert.equal(cache.hit, false);
   assert.ok(cache.fetchedAt > 0);
   assert.deepEqual(response, {
-    ok: true, tools: [{ ...entry(), category: 'その他', children: [] }], issues: [],
+    ok: true, tools: [{ ...entry(), children: [] }], issues: [],
   });
   assert.deepEqual(plain(calls), [
     ['values', 'test-id', "'仕事''s リンク'", { valueRenderOption: 'FORMATTED_VALUE' }],

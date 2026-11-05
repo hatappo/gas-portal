@@ -20,7 +20,7 @@ export default [
         PropertiesService: 'readonly',
       },
     },
-    rules: { 'no-unused-vars': ['error', { varsIgnorePattern: '^(getGitHubConnections|saveGitHubConnection|disconnectGitHub|getGitHubActionItems|doGet|getCatalog|saveCatalogCacheTtl|saveActionsCacheTtl|normalizeCatalogCacheTtl_|readCachedSheetCatalog_|saveTheme|saveLanguage|include_|parseCatalog_|readSheetCatalog_|initializeScriptProperties|initializeProperties|savePortalSettings|saveSpreadsheetSettings|createPortalSpreadsheet|resetPortalSettings|saveUnblockedUrlSchemes)$' }] },
+    rules: { 'no-unused-vars': ['error', { varsIgnorePattern: '^(getGitHubConnections|saveGitHubConnection|disconnectGitHub|getGitHubActionItems|doGet|getCatalog|saveCatalogCacheTtl|saveActionsCacheTtl|normalizeCatalogCacheTtl_|readCachedSheetCatalog_|saveTheme|saveLanguage|include_|parseCatalog_|readSheetCatalog_|initializeScriptProperties|initializeProperties|savePortalSettings|saveSpreadsheetSettings|createPortalSpreadsheet|saveUnblockedUrlSchemes)$' }] },
   },
   // GAS rejects newer syntax such as logical assignment even when Node accepts it.
   { files: ['src/server/*.js', 'src/shared/*.js'], languageOptions: { ecmaVersion: 2020, sourceType: 'script' } },

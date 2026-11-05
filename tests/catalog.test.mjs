@@ -8,7 +8,7 @@ const link = (overrides = {}) => entry({ id: '', tags: [], ...overrides });
 
 test("Build public catalog data without exposing internal fields", () => {
   assert.deepEqual(parse([entry({ memo: 'private' })]), {
-    tools: [{ ...entry(), category: 'その他', children: [] }], issues: [],
+    tools: [{ ...entry(), children: [] }], issues: [],
   });
 });
 
@@ -59,7 +59,7 @@ test("Ignore a scope field, which is no longer part of the catalog", () => {
 test("Default optional fields to empty descriptions and no tags", () => {
   assert.deepEqual(parse([{ id: 'a', name: 'A', url: 'https://example.com' }]).tools[0], {
     id: 'a', name: 'A', url: 'https://example.com', description: '',
-    tags: [], children: [], category: 'その他',
+    tags: [], children: [],
   });
 });
 

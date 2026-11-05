@@ -651,7 +651,7 @@
     try { receiveCatalog(JSON.parse(initial)); }
     catch { showError(); }
   } else {
-    // Retain compatibility with older HTML and development fixtures without embedded data.
+    // Only test fixtures render without embedded data; the built page always embeds it.
     loadCatalog();
   }
 })();

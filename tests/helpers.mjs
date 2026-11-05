@@ -84,7 +84,6 @@ export function browser(setupWindow = () => {}, client = ['language', 'client', 
     createPortalSpreadsheet(browserLanguage) { creationRequests.push({ browserLanguage, success: this.success, failure: this.failure }); },
     saveSpreadsheetSettings(settings) { sourceSettingsRequests.push({ settings, success: this.success, failure: this.failure }); },
     savePortalSettings(settings, browserLanguage) { settingsRequests.push({ settings, browserLanguage, success: this.success, failure: this.failure }); },
-    resetPortalSettings() { settingsRequests.push({ reset: true, success: this.success, failure: this.failure }); },
     saveLanguage(language) { languageRequests.push({ language, success: this.success, failure: this.failure }); },
     saveTheme(theme) { themeRequests.push({ theme, success: this.success, failure: this.failure }); },
   };
@@ -101,8 +100,8 @@ export function browser(setupWindow = () => {}, client = ['language', 'client', 
 export const catalog = {
   ok: true,
   tools: [
-    { id: 'address', name: 'アドレス生成', url: 'https://example.com/address', description: 'メールの文字列を生成', category: '業務', tags: ['業務'] },
-    { id: 'guide', name: 'Guide', url: 'https://example.com/guide', description: '社内の手引き', category: '資料', tags: ['資料'] },
+    { id: 'address', name: 'アドレス生成', url: 'https://example.com/address', description: 'メールの文字列を生成', tags: ['業務'] },
+    { id: 'guide', name: 'Guide', url: 'https://example.com/guide', description: '社内の手引き', tags: ['資料'] },
   ],
   issues: [],
 };
