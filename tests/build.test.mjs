@@ -72,9 +72,9 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   const app = browser((window) => { window.document.getElementById('initial-catalog').textContent = JSON.stringify(catalog); }, bundledClient.replace(/^<script>\s*/, '').replace(/\s*<\/script>\s*$/, ''), html);
   t.after(() => app.dom.window.close());
   const { context } = server();
-  const englishNote = context.portalSpreadsheetColumns_('en').find((column) => column.name === 'relatedLinks').note;
-  const japaneseNote = context.portalSpreadsheetColumns_('ja').find((column) => column.name === 'relatedLinks').note;
-  assert.equal(app.dom.window.PortalI18n.t(englishNote, 'ja'), japaneseNote, 'Minification preserves note URLs, Unicode, and line breaks');
+  const englishNote = context.portalSpreadsheetColumns_('en').find((column) => column.name === 'icon').note;
+  const japaneseNote = context.portalSpreadsheetColumns_('ja').find((column) => column.name === 'icon').note;
+  assert.equal(app.dom.window.PortalI18n.t(englishNote, 'ja'), japaneseNote, 'Minification preserves note URLs and Unicode');
   assert.equal(app.requests.length, 0, 'The built client renders embedded data without an initial RPC');
   assert.equal(app.document.querySelectorAll('#tools > li').length, 2);
   for (const [id, label] of [['view-cards', 'Cards'], ['view-list', 'List']]) {

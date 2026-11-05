@@ -353,22 +353,30 @@
     return frame;
   }
 
-  /** @param {CatalogTool} tool */
-  function relatedLinks(tool) {
+  /** @param {CatalogTool} tool @param {boolean} [tooltipLeft] */
+  function relatedLinks(tool, tooltipLeft = false) {
     const list = document.createElement('ul');
     list.className = 'related-links';
     list.setAttribute('aria-label', t('Related links for {name}', { name: tool.name }));
-    (tool.relatedLinks || []).forEach((related) => {
+    (tool.children || []).forEach((child) => {
       const item = document.createElement('li');
-      const link = toolLink(related);
+      const link = toolLink(child);
       const label = document.createElement('span');
       label.className = 'related-label';
-      label.textContent = related.label;
+      label.textContent = child.name;
       if (link.classList.contains('is-blocked')) {
         link.prepend(label);
-        link.append(blockedUrl(related.url));
+        link.append(blockedUrl(child.url));
       } else {
-        link.prepend(favicon(related.url, 'related-favicon', 14), label);
+        link.prepend(favicon(child.url, 'related-favicon', 14, child.icon), label);
+      }
+      if (child.description) {
+        // DaisyUI draws the tooltip with CSS, which screen readers skip; describe the link as well.
+        item.classList.add('tooltip');
+        // In the list view, links sit in the last column; open leftward to stay inside the scrolling table.
+        if (tooltipLeft) item.classList.add('tooltip-left');
+        item.dataset.tip = child.description;
+        link.setAttribute('aria-description', child.description);
       }
       item.append(link);
       list.append(item);
@@ -395,7 +403,7 @@
     link.prepend(title, description, tagLabels(tool));
     if (blocked) description.after(blockedUrl(tool.url));
     container.append(link);
-    if (tool.relatedLinks?.length) container.append(relatedLinks(tool));
+    if (tool.children?.length) container.append(relatedLinks(tool));
     item.append(container);
     return item;
   }
@@ -417,7 +425,7 @@
     const tags = document.createElement('td');
     tags.append(tagLabels(tool));
     const related = document.createElement('td');
-    if (tool.relatedLinks?.length) related.append(relatedLinks(tool));
+    if (tool.children?.length) related.append(relatedLinks(tool, true));
     else related.textContent = '—';
     row.append(name, description, tags, related);
     return row;
@@ -439,7 +447,7 @@
     const query = normalize(search.value);
     const visible = tools.filter((tool) =>
       [...selectedTags].every((tag) => tool.tags.includes(tag)) &&
-      normalize([tool.name, tool.description, ...tool.tags].join(' ')).includes(query));
+      normalize([tool.name, tool.description, ...tool.tags, ...(tool.children || []).map((child) => child.name)].join(' ')).includes(query));
     const list = element('tools');
     list.replaceChildren();
     const rows = element('tool-rows');
@@ -509,12 +517,17 @@
       typeof tool[/** @type {keyof CatalogTool} */ (key)] !== 'string')) return false;
     if (!Array.isArray(tool.tags) ||
         !tool.tags.every((tag) => typeof tag === 'string')) return false;
-    if (tool.icon !== undefined && (typeof tool.icon !== 'string' || !tool.icon.trim() ||
-        (isIconUrl(tool.icon) ? !safeUrl(tool.icon) : /\s/.test(tool.icon) || Array.from(tool.icon).length > 8))) return false;
-    if (tool.relatedLinks !== undefined && (!Array.isArray(tool.relatedLinks) ||
-        !tool.relatedLinks.every((link) => link && typeof link.label === 'string' &&
-          link.label.trim() && typeof link.url === 'string' && safeUrl(link.url)))) return false;
+    if (!safeIcon(tool.icon)) return false;
+    if (tool.children !== undefined && (!Array.isArray(tool.children) || !tool.children.every((child) => child &&
+        ['name', 'url', 'description'].every((key) => typeof child[/** @type {keyof CatalogChild} */ (key)] === 'string') &&
+        child.name.trim() && safeUrl(child.url) && safeIcon(child.icon)))) return false;
     return safeUrl(tool.url);
+  }
+
+  /** @param {unknown} icon */
+  function safeIcon(icon) {
+    return icon === undefined || (typeof icon === 'string' && Boolean(icon.trim()) &&
+      (isIconUrl(icon) ? safeUrl(icon) : !/\s/.test(icon) && Array.from(icon).length <= 8));
   }
 
   /** Check syntax only; blocked schemes are still rendered, without a link. @param {string} value */

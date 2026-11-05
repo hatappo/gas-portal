@@ -53,9 +53,9 @@ test('Save only optional schemes to User Properties and ignore invalid stored va
 const mixed = {
   ...catalog,
   tools: [
-    { ...catalog.tools[0], id: 'a-editor', name: 'Editor', url: 'vscode://file/Users/me/project', relatedLinks: [
-      { label: 'Local', url: 'http://localhost:4174/' },
-      { label: 'Inline', url: 'data:text/plain,hello' },
+    { ...catalog.tools[0], id: 'a-editor', name: 'Editor', url: 'vscode://file/Users/me/project', children: [
+      { id: 'c1', name: 'Local', url: 'http://localhost:4174/', description: '' },
+      { id: 'c2', name: 'Inline', url: 'data:text/plain,hello', description: '' },
     ] },
     { ...catalog.tools[0], id: 'b-data', name: 'Data page', url: 'data:text/html,<marquee>x</marquee>' },
     { ...catalog.tools[0], id: 'c-script', name: 'Script', url: 'javascript:alert(1)' },

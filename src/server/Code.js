@@ -288,7 +288,6 @@ function getCatalog(forceRefresh = false) {
       SHEETS_SERVICE_DISABLED: PortalI18n.t("Enable the Google Sheets API in GAS Services."),
       SHEET_NOT_FOUND: PortalI18n.t("The specified sheet does not exist. Check that SHEET_NAME matches its name."),
       INVALID_SHEET_HEADERS: PortalI18n.t("The first row must contain id, name, and url columns. Also check for duplicate column names."),
-      LEGACY_RELATED_HEADERS: PortalI18n.t("Combine related links in the relatedLinks column, with one URL, a space, and a label per line."),
     };
     const code = error instanceof Error && Object.prototype.hasOwnProperty.call(messages, error.message) ? error.message : 'READ_FAILED';
     console.error('CATALOG_FAILED', code);
@@ -361,14 +360,13 @@ function portalSpreadsheetColumns_(language) {
   /** @param {string} key */
   const t = (key) => PortalI18n.t(key, language);
   return [
-    { name: 'id', type: 'TEXT', width: 160, note: t('Required. Unique text ID. Entries are sorted by ID as text; leading zeros are preserved.') },
+    { name: 'id', type: 'TEXT', width: 160, note: t('Unique text ID; leading zeros are preserved. Leave it blank to make this row a related link of the nearest row above that has an id. Rows appear in sheet order, so sorting the sheet changes which tool a related link belongs to.') },
     { name: 'hidden', type: 'BOOLEAN', width: 100, note: t('Optional. Check TRUE to hide this entry. FALSE or blank keeps it visible. Hidden rows are excluded from search, tags, and counts.') },
     { name: 'tags', type: 'TEXT', width: 200, note: t('Optional. Separate tags with commas or line breaks.') },
     { name: 'icon', type: 'TEXT', width: 120, note: t('Optional. An image URL starting with https:// or an emoji, shown instead of the automatic favicon. Leave blank to detect the favicon automatically.') },
     { name: 'name', type: 'TEXT', width: 220, note: t('Required. Display name shown in the portal.') },
     { name: 'url', type: 'TEXT', width: 320, note: t('Required. Primary URL, such as https:// or vscode://, entered as plain text rather than a file chip.') },
-    { name: 'description', type: 'TEXT', width: 320, note: t('Optional. Plain-text description. HTML and Markdown are not interpreted.') },
-    { name: 'relatedLinks', type: 'TEXT', width: 720, note: t('Optional. One link per line in this cell: URL, a space, then a label. Labels may contain spaces. Example:\nhttps://example.com/guide User guide\nvscode://file/path/to/project Open in VS Code') },
+    { name: 'description', type: 'TEXT', width: 320, note: t('Optional. Plain-text description. HTML and Markdown are not interpreted. For a related link, it is shown as a tooltip.') },
   ];
 }
 
