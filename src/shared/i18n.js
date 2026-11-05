@@ -198,6 +198,7 @@ globalThis.PortalI18n = (() => {
   "id, name, and url must be non-empty strings.": "id・name・url は空でない文字列で指定してください。",
   "Duplicate id.": "id が重複しています。",
   "Enter a valid URL in url.": "url に有効な URL を入力してください。",
+  "Could not create the spreadsheet. Please try again.": "スプレッドシートを作成できませんでした。もう一度お試しください。",
   "The parent row has errors.": "親の行にエラーがあります。",
   "A row with a blank id needs a tool row above it.": "id が空の行の上に、ツールの行（id がある行）が必要です。",
   "name and url must be non-empty strings.": "name・url は空でない文字列で指定してください。",
