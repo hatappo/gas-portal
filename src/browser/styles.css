@@ -519,3 +519,10 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .url-scheme-choice { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--ink); font-size: 14px; cursor: pointer; }
 .url-scheme-choice input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
 .url-scheme-settings:disabled .url-scheme-choice { cursor: progress; opacity: .7; }
+
+/* Favicon finder bookmarklet: a link meant to be dragged to the bookmarks bar. */
+.bookmarklet-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 14px; border: 1px dashed var(--accent); border-radius: 7px; color: var(--accent); background: var(--surface-soft); font-size: 13px; font-weight: 600; text-decoration: none; cursor: grab; }
+.bookmarklet-link:active { cursor: grabbing; }
+.favicon-finder details { margin-top: 8px; }
+.favicon-finder summary { cursor: pointer; }
+.bookmarklet-code { display: block; width: 100%; margin: 8px 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: var(--surface); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; resize: vertical; }
