@@ -13,7 +13,7 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   t.after(() => rmSync(root, { recursive: true, force: true }));
   cpSync('src', path.join(root, 'src'), { recursive: true });
   mkdirSync(path.join(root, 'scripts'));
-  for (const file of ['build.mjs', 'portal-html.mjs']) cpSync(`scripts/${file}`, path.join(root, 'scripts', file));
+  for (const file of ['build.mjs', 'gas-syntax.mjs', 'portal-html.mjs']) cpSync(`scripts/${file}`, path.join(root, 'scripts', file));
   mkdirSync(path.join(root, 'lib'));
   cpSync('lib/repository-url.mjs', path.join(root, 'lib/repository-url.mjs'));
   symlinkSync(path.resolve('node_modules'), path.join(root, 'node_modules'), 'dir');
