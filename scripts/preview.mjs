@@ -70,6 +70,10 @@ export function renderPreview(html, root, options = {}) {
         }
       } catch { /* Use HTML defaults when stored values are invalid or browser storage is unavailable. */ }
       const normalizeSpreadsheetId_ = ${context.normalizeSpreadsheetId_.toString()};
+      // Input checks come from the server code, so the preview accepts and rejects the same values.
+      const isPortalLanguagePreference_ = ${context.isPortalLanguagePreference_.toString()};
+      const isPortalTheme_ = ${context.isPortalTheme_.toString()};
+      const validateUnblockedUrlSchemes_ = ${context.validateUnblockedUrlSchemes_.toString()};
       const validateSpreadsheetSettings_ = ${context.validateSpreadsheetSettings_.toString()};
       let previewSource = ${serialize({ SPREADSHEET_ID: portal.spreadsheetId, SHEET_NAME: portal.sheetName })};
       try {
@@ -116,10 +120,10 @@ export function renderPreview(html, root, options = {}) {
         if (theme !== 'auto' && PortalThemes.isTheme(theme)) document.documentElement.dataset.theme = theme;
       } catch { /* Use defaults when the browser denies storage access. */ }
       function readPreviewCatalog(forceRefresh = false) {
-        if (scenario === 'error') return {ok:false, error:PortalI18n.t('Select Fetch latest to try again. If the problem persists, check the GAS settings.')};
+        if (scenario === 'error') return {ok:false, error:'Select Fetch latest to try again. If the problem persists, check the GAS settings.'};
         if (scenario === 'empty') return {ok:true, tools:[], issues:[]};
-        if (scenario === 'invalid') return {ok:true, tools:[], issues:[{row:2, message:PortalI18n.t('Enter a valid URL in url.')}]};
-        if (scenario === 'config') return {ok:false, error:PortalI18n.t('The first row must contain id, name, and url columns. Also check for duplicate column names.')};
+        if (scenario === 'invalid') return {ok:true, tools:[], issues:[{row:2, message:'Enter a valid URL in url.'}]};
+        if (scenario === 'config') return {ok:false, error:'The first row must contain id, name, and url columns. Also check for duplicate column names.'};
         let cached;
         try {
           const value = JSON.parse(localStorage.getItem('portal-preview-catalog') || 'null');
@@ -161,7 +165,7 @@ export function renderPreview(html, root, options = {}) {
           } catch (error) { this.success({ok:false, error:error.message}); }
         }, 200);},
         createPortalSpreadsheet() {setTimeout(() => {
-          if (previewSource.SPREADSHEET_ID.trim()) return this.success({ok:false, error:PortalI18n.t('A spreadsheet ID is already configured. No spreadsheet was created.', previewLanguage)});
+          if (previewSource.SPREADSHEET_ID.trim()) return this.success({ok:false, notCreated:true, error:'A spreadsheet ID is already configured. No spreadsheet was created.'});
           try {
             const next = {...previewSource, SPREADSHEET_ID:'preview-created-sheet'};
             localStorage.setItem('portal-preview-source', JSON.stringify(next));
@@ -171,7 +175,7 @@ export function renderPreview(html, root, options = {}) {
           } catch { this.failure(); }
         }, 350);},
         saveLanguage(language) {setTimeout(() => {
-          if (!['auto', 'ja', 'en'].includes(language)) return this.success({ok:false});
+          if (!isPortalLanguagePreference_(language)) return this.success({ok:false});
           try {
             localStorage.setItem('portal-preview-language', language);
             previewPreference = language;
@@ -180,6 +184,7 @@ export function renderPreview(html, root, options = {}) {
           } catch { this.failure(); }
         }, 200);},
         saveTheme(theme) {setTimeout(() => {
+          if (!isPortalTheme_(theme)) return this.success({ok:false});
           try {
             localStorage.setItem('portal-preview-theme', theme);
             this.success({ok:true, theme});
@@ -194,9 +199,9 @@ export function renderPreview(html, root, options = {}) {
           } catch { this.failure(); }
         }, 200);},
         saveUnblockedUrlSchemes(schemes) {setTimeout(() => {
-          if (!Array.isArray(schemes) || schemes.some((scheme) => !PortalUrlSchemes.optional.includes(scheme)) || new Set(schemes).size !== schemes.length) return this.success({ok:false});
+          const normalized = validateUnblockedUrlSchemes_(schemes);
+          if (!normalized) return this.success({ok:false});
           try {
-            const normalized = PortalUrlSchemes.normalizeUnblocked(schemes);
             localStorage.setItem('portal-preview-unblocked-url-schemes', normalized.join(','));
             this.success({ok:true, schemes:normalized});
           } catch { this.failure(); }

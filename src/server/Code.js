@@ -22,9 +22,14 @@ function getPortalLanguage_(browserLanguage) {
   catch { return 'en'; }
 }
 
+/** @param {unknown} language @returns {language is 'auto' | 'ja' | 'en'} */
+function isPortalLanguagePreference_(language) {
+  return language === 'ja' || language === 'en' || language === 'auto';
+}
+
 /** @param {unknown} language @returns {{ok: true, language: string} | {ok: false}} */
 function saveLanguage(language) {
-  if (language !== 'ja' && language !== 'en' && language !== 'auto') return { ok: false };
+  if (!isPortalLanguagePreference_(language)) return { ok: false };
   try {
     withPortalPropertiesLock_(() => PropertiesService.getUserProperties().setProperty('PORTAL_LANGUAGE', language));
     return { ok: true, language };
@@ -323,14 +328,22 @@ function saveActionsCacheTtl(seconds) {
   }
 }
 
+/** Accept a list of distinct optional schemes only; return it in canonical order, or null.
+ * @param {unknown} schemes @returns {string[] | null}
+ */
+function validateUnblockedUrlSchemes_(schemes) {
+  if (!Array.isArray(schemes) || schemes.some((scheme) => typeof scheme !== 'string' || !PortalUrlSchemes.optional.includes(scheme)) ||
+      new Set(schemes).size !== schemes.length) return null;
+  return PortalUrlSchemes.normalizeUnblocked(schemes);
+}
+
 /** Save which default-blocked URL schemes may be opened. Script schemes are never accepted.
  * @param {unknown} schemes
  * @returns {{ok: true, schemes: string[]} | {ok: false}}
  */
 function saveUnblockedUrlSchemes(schemes) {
-  if (!Array.isArray(schemes) || schemes.some((scheme) => typeof scheme !== 'string' || !PortalUrlSchemes.optional.includes(scheme)) ||
-      new Set(schemes).size !== schemes.length) return { ok: false };
-  const normalized = PortalUrlSchemes.normalizeUnblocked(schemes);
+  const normalized = validateUnblockedUrlSchemes_(schemes);
+  if (!normalized) return { ok: false };
   try {
     withPortalPropertiesLock_(() => PropertiesService.getUserProperties().setProperty('UNBLOCKED_URL_SCHEMES', normalized.join(',')));
     return { ok: true, schemes: normalized };
