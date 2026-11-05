@@ -7,6 +7,7 @@ import './theme.js';
 import './settings.js';
 import './cache-settings.js';
 import './url-scheme-settings.js';
+import './favicon-finder.js';
 import './spreadsheet-settings.js';
 import './action-items.js';
 import './github.js';

@@ -70,7 +70,9 @@ Leave `icon` blank to detect the favicon automatically (see [Tool favicons](../R
 - **Emoji or short text**, such as `📘` or `HS`: shown instead of a favicon, with no image request.
 - **Image URL** starting with `https://`: tried first, then automatic detection if it fails to load. `http://` and other schemes are rejected.
 
-Automatic detection cannot see icons that a page declares in its HTML, which is common for signed-in apps. To find such an icon, open the page in your browser, open the developer tools (⌥⌘I on macOS, F12 elsewhere), search the **Elements** panel for `rel="icon"`, and copy the `href` value. A relative `href` must be made absolute with the page's origin.
+Automatic detection cannot see icons that a page declares in its HTML, which is common for signed-in apps. **Settings → Tools & Links → Favicon finder** provides a bookmarklet for this: drag **Find favicon** to your bookmarks bar, open the page, and click the bookmark. It shows the largest `https://` icon the page declares (or the site's `/favicon.ico`) ready to copy into `icon`. It runs in your own tab, so it works on signed-in pages, and it sends nothing anywhere. If dragging from the portal does not work, copy the code from the collapsed section and paste it as the URL of a new bookmark. Some sites' Content Security Policy may block bookmarklets in some browsers.
+
+To find an icon by hand, open the page in your browser, open the developer tools (⌥⌘I on macOS, F12 elsewhere), search the **Elements** panel for `rel="icon"`, and copy the `href` value. A relative `href` must be made absolute with the page's origin.
 
 ### URL schemes
 

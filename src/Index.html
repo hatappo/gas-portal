@@ -228,6 +228,18 @@
               <p id="url-scheme-help" data-i18n="Links with a checked scheme are shown but cannot be opened. javascript: and vbscript: are always blocked. Changes are saved automatically.">Links with a checked scheme are shown but cannot be opened. javascript: and vbscript: are always blocked. Changes are saved automatically.</p>
               <p id="url-scheme-settings-status" role="status" aria-live="polite"></p>
             </fieldset>
+            <section class="display-settings favicon-finder" aria-labelledby="favicon-finder-title">
+              <div class="settings-heading"><h2 id="favicon-finder-title" data-i18n="Favicon finder">Favicon finder</h2><p data-i18n="When a tool shows the 🌐 fallback, find the icon URL to put in its icon column.">When a tool shows the 🌐 fallback, find the icon URL to put in its icon column.</p></div>
+              <p><a id="favicon-finder-link" class="bookmarklet-link" draggable="true"><span aria-hidden="true">🔍</span> <span data-i18n="Find favicon">Find favicon</span></a></p>
+              <p class="settings-help" data-i18n="Drag the link above to your bookmarks bar. Then open the page whose icon you need and click the bookmark to show its icon URL.">Drag the link above to your bookmarks bar. Then open the page whose icon you need and click the bookmark to show its icon URL.</p>
+              <details class="settings-help">
+                <summary data-i18n="If dragging does not work">If dragging does not work</summary>
+                <p data-i18n="Create a bookmark manually and paste this code as its URL.">Create a bookmark manually and paste this code as its URL.</p>
+                <textarea id="favicon-finder-code" class="bookmarklet-code" rows="3" readonly spellcheck="false" aria-label="Bookmarklet code" data-i18n-aria-label="Bookmarklet code"></textarea>
+                <button type="button" id="favicon-finder-copy" class="settings-reset" data-i18n="Copy code">Copy code</button>
+              </details>
+              <p id="favicon-finder-status" class="settings-form-status" role="status" aria-live="polite"></p>
+            </section>
         </div>
         <div id="settings-actions-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-actions" tabindex="0" hidden>
           <div class="cache-settings">
