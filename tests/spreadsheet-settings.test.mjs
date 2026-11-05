@@ -1,10 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
 import { JSDOM } from 'jsdom';
-import { server, browser, plain } from './helpers.mjs';
-import { renderPreview } from '../scripts/preview.mjs';
+import { server, browser, plain, previewPage, runPreviewMock } from './helpers.mjs';
 import { withPreviewContent } from '../scripts/preview-project.mjs';
 
 const source = readFileSync('src/Index.html', 'utf8');
@@ -127,14 +125,7 @@ test('Keep source saving independent, preserve drafts on failure, and ignore lat
 
 test('Preview persists source settings without accessing Google and restores them after reload', (t) => {
   const storage = {};
-  const create = () => {
-    const dom = new JSDOM(renderPreview(source, process.cwd()));
-    t.after(() => dom.window.close());
-    const context = vm.createContext({ document: dom.window.document, URLSearchParams, location: { search: '' }, setTimeout(fn) { fn(); },
-      localStorage: { getItem: (key) => storage[key], setItem: (key, value) => { storage[key] = value; }, removeItem: (key) => { delete storage[key]; } } });
-    vm.runInContext(dom.window.document.querySelector('script:not([src]):not([type="application/json"])').textContent, context);
-    return { document: dom.window.document, run: vm.runInContext('google.script.run', context) };
-  };
+  const create = () => runPreviewMock(previewPage(t), { storage });
   let result;
   const first = create();
   first.run.withSuccessHandler((value) => { result = value; }).saveSpreadsheetSettings(settings('https://docs.google.com/spreadsheets/d/new-id/edit', 'My tools'));
@@ -154,14 +145,7 @@ test('Preview persists source settings without accessing Google and restores the
 
 test('Preview creates a fake source once and keeps demo entries after reload', (t) => {
   const storage = { 'portal-preview-source': JSON.stringify(settings('', '')) };
-  const create = () => {
-    const dom = new JSDOM(renderPreview(source, process.cwd()));
-    t.after(() => dom.window.close());
-    const context = vm.createContext({ document: dom.window.document, URLSearchParams, location: { search: '' }, setTimeout(fn) { fn(); },
-      localStorage: { getItem: (key) => storage[key], setItem: (key, value) => { storage[key] = value; }, removeItem: (key) => { delete storage[key]; } } });
-    vm.runInContext(dom.window.document.querySelector('script:not([src]):not([type="application/json"])').textContent, context);
-    return { document: dom.window.document, run: vm.runInContext('google.script.run', context) };
-  };
+  const create = () => runPreviewMock(previewPage(t), { storage });
   let result;
   const first = create();
   first.run.withSuccessHandler((value) => { result = value; }).createPortalSpreadsheet('en');
