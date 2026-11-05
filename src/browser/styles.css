@@ -6,6 +6,9 @@
 @plugin "daisyui" {
   /* Keep in sync with src/shared/themes.js. */
   themes: nord --default, night --prefersdark, light, lofi, fantasy, emerald, cmyk, acid, lemonade, cyberpunk, wireframe, dark, dim, dracula, forest, halloween, synthwave, black, aqua, luxury, sunset;
+  /* Only the parts the portal uses. Without this, plain words in markup such as "list" or "status"
+     would pull in unrelated components. Add a name here before using a new component. */
+  include: properties, rootcolor, rootscrollgutter, scrollbar, svg, alert, badge, button, card, checkbox, input, join, link, select, tab, table, textarea, radius;
   logs: false;
 }
 
