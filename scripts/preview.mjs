@@ -15,7 +15,7 @@ const demo = {
       { label: 'Source code', url: 'https://example.com/source' },
     ] },
     { id: 'demo-expense', name: 'Expense service', description: 'Upload receipts and submit expense claims.', scope: 'external', tags: ['Finance', 'Requests', 'Productivity'], url: 'https://example.com/#demo-expense' },
-    { id: 'demo-guide', name: 'Workplace guide', description: 'Find work instructions and answers to common questions.', scope: 'internal', tags: ['Reference', 'Onboarding'], url: 'https://example.com/#demo-guide' },
+    { id: 'demo-guide', name: 'Workplace guide', description: 'Find work instructions and answers to common questions. Its icon comes from the icon column.', scope: 'internal', tags: ['Reference', 'Onboarding'], url: 'https://example.com/#demo-guide', icon: '📘' },
     { id: 'demo-request', name: 'Request forms', description: 'Open the forms you need for everyday requests.', scope: 'internal', tags: ['Finance', 'Requests'], url: 'https://example.com/#demo-request' },
     { id: 'demo-workspace', name: 'Portal workspace', description: 'Open a local project in VS Code.', scope: 'internal', tags: ['Development'], url: 'vscode://file/path/to/my-portal', relatedLinks: [
       { label: 'Local server', url: 'http://localhost:4174/' },

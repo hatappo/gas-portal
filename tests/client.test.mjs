@@ -592,3 +592,33 @@ test('Scope badges still render text when icon templates are unavailable', (t) =
   assert.equal(badge.textContent, '社内');
   assert.equal(badge.querySelector('svg'), null);
 });
+
+test('Spreadsheet icons override detection: text replaces the fallback, and an image URL is tried first', (t) => {
+  const { dom, document, requests } = browser();
+  t.after(() => dom.window.close());
+  requests[0].success({ ...catalog, tools: [
+    { ...catalog.tools[0], icon: '📘' },
+    { ...catalog.tools[1], url: 'https://app.example.com/home', icon: 'https://www.example.com/favicon.ico' },
+  ] });
+  for (const container of ['#tools', '#tool-rows']) {
+    if (container === '#tool-rows') document.querySelector('#view-list').click();
+    const [text, image] = document.querySelectorAll(`${container} .tool-favicon`);
+    assert.equal(text.querySelector('img'), null, 'Text icons make no image request');
+    assert.equal(text.classList.contains('is-text'), true);
+    assert.equal(text.textContent, '📘');
+    assert.equal(text.getAttribute('aria-hidden'), 'true');
+    const img = image.querySelector('img');
+    assert.equal(img.src, 'https://www.example.com/favicon.ico');
+    img.dispatchEvent(new dom.window.Event('error'));
+    assert.equal(img.src, 'https://app.example.com/favicon.ico', 'Fall back to automatic detection');
+  }
+});
+
+test('Reject malformed icons in the browser', (t) => {
+  for (const icon of ['', ' ', 'two words', 'ABCDEFGHI', 'https://user:pass@example.com/i.png', 42]) {
+    const { dom, document, requests } = browser();
+    t.after(() => dom.window.close());
+    requests[0].success({ ...catalog, tools: [{ ...catalog.tools[0], icon }] });
+    assert.match(document.querySelector('#status-title').textContent, /取得できません/, String(icon));
+  }
+});

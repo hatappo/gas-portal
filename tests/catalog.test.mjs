@@ -157,3 +157,23 @@ test("Exclude entries with invalid related links", () => {
     assert.match(result.issues[0].message, /relatedLinks/);
   }
 });
+
+test('Accept an https image URL or short text as an icon and omit blank icons', () => {
+  for (const icon of ['https://www.hubspot.com/favicon.ico', ' 📘 ', 'A', '🇯🇵', '👨‍👩‍👧‍👦', '社']) {
+    const result = parse([entry({ icon })]);
+    assert.deepEqual(result.issues, [], icon);
+    assert.equal(result.tools[0].icon, icon.trim(), icon);
+  }
+  for (const icon of [undefined, '', '   ']) {
+    assert.equal(Object.hasOwn(parse([entry({ icon })]).tools[0], 'icon'), false, String(icon));
+  }
+});
+
+test('Reject icons that are not https images or short text', () => {
+  for (const icon of ['http://example.com/favicon.ico', 'javascript:alert(1)', 'data:image/png;base64,AAAA',
+    'https://user:pass@example.com/i.png', 'https://example.com/<x>', 'two words', 'ABCDEFGHI', 'a\nb', 42]) {
+    const result = parse([entry({ icon })]);
+    assert.equal(result.tools.length, 0, String(icon));
+    assert.match(result.issues[0].message, /icon/, String(icon));
+  }
+});

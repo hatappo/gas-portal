@@ -102,3 +102,14 @@ test('Exclude hidden drafts and duplicate IDs before validation while retaining 
   assert.doesNotMatch(JSON.stringify(result), /Hidden|hidden-only-tag|not a link/);
   assert.deepEqual(parse([['id', 'name', 'url', 'hidden'], ['', '', '', true]]), { tools: [], issues: [] });
 });
+
+test('Read the optional icon column by header name', () => {
+  const result = parse([
+    ['id', 'name', 'url', 'icon'],
+    ['a', 'A', 'https://example.com', '📘'],
+    ['b', 'B', 'https://example.com', ''],
+    ['c', 'C', 'https://example.com', 'https://example.com/icon.png'],
+  ]);
+  assert.deepEqual(result.tools.map((tool) => tool.icon), ['📘', undefined, 'https://example.com/icon.png']);
+  assert.equal(Object.hasOwn(parse([['id', 'name', 'url'], ['a', 'A', 'https://example.com']]).tools[0], 'icon'), false);
+});

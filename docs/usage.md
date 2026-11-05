@@ -27,7 +27,7 @@ On the first page load, catalog request, or `initializeProperties` run, missing 
 
 **Create new spreadsheet** is available only when no ID is saved and the ID input is empty. The server checks the saved User Property again under the same lock used for source settings. Any nonempty saved ID, even an invalid one, stops creation before calling Sheets. Clearing the input alone does not disconnect an existing source; save the empty ID first if you intend to create a replacement.
 
-Creation makes a file named `<portal name>`, with one `Tools` sheet and a native Google Sheets table named `PortalLinks`. It contains a header plus 100 empty entry rows and exactly eight columns in this order: `id`, `hidden`, `scope`, `tags`, `name`, `url`, `description`, `relatedLinks`. Columns beyond H do not exist. `scope` is a dropdown with `internal` and `external`; `hidden` is a checkbox; all other columns are text, including URLs and IDs with leading zeros. The header is frozen, column widths are set, and each header cell has a note describing its format. Notes follow the current portal language at creation, including a multiline `relatedLinks` example. Explicit English or Japanese takes priority; Automatic uses the browser language, with English as fallback. Changing the portal language later does not rewrite existing notes. The table header uses the portal’s Tsuyukusa blue (`#71a4d9`) with dark text. Add table rows in Sheets as needed.
+Creation makes a file named `<portal name>`, with one `Tools` sheet and a native Google Sheets table named `PortalLinks`. It contains a header plus 100 empty entry rows and exactly nine columns in this order: `id`, `hidden`, `scope`, `tags`, `icon`, `name`, `url`, `description`, `relatedLinks`. Columns beyond I do not exist. `scope` is a dropdown with `internal` and `external`; `hidden` is a checkbox; all other columns are text, including URLs and IDs with leading zeros. The header is frozen, column widths are set, and each header cell has a note describing its format. Notes follow the current portal language at creation, including a multiline `relatedLinks` example. Explicit English or Japanese takes priority; Automatic uses the browser language, with English as fallback. Changing the portal language later does not rewrite existing notes. The table header uses the portal’s Tsuyukusa blue (`#71a4d9`) with dark text. Add table rows in Sheets as needed.
 
 `relatedLinks` is created 720px wide because each cell usually holds several full URLs.
 
@@ -47,6 +47,7 @@ Columns are matched by their case-sensitive names in the first row, so you can r
 | hidden | TRUE hides the row; FALSE or blank keeps it visible. Standard checkboxes are supported |
 | scope | internal / external, or the supported Japanese aliases 社内 / 社外. Defaults to internal |
 | tags | Multiple tags separated by commas, Japanese commas, or line breaks |
+| icon | Optional. An image URL starting with `https://`, or an emoji or short text (up to 8 characters). Overrides the automatic favicon |
 | name | Required. Display name |
 | url | Required. Primary link: `https://`, `http://`, or an app scheme such as `vscode://` |
 | description | Plain text; HTML and Markdown are not interpreted |
@@ -61,6 +62,15 @@ Optional columns can be omitted. Enter URLs as text rather than named smart chip
 Catalog reads use `spreadsheets.readonly`, which is not restricted to the configured file. Creation and table setup use `drive.file`, which allows writing files created by or explicitly opened with this app; the app does not request the broad `spreadsheets` write scope. Entering an existing spreadsheet ID does not grant per-file write access. The creation permission remains authorized after setup, while ordinary catalog loading only reads data. See the [Sheets authorization scopes](https://developers.google.com/workspace/sheets/api/scopes).
 
 When upgrading to this feature, push and deploy the new code and authorize the added scope as the deploying account. CLI deployment alone does not confirm that the new consent has been granted. Creation checks authorization before calling Sheets and shows editor instructions when consent is missing. If authorization is required, push the latest code, reload the GAS editor, and run `initializeProperties` with that account. This editor entry point calls `ScriptApp.requireAllScopes(ScriptApp.AuthMode.FULL)` before acquiring a lock or changing properties. Missing consent stops execution and opens the authorization flow. After granting consent, run it again if necessary. `PORTAL_AUTHORIZATION_CHECK_STARTED` and `PORTAL_AUTHORIZATION_GRANTED` identify the check and successful authorization in the execution log. Normal automatic property initialization does not invoke this consent flow. Creation blocked by the check logs `SPREADSHEET_CREATION_BLOCKED AUTHORIZATION_REQUIRED`. If the editor reports granted consent but the web app still reports missing consent, verify the executing account and deployment version before retrying. Keep this a personal project and control who can edit its code.
+
+### Icons
+
+Leave `icon` blank to detect the favicon automatically (see [Tool favicons](../README.md#tool-favicons)). Set it when detection finds nothing or the wrong image:
+
+- **Emoji or short text**, such as `📘` or `HS`: shown instead of a favicon, with no image request.
+- **Image URL** starting with `https://`: tried first, then automatic detection if it fails to load. `http://` and other schemes are rejected.
+
+Automatic detection cannot see icons that a page declares in its HTML, which is common for signed-in apps. To find such an icon, open the page in your browser, open the developer tools (⌥⌘I on macOS, F12 elsewhere), search the **Elements** panel for `rel="icon"`, and copy the `href` value. A relative `href` must be made absolute with the page's origin.
 
 ### URL schemes
 

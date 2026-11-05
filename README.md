@@ -139,7 +139,7 @@ Commit the release's source and workflow changes before tagging. Existing releas
 
 ## Tool favicons
 
-Tool cards, list rows, and related links (at 14 × 14) show decorative favicons. Each `https://` link tries two sources in order:
+Tool cards, list rows, and related links (at 14 × 14) show decorative favicons. A tool's optional `icon` column overrides detection with an emoji or an image URL (see [Icons](docs/usage.md#icons)). Otherwise, each `https://` link tries two sources in order:
 
 1. **The site itself**: `https://<host>/favicon.ico` on the link's own origin. The browser loads it with your normal session, so intranet and signed-in sites that Google cannot reach also get icons. The request goes only to the site the link already points to.
 2. **Google's favicon service** (`t2.gstatic.com/faviconV2`), for public hostnames only. Only the scheme and hostname are sent. The `fallback_opts` parameter makes it answer 404 instead of a generic globe when it has no icon.
