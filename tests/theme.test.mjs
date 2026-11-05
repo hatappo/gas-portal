@@ -118,6 +118,25 @@ test('Report theme save timeouts and ignore late responses', (t) => {
   assert.equal(document.documentElement.dataset.theme, 'night');
 });
 
+test('Show the confirmed theme after a save timeout, so it can be selected again', (t) => {
+  let timeout;
+  const { dom, document, themeRequests } = browser((window) => {
+    const original = window.setTimeout.bind(window);
+    window.setTimeout = (fn, ms) => { if (ms === 15000) { timeout = fn; return 123; } return original(fn, ms); };
+  });
+  t.after(() => dom.window.close());
+  document.querySelector('input[value="nord"]').click();
+  timeout();
+  assert.equal(document.documentElement.hasAttribute('data-theme'), false, 'Back to the saved auto theme');
+  assert.equal(document.querySelector('input[value="auto"]').checked, true);
+  themeRequests[0].success({ ok: true, theme: 'nord' });
+  assert.equal(document.documentElement.hasAttribute('data-theme'), false, 'A late response is ignored');
+  document.querySelector('input[value="nord"]').click();
+  assert.equal(themeRequests.length, 2, 'Selecting the same theme again sends a new save');
+  themeRequests[1].success({ ok: true, theme: 'nord' });
+  assert.equal(document.documentElement.dataset.theme, 'nord');
+});
+
 test('Keep the DaisyUI theme list in styles.css in sync with the shared list', () => {
   const css = readFileSync('src/browser/styles.css', 'utf8');
   const declared = /@plugin "daisyui" \{[^}]*themes:\s*([^;]+);/.exec(css)[1].split(',').map((entry) => entry.trim());

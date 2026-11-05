@@ -67,6 +67,8 @@
     const timeout = window.setTimeout(() => {
       if (current !== generation) return;
       generation++;
+      // Show the last confirmed theme, as the other settings do, so selecting it again works.
+      apply(savedTheme);
       saving(false);
       status.textContent = t("Could not confirm the save. Reload the page to check.");
     }, 15000);
