@@ -461,7 +461,9 @@ test('Use only the refresh spinner during initial loading, refresh, and retry af
   assert.match(status.textContent, /表示する項目がありません/);
 });
 
-test('Tool and related-link favicons share hostname-only URLs across cards and lists without exposing URL details', (t) => {
+const googleFavicon = (origin) => 'https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&size=64&url=' + encodeURIComponent(origin);
+
+test('Favicons try the site itself, then Google, sending only the origin or hostname', (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   requests[0].success({ ...catalog, tools: [{ ...catalog.tools[0],
@@ -469,50 +471,50 @@ test('Tool and related-link favicons share hostname-only URLs across cards and l
     relatedLinks: [{ url: 'https://example.org/private', label: 'Related' }],
   }] });
   const image = document.querySelector('#tools .tool-favicon img');
-  assert.equal(image.src, 'https://www.google.com/s2/favicons?domain=github.com&sz=64');
+  assert.equal(image.src, 'https://github.com/favicon.ico');
   assert.equal(image.loading, 'lazy');
   assert.equal(image.decoding, 'async');
   assert.equal(image.referrerPolicy, 'no-referrer');
   assert.equal(image.alt, '');
   assert.equal(image.width, 20);
-  assert.equal(image.height, 20);
   assert.equal(image.parentElement.getAttribute('aria-hidden'), 'true');
-  assert.equal(document.querySelectorAll('#tools img').length, 2);
+  image.dispatchEvent(new dom.window.Event('error'));
+  assert.equal(image.src, googleFavicon('https://github.com'));
+  assert.doesNotMatch(image.src, /company|private|token|secret|fragment/);
   const related = document.querySelector('#tools .related-favicon img');
-  assert.equal(related.src, 'https://www.google.com/s2/favicons?domain=example.org&sz=64');
+  assert.equal(related.src, 'https://example.org/favicon.ico');
   assert.equal(related.width, 14);
   assert.equal(related.referrerPolicy, 'no-referrer');
-  assert.equal(related.parentElement.getAttribute('aria-hidden'), 'true');
   assert.equal(related.closest('a').textContent.includes('Related'), true);
-  Object.defineProperties(related, { naturalWidth: { value: 12 }, naturalHeight: { value: 12 } });
-  related.dispatchEvent(new dom.window.Event('load'));
-  assert.equal(document.querySelector('#tools .related-favicon img'), null, 'Undersized related icons keep the fallback');
-  assert.equal(document.querySelector('#tools .related-favicon-fallback').textContent, '🌐');
+  related.dispatchEvent(new dom.window.Event('error'));
+  assert.equal(related.src, googleFavicon('https://example.org'));
   Object.defineProperties(image, { naturalWidth: { value: 64 }, naturalHeight: { value: 64 } });
   image.dispatchEvent(new dom.window.Event('load'));
   assert.equal(image.parentElement.classList.contains('is-loaded'), true);
   document.querySelector('#view-list').click();
-  assert.equal(document.querySelector('#tool-rows img').src, image.src);
-  assert.equal(document.querySelectorAll('#tool-rows .tool-favicon img').length, 1);
+  assert.equal(document.querySelector('#tool-rows .tool-favicon img').src, 'https://github.com/favicon.ico');
   assert.equal(document.querySelectorAll('#tool-rows .related-favicon img').length, 1);
   assert.equal(document.querySelector('#tool-rows a').target, '_blank');
 });
 
-test('Tool favicons retain their reserved fallback on failure and do not delay the catalog', (t) => {
+test('Favicons keep the emoji fallback after every source fails and do not delay the catalog', (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   requests[0].success(catalog);
   assert.equal(document.querySelector('#directory').getAttribute('aria-busy'), 'false');
   assert.equal(document.querySelector('#search').disabled, false);
   const frame = document.querySelector('#tools .tool-favicon');
-  frame.querySelector('img').dispatchEvent(new dom.window.Event('error'));
+  const image = frame.querySelector('img');
+  image.dispatchEvent(new dom.window.Event('error'));
+  assert.equal(frame.contains(image), true, 'The second source is still pending');
+  image.dispatchEvent(new dom.window.Event('error'));
   assert.equal(frame.querySelector('img'), null);
   assert.equal(frame.querySelector('.tool-favicon-fallback').textContent, '🌐');
   assert.equal(frame.classList.contains('is-loaded'), false);
   assert.equal(document.querySelectorAll('#tools .tool-card').length, 2);
 });
 
-test('Tool favicons never send local hosts or IP addresses to the image service', (t) => {
+test('Private hosts request only their own favicon, never the external service', (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   const urls = ['https://localhost:3000', 'https://intranet', 'https://127.0.0.1',
@@ -521,30 +523,48 @@ test('Tool favicons never send local hosts or IP addresses to the image service'
     'https://router.home.arpa', 'https://app.localhost.', 'https://app.lan',
     'https://app.home', 'https://app.test', 'https://app.invalid', 'https://app.onion'];
   requests[0].success({ ...catalog, tools: urls.map((url, i) => ({ ...catalog.tools[0], id: String(i), url })) });
-  assert.equal(document.querySelectorAll('#tools .tool-favicon').length, urls.length);
-  assert.equal(document.querySelectorAll('#tools img').length, 0);
-  document.querySelector('#view-list').click();
-  assert.equal(document.querySelectorAll('#tool-rows .tool-favicon').length, urls.length);
-  assert.equal(document.querySelectorAll('#tool-rows img').length, 0);
+  for (const container of ['#tools', '#tool-rows']) {
+    if (container === '#tool-rows') document.querySelector('#view-list').click();
+    const images = [...document.querySelectorAll(`${container} .tool-favicon img`)];
+    assert.equal(images.length, urls.length, container);
+    images.forEach((image, index) => {
+      assert.equal(image.src, new URL(urls[index]).origin + '/favicon.ico', urls[index]);
+      image.dispatchEvent(new dom.window.Event('error'));
+      assert.equal(image.isConnected, false, 'No second source for ' + urls[index]);
+    });
+  }
 });
 
+test('Favicons skip mixed-content requests and non-web schemes', (t) => {
+  const { dom, document, requests } = browser();
+  t.after(() => dom.window.close());
+  const urls = ['http://example.com/path', 'http://localhost:4174/', 'vscode://file/Users/me/project', 'mailto:a@example.com'];
+  requests[0].success({ ...catalog, tools: urls.map((url, i) => ({ ...catalog.tools[0], id: String(i), url })) });
+  const frames = [...document.querySelectorAll('#tools .tool-favicon')];
+  assert.deepEqual(frames.map((frame) => frame.querySelector('img')?.src ?? null),
+    [googleFavicon('http://example.com'), null, null, null]);
+  assert.ok(frames.every((frame) => frame.querySelector('.tool-favicon-fallback').textContent === '🌐'));
+});
 
-test('Use the globe emoji for undersized images in both views and retain adequate site icons', (t) => {
+test('Show small icons at their own size and skip placeholder pixels', (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   requests[0].success(catalog);
-  for (const size of [16, 20, 64]) {
-    for (const view of ['cards', 'list']) {
-      document.querySelector('#view-' + view).click();
-      const frame = document.querySelector((view === 'cards' ? '#tools' : '#tool-rows') + ' .tool-favicon');
-      const image = frame.querySelector('img');
+  for (const view of ['cards', 'list']) {
+    document.querySelector('#view-' + view).click();
+    const container = view === 'cards' ? '#tools' : '#tool-rows';
+    const load = (index, size) => {
+      const image = document.querySelectorAll(`${container} .tool-favicon img`)[index];
       Object.defineProperties(image, { naturalWidth: { value: size }, naturalHeight: { value: size } });
       image.dispatchEvent(new dom.window.Event('load'));
-      assert.equal(frame.querySelector('.tool-favicon-fallback').textContent, '🌐');
-      assert.equal(frame.classList.contains('is-loaded'), size >= 20);
-      assert.equal(frame.contains(image), size >= 20);
-      assert.equal(frame.getAttribute('aria-hidden'), 'true');
-    }
+      return image;
+    };
+    const small = load(0, 16);
+    assert.equal(small.parentElement.classList.contains('is-loaded'), true);
+    assert.deepEqual([small.width, small.height], [16, 16], 'Do not enlarge 16px icons');
+    const placeholder = load(1, 1);
+    assert.equal(placeholder.parentElement.classList.contains('is-loaded'), false);
+    assert.match(placeholder.src, /^https:\/\/t2\.gstatic\.com\/faviconV2/, 'A 1px image is not an icon');
   }
 });
 

@@ -484,7 +484,7 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 /* Reserve identical space before, during, and after the decorative image request. */
 .tool-favicon { position: relative; display: inline-flex; flex: 0 0 20px; width: 20px; height: 20px; margin-top: 2px; align-items: center; justify-content: center; color: var(--muted); }
 .tool-favicon-fallback { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: 18px; line-height: 20px; }
-.tool-favicon img { position: absolute; inset: 0; width: 20px; height: 20px; object-fit: contain; opacity: 0; }
+.tool-favicon img { position: absolute; inset: 0; margin: auto; max-width: 20px; max-height: 20px; object-fit: contain; opacity: 0; }
 .tool-favicon.is-loaded img { opacity: 1; }
 .tool-favicon.is-loaded .tool-favicon-fallback { visibility: hidden; }
 .related-links a, .table-view .related-links a { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
@@ -492,7 +492,7 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .related-links a:hover .related-label { text-decoration-color: currentColor; }
 .related-favicon { position: relative; display: inline-flex; flex: 0 0 14px; width: 14px; height: 14px; align-items: center; justify-content: center; }
 .related-favicon-fallback { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: 12px; line-height: 14px; }
-.related-favicon img { position: absolute; inset: 0; width: 14px; height: 14px; object-fit: contain; opacity: 0; }
+.related-favicon img { position: absolute; inset: 0; margin: auto; max-width: 14px; max-height: 14px; object-fit: contain; opacity: 0; }
 .related-favicon.is-loaded img { opacity: 1; }
 .related-favicon.is-loaded .related-favicon-fallback { visibility: hidden; }
 .table-view .tool-name-link { display: inline-flex; align-items: flex-start; gap: 10px; }
