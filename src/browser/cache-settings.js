@@ -1,17 +1,25 @@
 (() => {
   'use strict';
-  /** @type {Array<[string, string, string, string[], 'saveCatalogCacheTtl' | 'saveActionsCacheTtl']>} */
+  /** @type {Array<[string, string, 'catalog' | 'actions', 'saveCatalogCacheTtl' | 'saveActionsCacheTtl']>} */
   const preferences = [
-    ['catalog-cache-seconds', 'cache-settings-status', '21600', ['0', '300', '3600', '21600'], 'saveCatalogCacheTtl'],
-    ['actions-cache-seconds', 'actions-cache-settings-status', '300', ['0', '60', '300', '900', '1800', '3600', '21600'], 'saveActionsCacheTtl'],
+    ['catalog-cache-seconds', 'cache-settings-status', 'catalog', 'saveCatalogCacheTtl'],
+    ['actions-cache-seconds', 'actions-cache-settings-status', 'actions', 'saveActionsCacheTtl'],
   ];
-  for (const [selectId, statusId, defaultValue, choices, save] of preferences) {
+  /** @param {string} key */
+  const t = (key) => PortalI18n.t(key, document.documentElement.lang);
+  for (const [selectId, statusId, kind, save] of preferences) {
     const select = /** @type {HTMLSelectElement} */ (document.getElementById(selectId));
     const status = /** @type {HTMLElement} */ (document.getElementById(statusId));
-    /** @param {string} key */
-    const t = (key) => PortalI18n.t(key, document.documentElement.lang);
-    let saved = select.dataset.savedValue || String(defaultValue);
-    if (!choices.includes(saved)) saved = String(defaultValue);
+    // One option per choice, from the shared list. Language changes retranslate them through data-i18n.
+    select.replaceChildren(...PortalCacheDurations[kind].choices.map((seconds) => {
+      const option = document.createElement('option');
+      const key = PortalCacheDurations.label(kind, seconds);
+      option.value = String(seconds);
+      option.dataset.i18n = key;
+      option.textContent = t(key);
+      return option;
+    }));
+    let saved = String(PortalCacheDurations.normalize(kind, select.dataset.savedValue || undefined));
     select.value = saved;
     let generation = 0;
     select.addEventListener('change', () => {

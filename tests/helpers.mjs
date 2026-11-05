@@ -3,6 +3,10 @@ import vm from 'node:vm';
 import { createHash, randomUUID } from 'node:crypto';
 import { JSDOM } from 'jsdom';
 import { withPreviewContent } from '../scripts/preview-project.mjs';
+import { sharedSources } from '../scripts/gas-sources.mjs';
+
+// The browser modules, in the order src/browser/main.js imports them.
+export const browserModules = [...readFileSync('src/browser/main.js', 'utf8').matchAll(/^import '\.\/([\w-]+)\.js';$/gm)].map((match) => match[1]);
 
 export const entry = (overrides = {}) => ({
   id: 'address', name: 'アドレス生成', url: 'https://example.com/tool',
@@ -45,10 +49,7 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
     },
     ...overrides,
   });
-  vm.runInContext(readFileSync('src/shared/i18n.js', 'utf8'), context);
-  vm.runInContext(readFileSync('src/shared/url-schemes.js', 'utf8'), context);
-  vm.runInContext(readFileSync('src/shared/themes.js', 'utf8'), context);
-  vm.runInContext(readFileSync('src/shared/catalog-rules.js', 'utf8'), context);
+  for (const file of sharedSources) vm.runInContext(readFileSync(file, 'utf8'), context);
   for (const name of ['Catalog', 'SheetCatalog', 'Code', 'GitHub']) {
     vm.runInContext(readFileSync(`src/server/${name}.js`, 'utf8'), context);
   }
@@ -57,7 +58,7 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
 
 export const plain = (value) => JSON.parse(JSON.stringify(value));
 
-export function browser(setupWindow = () => {}, client = ['language', 'client', 'theme', 'settings', 'cache-settings', 'url-scheme-settings', 'favicon-finder', 'spreadsheet-settings', 'action-items', 'github'].map((file) => readFileSync(`src/browser/${file}.js`, 'utf8')).join('\n'), source = readFileSync('src/Index.html', 'utf8')) {
+export function browser(setupWindow = () => {}, client = browserModules.map((file) => readFileSync(`src/browser/${file}.js`, 'utf8')).join('\n'), source = readFileSync('src/Index.html', 'utf8')) {
   const html = withPreviewContent(source, server().context.getPortalContent_({ PORTAL_LANGUAGE: 'ja' }))
     .replace(/<\?[\s\S]*?\?>/g, '');
   const dom = new JSDOM(html, { runScripts: 'outside-only', url: 'https://example.com' });
@@ -89,10 +90,7 @@ export function browser(setupWindow = () => {}, client = ['language', 'client', 
   };
   dom.window.google = { script: { run: runner } };
   setupWindow(dom.window);
-  dom.window.eval(readFileSync('src/shared/i18n.js', 'utf8'));
-  dom.window.eval(readFileSync('src/shared/url-schemes.js', 'utf8'));
-  dom.window.eval(readFileSync('src/shared/themes.js', 'utf8'));
-  dom.window.eval(readFileSync('src/shared/catalog-rules.js', 'utf8'));
+  for (const file of sharedSources) dom.window.eval(readFileSync(file, 'utf8'));
   dom.window.eval(client);
   return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests, cacheSettingsRequests, sourceSettingsRequests, creationRequests, githubRequests, urlSchemeRequests };
 }

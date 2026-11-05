@@ -152,7 +152,7 @@ function initializePropertyStore_(store, defaults) {
 function initializeUserProperties_() {
   return initializePropertyStore_(PropertiesService.getUserProperties(), {
     ...getPortalPropertyDefaults_(),
-    PORTAL_THEME: 'auto', PORTAL_LANGUAGE: 'auto', CATALOG_CACHE_SECONDS: '21600', ACTIONS_CACHE_SECONDS: '300',
+    PORTAL_THEME: 'auto', PORTAL_LANGUAGE: 'auto', CATALOG_CACHE_SECONDS: String(PortalCacheDurations.catalog.defaultSeconds), ACTIONS_CACHE_SECONDS: String(PortalCacheDurations.actions.defaultSeconds),
     SPREADSHEET_ID: '', SHEET_NAME: '', UNBLOCKED_URL_SCHEMES: '',
   });
 }
@@ -291,12 +291,12 @@ function getCatalog(forceRefresh = false) {
 
 /** @param {unknown} value */
 function normalizeCatalogCacheTtl_(value) {
-  return ['0', '300', '3600', '21600'].includes(String(value)) ? Number(value) : 21600;
+  return PortalCacheDurations.normalize('catalog', value);
 }
 
 /** Persist only the supported cache duration choices. @param {unknown} seconds */
 function saveCatalogCacheTtl(seconds) {
-  if (typeof seconds !== 'number' || ![0, 300, 3600, 21600].includes(seconds)) return { ok: false };
+  if (!PortalCacheDurations.isChoice('catalog', seconds)) return { ok: false };
   try {
     withPortalPropertiesLock_(() => PropertiesService.getUserProperties().setProperty('CATALOG_CACHE_SECONDS', String(seconds)));
     return { ok: true, seconds };
@@ -308,12 +308,12 @@ function saveCatalogCacheTtl(seconds) {
 
 /** Shared duration for all Action Items providers; kept separate from the catalog. @param {unknown} value */
 function normalizeActionsCacheTtl_(value) {
-  return ['0', '60', '300', '900', '1800', '3600', '21600'].includes(String(value)) ? Number(value) : 300;
+  return PortalCacheDurations.normalize('actions', value);
 }
 
 /** @param {unknown} seconds */
 function saveActionsCacheTtl(seconds) {
-  if (typeof seconds !== 'number' || ![0, 60, 300, 900, 1800, 3600, 21600].includes(seconds)) return { ok: false };
+  if (!PortalCacheDurations.isChoice('actions', seconds)) return { ok: false };
   try {
     withPortalPropertiesLock_(() => PropertiesService.getUserProperties().setProperty('ACTIONS_CACHE_SECONDS', String(seconds)));
     return { ok: true, seconds };

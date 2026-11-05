@@ -19,6 +19,13 @@ declare var PortalThemes: {
   isTheme(theme: unknown): boolean;
   label(theme: string): string;
 };
+declare var PortalCacheDurations: {
+  catalog: { defaultSeconds: number; choices: readonly number[] };
+  actions: { defaultSeconds: number; choices: readonly number[] };
+  normalize(kind: 'catalog' | 'actions', value: unknown): number;
+  isChoice(kind: 'catalog' | 'actions', value: unknown): boolean;
+  label(kind: 'catalog' | 'actions', seconds: number): string;
+};
 declare var PortalCatalogRules: {
   isValidLinkUrl(value: unknown): boolean;
   isValidIcon(value: unknown): boolean;

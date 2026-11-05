@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import { createGitHubPreview } from './github-preview.mjs';
 import { withPreviewProject, withPreviewContent } from './preview-project.mjs';
+import { sharedSources } from './gas-sources.mjs';
 import { withPortalAssets } from './portal-html.mjs';
 // Re-exported so a consumer previewing a linked checkout resolves Tailwind from this package.
 export { default as tailwindcss } from '@tailwindcss/vite';
@@ -29,11 +30,8 @@ export function renderPreview(html, root, options = {}) {
   const url = pathToFileURL(path.join(root, 'src/server/'));
   const context = vm.createContext({ console });
   const i18n = readFileSync(path.join(root, 'src/shared/i18n.js'), 'utf8');
-  vm.runInContext(i18n, context);
   const urlSchemes = readFileSync(path.join(root, 'src/shared/url-schemes.js'), 'utf8');
-  vm.runInContext(urlSchemes, context);
-  vm.runInContext(readFileSync(path.join(root, 'src/shared/themes.js'), 'utf8'), context);
-  vm.runInContext(readFileSync(path.join(root, 'src/shared/catalog-rules.js'), 'utf8'), context);
+  for (const file of sharedSources) vm.runInContext(readFileSync(path.join(root, file), 'utf8'), context);
   for (const name of ['Catalog', 'Code']) {
     vm.runInContext(readFileSync(new URL(`${name}.js`, url), 'utf8'), context);
   }
@@ -50,6 +48,7 @@ export function renderPreview(html, root, options = {}) {
       ${i18n}
       ${urlSchemes}
       ${readFileSync(path.join(root, 'src/shared/themes.js'), 'utf8')}
+      ${readFileSync(path.join(root, 'src/shared/cache-durations.js'), 'utf8')}
       let previewPreference = 'auto';
       try { previewPreference = PortalI18n.preference(localStorage.getItem('portal-preview-language')); } catch { /* Storage may be unavailable. */ }
       const browserLanguages = typeof navigator === 'undefined' ? [] : navigator.languages?.length ? navigator.languages : [navigator.language];
@@ -98,11 +97,11 @@ export function renderPreview(html, root, options = {}) {
         document.getElementById('open-spreadsheet-link').dataset.url = id ? 'https://docs.google.com/spreadsheets/d/' + id + '/edit' : '';
       }
       const normalizeCatalogCacheTtl_ = ${context.normalizeCatalogCacheTtl_.toString()};
-      let previewCacheSeconds = 21600;
+      let previewCacheSeconds = PortalCacheDurations.catalog.defaultSeconds;
       try { previewCacheSeconds = normalizeCatalogCacheTtl_(localStorage.getItem('portal-preview-cache-seconds')); } catch { /* Use defaults. */ }
       if (typeof document !== 'undefined') document.getElementById('catalog-cache-seconds').dataset.savedValue = String(previewCacheSeconds);
       const normalizeActionsCacheTtl_ = ${context.normalizeActionsCacheTtl_.toString()};
-      let previewActionsCacheSeconds = 300;
+      let previewActionsCacheSeconds = PortalCacheDurations.actions.defaultSeconds;
       try { previewActionsCacheSeconds = normalizeActionsCacheTtl_(localStorage.getItem('portal-preview-actions-cache-seconds')); } catch { /* Use defaults. */ }
       if (typeof document !== 'undefined') document.getElementById('actions-cache-seconds').dataset.savedValue = String(previewActionsCacheSeconds);
       let previewUnblockedUrlSchemes = [];
@@ -187,7 +186,7 @@ export function renderPreview(html, root, options = {}) {
           } catch { this.failure(); }
         }, 200);},
         saveActionsCacheTtl(seconds) {setTimeout(() => {
-          if (typeof seconds !== 'number' || ![0, 60, 300, 900, 1800, 3600, 21600].includes(seconds)) return this.success({ok:false});
+          if (!PortalCacheDurations.isChoice('actions', seconds)) return this.success({ok:false});
           try {
             localStorage.setItem('portal-preview-actions-cache-seconds', String(seconds));
             previewActionsCacheSeconds = seconds;
@@ -203,7 +202,7 @@ export function renderPreview(html, root, options = {}) {
           } catch { this.failure(); }
         }, 200);},
         saveCatalogCacheTtl(seconds) {setTimeout(() => {
-          if (typeof seconds !== 'number' || ![0, 300, 3600, 21600].includes(seconds)) return this.success({ok:false});
+          if (!PortalCacheDurations.isChoice('catalog', seconds)) return this.success({ok:false});
           try {
             localStorage.setItem('portal-preview-cache-seconds', String(seconds));
             previewCacheSeconds = seconds;

@@ -4,20 +4,18 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { build } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
+import { sharedSources } from './gas-sources.mjs';
 import { checkGasSyntax } from './gas-syntax.mjs';
 import { withPortalAssets } from './portal-html.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const dist = path.join(root, 'dist');
 // Check syntax before replacing output. Building does not access the spreadsheet.
-const i18n = readFileSync(path.join(root, 'src/shared/i18n.js'), 'utf8');
-checkGasSyntax(i18n, 'i18n.js');
-const urlSchemes = readFileSync(path.join(root, 'src/shared/url-schemes.js'), 'utf8');
-checkGasSyntax(urlSchemes, 'url-schemes.js');
-const portalThemes = readFileSync(path.join(root, 'src/shared/themes.js'), 'utf8');
-checkGasSyntax(portalThemes, 'themes.js');
-const catalogRules = readFileSync(path.join(root, 'src/shared/catalog-rules.js'), 'utf8');
-checkGasSyntax(catalogRules, 'catalog-rules.js');
+const shared = sharedSources.map((file) => {
+  const code = readFileSync(path.join(root, file), 'utf8');
+  checkGasSyntax(code, path.basename(file));
+  return code;
+});
 const serverFiles = ['Code.js', 'Catalog.js', 'SheetCatalog.js'];
 const github = readFileSync(path.join(root, 'src/server/GitHub.js'), 'utf8');
 checkGasSyntax(github, 'GitHub.js');
@@ -61,7 +59,7 @@ for (const file of ['appsscript.json']) {
 }
 writeFileSync(path.join(dist, 'Index.html'), index);
 for (const file of serverFiles) {
-  writeFileSync(path.join(dist, file), (file === 'Code.js' ? i18n + '\n' + urlSchemes + '\n' + portalThemes + '\n' + catalogRules + '\n' + github + '\n' : '') + readFileSync(path.join(root, 'src/server', file), 'utf8'));
+  writeFileSync(path.join(dist, file), (file === 'Code.js' ? [...shared, github, ''].join('\n') : '') + readFileSync(path.join(root, 'src/server', file), 'utf8'));
 }
 writeFileSync(path.join(dist, 'Styles.html'), `<style>\n${css}\n</style>\n`);
 writeFileSync(path.join(dist, 'Client.html'), `<script>\n${client}\n</script>\n`);
