@@ -312,18 +312,25 @@
 
   /** @param {CatalogTool} tool */
   function toolFavicon(tool) {
+    return favicon(tool.url, 'tool-favicon', 20);
+  }
+
+  /** A decorative icon with an emoji fallback. Images smaller than the display size are dropped.
+   * @param {string} url @param {string} className @param {number} size
+   */
+  function favicon(url, className, size) {
     const frame = document.createElement('span');
-    frame.className = 'tool-favicon';
+    frame.className = className;
     frame.setAttribute('aria-hidden', 'true');
     const fallback = document.createElement('span');
-    fallback.className = 'tool-favicon-fallback';
+    fallback.className = className + '-fallback';
     fallback.textContent = '🌐';
     frame.append(fallback);
-    const url = faviconUrl(tool.url);
-    if (url) {
+    const source = faviconUrl(url);
+    if (source) {
       const image = document.createElement('img');
-      image.width = 20;
-      image.height = 20;
+      image.width = size;
+      image.height = size;
       image.alt = '';
       image.loading = 'lazy';
       image.decoding = 'async';
@@ -335,7 +342,7 @@
         else frame.classList.add('is-loaded');
       }, { once: true });
       image.addEventListener('error', () => image.remove(), { once: true });
-      image.src = url;
+      image.src = source;
       frame.append(image);
     }
     return frame;
@@ -349,8 +356,15 @@
     (tool.relatedLinks || []).forEach((related) => {
       const item = document.createElement('li');
       const link = toolLink(related);
-      link.prepend(document.createTextNode(related.label));
-      if (link.classList.contains('is-blocked')) link.append(blockedUrl(related.url));
+      const label = document.createElement('span');
+      label.className = 'related-label';
+      label.textContent = related.label;
+      if (link.classList.contains('is-blocked')) {
+        link.prepend(label);
+        link.append(blockedUrl(related.url));
+      } else {
+        link.prepend(favicon(related.url, 'related-favicon', 14), label);
+      }
       item.append(link);
       list.append(item);
     });
