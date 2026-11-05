@@ -223,52 +223,59 @@ test("Ignore successful responses that arrive after timeout", (t) => {
   assert.match(document.querySelector('#status-description').textContent, /最新データを取得/);
 });
 
-test("Render multiple related links as independent safe links in both views", (t) => {
+test("Render related link rows as independent safe links with tooltips in both views", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
-  const relatedLinks = [
-    { label: '使い方', url: 'https://example.com/manual' },
-    { label: '<img src=x onerror=alert(1)>', url: 'https://example.com/source' },
+  const children = [
+    entry({ id: '', tags: [], name: '使い方', url: 'https://example.com/manual', description: '<marquee>手順</marquee>の説明' }),
+    entry({ id: '', tags: [], name: '<img src=x onerror=alert(1)>', url: 'https://example.com/source', description: '' }),
   ];
-  requests[0].success(plain(server({ values: sheetRows([entry({ relatedLinks }), entry({ id: 'other' })]) }).context.getCatalog()));
+  requests[0].success(plain(server({ values: sheetRows([entry(), ...children, entry({ id: 'other' })]) }).context.getCatalog()));
+  assert.equal(document.querySelectorAll('#tools > li').length, 2, 'Children are not cards of their own');
   for (const container of ['#tools', '#tool-rows']) {
     if (container === '#tool-rows') document.querySelector('#view-list').click();
     const links = [...document.querySelectorAll(`${container} .related-links a`)];
-    assert.deepEqual(links.map((link) => link.href), relatedLinks.map((link) => link.url));
+    assert.deepEqual(links.map((link) => link.href), children.map((child) => child.url));
     links.forEach((link, index) => {
-      assert.ok(link.textContent.includes(relatedLinks[index].label));
+      assert.ok(link.textContent.includes(children[index].name));
       assert.equal(link.target, '_blank');
       assert.equal(link.rel, 'noopener noreferrer');
       assert.equal(link.parentElement.closest('a'), null);
       assert.match(link.textContent, /新しいタブ/);
     });
-    assert.equal(document.querySelectorAll(`${container} .related-links`).length, 1);
-    assert.equal(document.querySelectorAll('img:not(.tool-favicon img, .related-favicon img), [onerror]').length, 0);
+    const [described, plainItem] = document.querySelectorAll(`${container} .related-links li`);
+    assert.ok(described.classList.contains('tooltip'));
+    assert.equal(described.classList.contains('tooltip-left'), container === '#tool-rows', 'List-view tooltips open leftward inside the table');
+    assert.equal(described.dataset.tip, '<marquee>手順</marquee>の説明', 'Tooltips are attribute text, never HTML');
+    assert.equal(described.querySelector('a').getAttribute('aria-description'), '<marquee>手順</marquee>の説明');
+    assert.equal(plainItem.classList.contains('tooltip'), false);
+    assert.equal(plainItem.querySelector('a').hasAttribute('aria-description'), false);
+    assert.equal(document.querySelectorAll('img:not(.tool-favicon img, .related-favicon img), [onerror], marquee').length, 0);
     assert.equal(document.querySelectorAll(`${container} .related-links .related-favicon img`).length, 2);
     assert.equal(document.querySelector(`${container} a`).href, entry().url);
-    assert.doesNotMatch(document.querySelector(container).textContent, /↗/);
-    for (const link of document.querySelectorAll(`${container} a`)) {
-      assert.equal(link.target, '_blank');
-      assert.equal(link.rel, 'noopener noreferrer');
-    }
   }
   assert.equal(document.querySelectorAll('#tool-rows tr')[1].lastElementChild.textContent, '—');
 });
 
-test("Support legacy responses without related links and reject invalid links", (t) => {
-  for (const relatedLinks of [null, {}, [null], [{ label: '', url: 'https://example.com' }],
-    [{ label: '使い方', url: 'not a url' }], [{ label: '使い方', url: 'https://user:pass@example.com' }]]) {
+test("Search children's names and reject malformed children", (t) => {
+  const app = browser();
+  t.after(() => app.dom.window.close());
+  app.requests[0].success({ ...catalog, tools: [{ ...catalog.tools[0], children: [{ id: 'c', name: 'Runbook', url: 'https://example.com/runbook', description: '' }] }, catalog.tools[1]] });
+  const search = app.document.querySelector('#search');
+  search.value = 'runbook';
+  search.dispatchEvent(new app.dom.window.Event('input'));
+  const titles = [...app.document.querySelectorAll('#tools .tool-main h3')].map((title) => title.textContent);
+  assert.equal(titles.length, 1);
+  assert.ok(titles[0].endsWith(catalog.tools[0].name), 'The parent card matches through its child');
+  for (const children of [null, {}, [null], [{ id: 'c', name: '', url: 'https://example.com', description: '' }],
+    [{ id: 'c', name: 'Doc', url: 'not a url', description: '' }], [{ id: 'c', name: 'Doc', url: 'https://user:pass@example.com', description: '' }],
+    [{ id: 'c', name: 'Doc', url: 'https://example.com' }], [{ id: 'c', name: 'Doc', url: 'https://example.com', description: '', icon: 'two words' }]]) {
     const { dom, document, requests } = browser();
     t.after(() => dom.window.close());
-    requests[0].success({ ...catalog, tools: [{ ...catalog.tools[0], relatedLinks }] });
-    assert.equal(document.querySelectorAll('#tools a').length, 0);
+    requests[0].success({ ...catalog, tools: [{ ...catalog.tools[0], children }] });
+    assert.equal(document.querySelectorAll('#tools a').length, 0, JSON.stringify(children));
     assert.match(document.querySelector('#status-title').textContent, /取得できません/);
   }
-  const { dom, document, requests } = browser();
-  t.after(() => dom.window.close());
-  requests[0].success(catalog);
-  assert.equal(document.querySelectorAll('#tools a').length, 2);
-  assert.equal(document.querySelectorAll('.related-links').length, 0);
 });
 
 test("Render sheet configuration errors as plain text", (t) => {
@@ -476,7 +483,7 @@ test('Favicons try the site itself, then Google, sending only the origin or host
   t.after(() => dom.window.close());
   requests[0].success({ ...catalog, tools: [{ ...catalog.tools[0],
     url: 'https://GitHub.com:443/company/private?token=secret#fragment',
-    relatedLinks: [{ url: 'https://example.org/private', label: 'Related' }],
+    children: [{ id: 'c', url: 'https://example.org/private', name: 'Related', description: '' }],
   }] });
   const image = document.querySelector('#tools .tool-favicon img');
   assert.equal(image.src, 'https://github.com/favicon.ico');

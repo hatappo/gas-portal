@@ -7,15 +7,13 @@ import { withPreviewContent } from '../scripts/preview-project.mjs';
 export const entry = (overrides = {}) => ({
   id: 'address', name: 'アドレス生成', url: 'https://example.com/tool',
   description: 'メール用の文字列を生成', tags: ['業務'],
-  relatedLinks: [],
   ...overrides,
 });
 
 export function sheetRows(entries) {
-  const headers = ['id', 'name', 'url', 'description', 'tags', 'relatedLinks'];
+  const headers = ['id', 'name', 'url', 'description', 'tags'];
   return [headers, ...entries.map((entry) => [
     entry.id, entry.name, entry.url, entry.description || '', (entry.tags || []).join(','),
-    (entry.relatedLinks || []).map((link) => `${link.url} ${link.label}`).join('\n'),
   ])];
 }
 

@@ -27,9 +27,7 @@ On the first page load, catalog request, or `initializeProperties` run, missing 
 
 **Create new spreadsheet** is available only when no ID is saved and the ID input is empty. The server checks the saved User Property again under the same lock used for source settings. Any nonempty saved ID, even an invalid one, stops creation before calling Sheets. Clearing the input alone does not disconnect an existing source; save the empty ID first if you intend to create a replacement.
 
-Creation makes a file named `<portal name>`, with one `Tools` sheet and a native Google Sheets table named `PortalLinks`. It contains a header plus 100 empty entry rows and exactly eight columns in this order: `id`, `hidden`, `tags`, `icon`, `name`, `url`, `description`, `relatedLinks`. Columns beyond H do not exist. `hidden` is a checkbox; all other columns are text, including URLs and IDs with leading zeros. The header is frozen, column widths are set, and each header cell has a note describing its format. Notes follow the current portal language at creation, including a multiline `relatedLinks` example. Explicit English or Japanese takes priority; Automatic uses the browser language, with English as fallback. Changing the portal language later does not rewrite existing notes. The table header uses the portal’s Tsuyukusa blue (`#71a4d9`) with dark text. Add table rows in Sheets as needed.
-
-`relatedLinks` is created 720px wide because each cell usually holds several full URLs.
+Creation makes a file named `<portal name>`, with one `Tools` sheet and a native Google Sheets table named `PortalLinks`. It contains a header plus 100 empty entry rows and exactly seven columns in this order: `id`, `hidden`, `tags`, `icon`, `name`, `url`, `description`. Columns beyond G do not exist. `hidden` is a checkbox; all other columns are text, including URLs and IDs with leading zeros. The header is frozen, column widths are set, and each header cell has a note describing its format. Notes follow the current portal language at creation, including a multiline `relatedLinks` example. Explicit English or Japanese takes priority; Automatic uses the browser language, with English as fallback. Changing the portal language later does not rewrite existing notes. The table header uses the portal’s Tsuyukusa blue (`#71a4d9`) with dark text. Add table rows in Sheets as needed.
 
 The public [Table API](https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets/sheets#Table) does not expose the table-specific **Show condensed view** and **Show gridlines** switches. Enable those manually under the table menu → **Table formatting** after creation. The sheet-wide gridlines setting is separate and does not enable table gridlines.
 
@@ -43,18 +41,38 @@ Columns are matched by their case-sensitive names in the first row, so you can r
 
 | Column | Content |
 | --- | --- |
-| id | Required. A unique string ID, sorted in ascending order |
+| id | A unique string ID for a tool. Leave it blank to make the row a related link of the tool above (see below) |
 | hidden | TRUE hides the row; FALSE or blank keeps it visible. Standard checkboxes are supported |
 | tags | Multiple tags separated by commas, Japanese commas, or line breaks |
 | icon | Optional. An image URL starting with `https://`, or an emoji or short text (up to 8 characters). Overrides the automatic favicon |
 | name | Required. Display name |
 | url | Required. Primary link: `https://`, `http://`, or an app scheme such as `vscode://` |
-| description | Plain text; HTML and Markdown are not interpreted |
-| relatedLinks | One entry per line within a cell: URL, a space, then a label |
+| description | Plain text; HTML and Markdown are not interpreted. For a related link, shown as a tooltip |
 
 The optional `hidden` column is matched by its header, regardless of position. Only `TRUE` (ignoring case and surrounding whitespace) hides a row; other values remain visible. Hidden rows stay in the spreadsheet but are excluded before validation and duplicate-ID checks, and never enter the catalog response, embedded HTML data, or cache. They do not contribute tags, search results, or counts. After changing a checkbox, use **Fetch latest** to bypass an existing cache, or wait for cache expiry.
 
 Optional columns can be omitted. Enter URLs as text rather than named smart chips. Unknown columns are not included in the public response. Spreadsheets created before v0.4.0 have a `scope` column (internal/external); it is now ignored like any other unknown column. Use a tag, such as `External`, if you still want that distinction. Invalid entries are reported with their row numbers. Primary URLs with the Apps Script origin automatically receive a GAS tag.
+
+### Related links
+
+The sheet order is the structure. A row with an `id` is a tool. A row with a blank `id` is a related link of the nearest row above it that has an `id`; blank rows in between are skipped. Tools and related links appear in sheet row order.
+
+```text
+id         name                 url
+atom       ATOM                 https://atomdata.jp/
+           ATOM NEO production  https://www.atom.onl/auth/login
+           ATOM NEO dev         https://dev.atom.onl/auth/login
+hubspot    HubSpot              https://app.hubspot.com/
+           HubSpot notes        https://app.notion.com/...
+```
+
+- A related link is shown inside its tool's card and in the list view's **Related links** column, not as a card of its own. It uses its own `name`, `url`, favicon or `icon`, and blocked-scheme handling, and its `description` appears as a tooltip.
+- Tag filters treat a tool and its related links as one: the tool shows the union of their tags. Search also matches related links' names. Counts include tools only.
+- Hiding a tool row also hides the related links below it. A related link row can also be hidden on its own.
+- If a tool row is excluded for its own error (an invalid URL, a duplicate id, …), the related links below it are excluded with a row issue rather than moving to an earlier tool. A blank-id row with no tool row above it is also reported.
+- **Sorting the sheet changes the structure.** A related link belongs to whichever tool row ends up above it, so sorting by name or tags moves links between tools. Move a tool together with the related-link rows below it.
+
+Spreadsheets from v0.4.0 and earlier have a `relatedLinks` column with `URL label` lines; it is now ignored. Move each line to its own row with a blank `id`, directly below its tool.
 
 ### Permissions
 

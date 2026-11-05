@@ -54,7 +54,7 @@ function readCachedSheetCatalog_(forceRefresh) {
   try {
     // Version the key whenever cached catalog semantics change. Include the source, sharing one entry across duration choices.
     const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, JSON.stringify([source.id, source.name]), Utilities.Charset.UTF_8);
-    key = 'catalog-v5:' + digest.map((byte) => (byte & 255).toString(16).padStart(2, '0')).join('');
+    key = 'catalog-v7:' + digest.map((byte) => (byte & 255).toString(16).padStart(2, '0')).join('');
     cache = CacheService.getUserCache();
   } catch { /* Cache availability must never prevent a live read. */ }
 
@@ -107,38 +107,33 @@ function parseSheetCatalog_(rows) {
   if (new Set(named).size !== named.length || !['id', 'name', 'url'].every((name) => headers.includes(name))) {
     throw new Error('INVALID_SHEET_HEADERS');
   }
-  if (!headers.includes('relatedLinks') && headers.some((name) => /^relatedLink[1-9]\d*(Label|Url)$/.test(name))) {
-    throw new Error('LEGACY_RELATED_HEADERS');
-  }
   /** @type {CatalogEntry[]} */
   const entries = [];
   /** @type {number[]} */
   const sourceRows = [];
+  /** Set while the nearest tool row above is hidden: its related links are hidden too. */
+  let hidingLinks = false;
   rows.slice(1).forEach((row, index) => {
     // Handle omitted trailing cells and blank spreadsheet rows.
     if (row.every((cell, column) => headers[column] === 'hidden' || String(cell ?? '').trim() === '')) return;
     /** @param {string} name */
     const cell = (name) => String(row[headers.indexOf(name)] ?? '');
+    const isTool = cell('id').trim() !== '';
+    if (isTool) hidingLinks = false;
     // Exclude hidden rows before validation, duplicate detection, and serialization.
-    if (cell('hidden').trim().toUpperCase() === 'TRUE') return;
+    if (cell('hidden').trim().toUpperCase() === 'TRUE') {
+      if (isTool) hidingLinks = true;
+      return;
+    }
+    if (!isTool && hidingLinks) return;
     entries.push({
       id: cell('id'), name: cell('name'), url: cell('url'), description: cell('description'),
       icon: cell('icon'),
       tags: cell('tags').split(/[,、\n\r]+/),
-      relatedLinks: cell('relatedLinks').split(/\r\n?|\n/).map((line) => line.trim()).filter(Boolean).map((line) => {
-        // Split URL and label at the first whitespace; preserve spaces within labels.
-        const match = /^(\S+)[ \t]+(.+)$/.exec(line);
-        return match ? { url: match[1], label: match[2].trim() } : { url: line, label: '' };
-      }),
     });
     sourceRows.push(index + 2);
   });
   const catalog = parseCatalog_(entries);
-  catalog.issues.forEach((issue) => {
-    issue.row = sourceRows[issue.row - 1];
-    if (issue.message.startsWith('relatedLinks')) {
-      issue.message = PortalI18n.t("Each relatedLinks line must contain a URL, a space, and a label.");
-    }
-  });
+  catalog.issues.forEach((issue) => { issue.row = sourceRows[issue.row - 1]; });
   return catalog;
 }

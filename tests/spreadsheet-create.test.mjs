@@ -38,7 +38,7 @@ function setup(options = {}) {
   return { ...app, requests, userProperties, isLocked: () => locked, authorizationChecks: () => authorizationChecks };
 }
 
-test('Create only the eight supported columns with typed table, header notes, and no sheet-name property', () => {
+test('Create only the seven supported columns with typed table, header notes, and no sheet-name property', () => {
   const app = setup({ userProperties: { PORTAL_NAME: 'My Work', PORTAL_THEME: 'dim' } });
   assert.deepEqual(plain(app.context.createPortalSpreadsheet('en')), { ok: true, spreadsheetId: 'created-sheet' });
   assert.equal(app.requests.length, 2);
@@ -46,29 +46,27 @@ test('Create only the eight supported columns with typed table, header notes, an
   assert.equal(spreadsheet.properties.title, 'My Work');
   assert.equal(spreadsheet.sheets.length, 1);
   const sheet = spreadsheet.sheets[0];
-  assert.deepEqual(sheet.properties.gridProperties, { rowCount: 101, columnCount: 8, frozenRowCount: 1 });
+  assert.deepEqual(sheet.properties.gridProperties, { rowCount: 101, columnCount: 7, frozenRowCount: 1 });
   const headers = sheet.data[0].rowData[0].values;
-  const names = ['id', 'hidden', 'tags', 'icon', 'name', 'url', 'description', 'relatedLinks'];
+  const names = ['id', 'hidden', 'tags', 'icon', 'name', 'url', 'description'];
   assert.deepEqual(headers.map((cell) => cell.userEnteredValue.stringValue), names);
   assert.ok(headers.every((cell) => cell.note && cell.userEnteredFormat.textFormat.bold));
+  assert.match(headers[0].note, /blank to make this row a related link.*sorting the sheet/);
   assert.match(headers[3].note, /https:\/\/ or an emoji/);
-  assert.match(headers[7].note, /: URL, a space, then a label/);
-  assert.match(headers[7].note, /\nhttps:\/\/example.com\/guide User guide\nvscode:\/\/file\/path\/to\/project Open in VS Code/);
+  assert.match(headers[6].note, /shown as a tooltip/);
   const requests = app.requests[1][1].requests;
   const table = requests.find((request) => request.addTable).addTable.table;
   assert.equal(table.name, 'PortalLinks');
   assert.deepEqual(table.rowsProperties.headerColorStyle, { rgbColor: { red: 113 / 255, green: 164 / 255, blue: 217 / 255 } });
   assert.deepEqual(headers[0].userEnteredFormat.textFormat.foregroundColorStyle, { rgbColor: { red: 22 / 255, green: 51 / 255, blue: 77 / 255 } });
-  assert.deepEqual(table.range, { sheetId: 0, startRowIndex: 0, endRowIndex: 101, startColumnIndex: 0, endColumnIndex: 8 });
+  assert.deepEqual(table.range, { sheetId: 0, startRowIndex: 0, endRowIndex: 101, startColumnIndex: 0, endColumnIndex: 7 });
   assert.deepEqual(table.columnProperties.map((column) => column.columnName), names);
-  assert.deepEqual(table.columnProperties.map((column) => column.columnType), ['TEXT', 'BOOLEAN', 'TEXT', 'TEXT', 'TEXT', 'TEXT', 'TEXT', 'TEXT']);
+  assert.deepEqual(table.columnProperties.map((column) => column.columnType), ['TEXT', 'BOOLEAN', 'TEXT', 'TEXT', 'TEXT', 'TEXT', 'TEXT']);
   assert.ok(table.columnProperties.every((column) => !column.dataValidationRule), 'No dropdown columns remain');
   const formats = requests.filter((request) => request.repeatCell).map((request) => request.repeatCell);
-  assert.equal(formats.length, 7);
+  assert.equal(formats.length, 6);
   assert.ok(formats.every((format) => format.cell.userEnteredFormat.numberFormat.type === 'TEXT'));
-  const widths = sheet.data[0].columnMetadata.map((column) => column.pixelSize);
-  assert.equal(widths[7], 720, 'relatedLinks holds several full URLs per cell');
-  assert.ok(widths[7] >= Math.max(...widths.slice(0, 7)) * 2);
+  assert.equal(sheet.data[0].columnMetadata.length, names.length);
   assert.equal(app.requests[1][2], 'created-sheet');
   assert.equal(app.userProperties.SPREADSHEET_ID, 'created-sheet');
   assert.equal(Object.hasOwn(app.userProperties, 'SHEET_NAME'), false);
@@ -103,7 +101,7 @@ test('Preserve an existing sheet name and localize notes using the saved or brow
   const app = setup({ userProperties: { SHEET_NAME: 'Keep me', PORTAL_LANGUAGE: 'ja' } });
   assert.equal(app.context.createPortalSpreadsheet('en').ok, true);
   assert.equal(app.userProperties.SHEET_NAME, 'Keep me');
-  assert.match(app.requests[0][1].sheets[0].data[0].rowData[0].values[7].note, /「URL 半角スペース ラベル」/);
+  assert.match(app.requests[0][1].sheets[0].data[0].rowData[0].values[0].note, /上にある最も近い id 付きの行の関連リンク/);
 });
 
 test('Keep the created ID after table failure and report partial failure without creating again', () => {

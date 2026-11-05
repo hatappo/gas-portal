@@ -8,7 +8,7 @@
   themes: lofi --default, dracula --prefersdark, light, nord, fantasy, emerald, cmyk, acid, lemonade, cyberpunk, wireframe, dark, dim, night, forest, halloween, synthwave, black, aqua, luxury, sunset;
   /* Only the parts the portal uses. Without this, plain words in markup such as "list" or "status"
      would pull in unrelated components. Add a name here before using a new component. */
-  include: properties, rootcolor, rootscrollgutter, scrollbar, svg, alert, badge, button, card, checkbox, input, join, link, select, tab, table, textarea, radius;
+  include: properties, rootcolor, rootscrollgutter, scrollbar, svg, alert, badge, button, card, checkbox, input, join, link, select, tab, table, textarea, tooltip, radius;
   logs: false;
 }
 

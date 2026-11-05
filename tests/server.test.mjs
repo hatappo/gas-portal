@@ -12,7 +12,7 @@ test("Read the configured sheet regardless of position and preserve the RPC shap
   assert.equal(cache.hit, false);
   assert.ok(cache.fetchedAt > 0);
   assert.deepEqual(response, {
-    ok: true, tools: [{ ...entry(), category: 'その他' }], issues: [],
+    ok: true, tools: [{ ...entry(), category: 'その他', children: [] }], issues: [],
   });
   assert.deepEqual(plain(calls), [
     ['values', 'test-id', "'仕事''s リンク'", { valueRenderOption: 'FORMATTED_VALUE' }],
@@ -33,13 +33,22 @@ test("Report missing services, sheets, and headers safely", () => {
     [{ Sheets: undefined }, /Google Sheets API/],
     [{ sheetProperties: [] }, /シートがありません/],
     [{ values: [] }, /1 行目/],
-    [{ values: [['id', 'name', 'url', 'relatedLink1Label']] }, /relatedLinks 列/],
   ]) {
     const { context } = server(options);
     const result = context.getCatalog();
     assert.equal(result.ok, false);
     assert.match(result.error, expected);
   }
+});
+
+test("Read related links from blank-id rows and pick up edits on the next uncached read", () => {
+  const values = sheetRows([entry({ id: 'top' }), entry({ id: '', name: 'Doc', url: 'https://example.com/doc', tags: [] }), entry({ id: 'next' })]);
+  const { context } = server({ values });
+  const result = plain(context.getCatalog());
+  assert.deepEqual(result.tools.map((tool) => [tool.id, tool.children.map((child) => child.name)]), [['top', ['Doc']], ['next', []]]);
+  values.splice(2, 1);
+  values.push(['', 'Moved', 'https://example.com/moved', '', '']);
+  assert.deepEqual(plain(context.getCatalog()).tools.map((tool) => [tool.id, tool.children.map((child) => child.name)]), [['top', []], ['next', ['Moved']]], 'Moving a row moves the link');
 });
 
 test("Reject missing properties and invalid IDs before calling the API", () => {

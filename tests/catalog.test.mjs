@@ -3,10 +3,12 @@ import { test } from 'node:test';
 import { entry, server, plain } from './helpers.mjs';
 
 const parse = (entries) => plain(server().context.parseCatalog_(entries));
+/** A related link row: a blank id under the tool row above it. */
+const link = (overrides = {}) => entry({ id: '', tags: [], ...overrides });
 
 test("Build public catalog data without exposing internal fields", () => {
   assert.deepEqual(parse([entry({ memo: 'private' })]), {
-    tools: [{ ...entry(), category: 'その他' }], issues: [],
+    tools: [{ ...entry(), category: 'その他', children: [] }], issues: [],
   });
 });
 
@@ -57,14 +59,14 @@ test("Ignore a scope field, which is no longer part of the catalog", () => {
 test("Default optional fields to empty descriptions and no tags", () => {
   assert.deepEqual(parse([{ id: 'a', name: 'A', url: 'https://example.com' }]).tools[0], {
     id: 'a', name: 'A', url: 'https://example.com', description: '',
-    tags: [], relatedLinks: [], category: 'その他',
+    tags: [], children: [], category: 'その他',
   });
 });
 
-test("Sort string IDs without depending on input order or mutating data", () => {
+test("Keep the sheet row order for tools without mutating data", () => {
   const entries = ['tool-2', 'tool-10', 'tool-1', 'b', ' A ', 'a'].map((id) => entry({ id }));
   const before = structuredClone(entries);
-  assert.deepEqual(parse(entries).tools.map((tool) => tool.id), ['A', 'a', 'b', 'tool-1', 'tool-10', 'tool-2']);
+  assert.deepEqual(parse(entries).tools.map((tool) => tool.id), ['tool-2', 'tool-10', 'tool-1', 'b', 'A', 'a']);
   assert.deepEqual(entries, before);
 });
 
@@ -109,10 +111,10 @@ test("Accept any well-formed scheme and leave blocking to the browser", () => {
   for (const url of ['http://example.com', 'http://localhost:4174/', 'vscode://file/Users/me/project',
     'vscode-insiders://file/c:/work', 'mailto:a@example.com', 'slack://open', 'javascript:alert(1)',
     'data:text/html,x', 'x:' + 'a'.repeat(2046)]) {
-    const result = parse([entry({ url, relatedLinks: [{ label: 'Link', url }] })]);
+    const result = parse([entry({ url }), link({ name: 'Link', url })]);
     assert.deepEqual(result.issues, [], url);
     assert.equal(result.tools[0].url, url);
-    assert.equal(result.tools[0].relatedLinks[0].url, url);
+    assert.equal(result.tools[0].children[0].url, url);
   }
 });
 
@@ -126,34 +128,62 @@ test("Return HTML-like names as plain text", () => {
   assert.equal(parse([entry({ name })]).tools[0].name, name);
 });
 
-test("Normalize optional related links while preserving order and input", () => {
-  for (const relatedLinks of [undefined, []]) {
-    assert.deepEqual(parse([entry({ relatedLinks })]).tools[0].relatedLinks, []);
-  }
-  const input = entry({ relatedLinks: [
-    { label: ' 使い方 ', url: ' https://example.com/manual ', memo: 'private' },
-    { label: '編集', url: 'https://script.google.com/home/projects/test' },
-  ] });
+test("Attach blank-id rows to the nearest tool row above, in row order, with only link fields", () => {
+  const input = [
+    entry(),
+    link({ name: ' 編集 ', url: 'https://script.google.com/home/projects/test', description: 'GAS エディタ', tags: ['開発'], icon: '🛠', memo: 'private' }),
+    link({ name: '使い方', url: ' https://example.com/manual ', description: '', tags: ['資料', '業務'] }),
+    entry({ id: 'other', name: 'Other' }),
+    link({ name: 'Other link', url: 'https://example.com/other' }),
+  ];
   const before = structuredClone(input);
-  const result = parse([input]).tools[0];
-  assert.deepEqual(result.relatedLinks, [
-    { label: '使い方', url: 'https://example.com/manual' },
-    { label: '編集', url: 'https://script.google.com/home/projects/test' },
+  const result = parse(input);
+  assert.deepEqual(result.issues, []);
+  assert.deepEqual(result.tools.map((tool) => tool.id), ['address', 'other'], 'Related links are not tools of their own');
+  assert.deepEqual(result.tools[0].children, [
+    { name: '編集', url: 'https://script.google.com/home/projects/test', description: 'GAS エディタ', icon: '🛠' },
+    { name: '使い方', url: 'https://example.com/manual', description: '' },
   ]);
+  assert.deepEqual(result.tools[0].tags, ['業務', '開発', 'GAS', '資料'], 'Tags merge the tool and its links, including automatic tags');
+  assert.deepEqual(result.tools[1].children.map((child) => child.name), ['Other link']);
   assert.deepEqual(input, before);
-  assert.deepEqual(result.tags, ['業務']); // 自動タグはメイン URL のみ対象。
 });
 
-test("Exclude entries with invalid related links", () => {
-  for (const relatedLinks of [null, {}, 'https://example.com', [null], [[]], [123],
-    [{}], [{ label: '', url: 'https://example.com' }], [{ label: 1, url: 'https://example.com' }],
-    [{ label: '使い方', url: 1 }], [{ label: '使い方', url: ' ' }],
-    ...['javascript alert', 'vscode:', 'http://user:pass@example.com', 'https://user:pass@example.com',
-      'https://example.com/\nattack', 'https://-bad.com'].map((url) => [{ label: '使い方', url }])]) {
-    const result = parse([entry({ relatedLinks })]);
-    assert.equal(result.tools.length, 0);
-    assert.match(result.issues[0].message, /relatedLinks/);
-  }
+test("Report a blank-id row with no tool row above it", () => {
+  const result = parse([link({ name: 'Orphan' }), entry(), link({ name: 'Kept' })]);
+  assert.deepEqual(result.issues.map((issue) => issue.row), [1]);
+  assert.match(result.issues[0].message, /id が空の行の上に/);
+  assert.deepEqual(result.tools[0].children.map((child) => child.name), ['Kept']);
+});
+
+test("Exclude links below a broken tool row instead of moving them to an earlier tool", () => {
+  const result = parse([
+    entry({ id: 'fine' }),
+    entry({ id: 'broken', url: 'not a url' }),
+    link({ name: 'Under broken' }),
+    entry({ id: 'dup' }), entry({ id: 'dup' }),
+    link({ name: 'Under duplicate' }),
+    entry({ id: 'next' }),
+    link({ name: 'Under next' }),
+  ]);
+  assert.deepEqual(result.tools.map((tool) => [tool.id, tool.children.map((child) => child.name)]), [['fine', []], ['next', ['Under next']]]);
+  assert.deepEqual(result.issues.map((issue) => issue.row), [2, 3, 4, 5, 6]);
+  assert.match(result.issues[1].message, /親の行にエラー/);
+  assert.match(result.issues[4].message, /親の行にエラー/);
+});
+
+test("Validate related link rows on their own, without an id or duplicate check", () => {
+  const result = parse([
+    entry(),
+    link({ name: '', url: 'https://example.com' }),
+    link({ name: 'Bad URL', url: 'not a url' }),
+    link({ name: 'Bad icon', icon: 'two words' }),
+    link({ name: 'Same', url: 'https://example.com/a' }),
+    link({ name: 'Same', url: 'https://example.com/a' }),
+  ]);
+  assert.deepEqual(result.issues.map((issue) => issue.row), [2, 3, 4]);
+  assert.match(result.issues[0].message, /name・url/);
+  assert.deepEqual(result.tools[0].children.map((child) => child.name), ['Same', 'Same']);
 });
 
 test('Accept an https image URL or short text as an icon and omit blank icons', () => {

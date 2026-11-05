@@ -5,9 +5,10 @@ interface CatalogTool {
   description: string;
   category: string;
   tags: string[];
-  relatedLinks?: { label: string; url: string }[];
+  children?: CatalogChild[];
   icon?: string;
 }
+interface CatalogChild { name: string; url: string; description: string; icon?: string }
 interface CatalogWarning { row: number; message: string }
 type CatalogResponse =
   | { ok: true; tools: CatalogTool[]; issues: CatalogWarning[]; cache?: { hit: boolean; fetchedAt: number } }
