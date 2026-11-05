@@ -244,7 +244,7 @@
     labels.hidden = tool.tags.length === 0;
     tool.tags.forEach((tag) => {
       const label = document.createElement('span');
-      label.className = 'tool-tag badge badge-sm badge-outline';
+      label.className = 'tool-tag badge badge-sm';
       label.textContent = tag;
       labels.append(label);
     });
