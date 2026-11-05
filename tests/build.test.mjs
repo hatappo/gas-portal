@@ -31,7 +31,7 @@ test("Build stays offline, removes stale data, and preserves output after syntax
     assert.match(html, new RegExp(`class="${icon}-icon"`));
     assert.doesNotMatch(html, new RegExp(`<!-- ${icon}-icon -->`));
   }
-  assert.doesNotMatch(html, /LOCAL PREVIEW|__preview\/version|class="footer-link repository-link"/);
+  assert.doesNotMatch(html, /LOCAL PREVIEW|__preview\/version|class="link footer-link repository-link"/);
   spawnSync('git', ['init', '-q'], { cwd: root });
   spawnSync('git', ['remote', 'add', 'origin', 'git@github.com:example/portal.git'], { cwd: root });
   assert.equal(build().status, 0);
@@ -66,7 +66,8 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   inspect(parsedClient);
   assert.deepEqual(unsafeTemplates, [], 'GAS inline scripts must avoid URL-bearing and multiline template literals');
   assert.doesNotMatch(bundledClient + bundledStyles, /@vite|LOCAL PREVIEW|__preview|demo-address/);
-  assert.match(bundledStyles, /--theme-color/);
+  assert.match(bundledStyles, /\[data-theme=dracula\]/, 'DaisyUI themes are bundled into the inline styles');
+  assert.doesNotMatch(bundledStyles, /@supports \(color:lab/, 'No oklch fallbacks for browsers Tailwind does not support');
   assert.doesNotMatch(html, /type="module"|browser\/main.js/);
   const app = browser((window) => { window.document.getElementById('initial-catalog').textContent = JSON.stringify(catalog); }, bundledClient.replace(/^<script>\s*/, '').replace(/\s*<\/script>\s*$/, ''), html);
   t.after(() => app.dom.window.close());
@@ -88,9 +89,9 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   app.document.querySelector('#search').value = 'Guide';
   app.document.querySelector('#search').dispatchEvent(new app.dom.window.Event('input'));
   assert.equal(app.document.querySelectorAll('#tool-rows > tr').length, 1);
-  app.document.querySelector('input[value="tetsukon"]').click();
-  app.themeRequests[0].success({ ok: true, theme: 'tetsukon' });
-  assert.equal(app.document.documentElement.dataset.theme, 'tetsukon');
+  app.document.querySelector('input[value="night"]').click();
+  app.themeRequests[0].success({ ok: true, theme: 'night' });
+  assert.equal(app.document.documentElement.dataset.theme, 'night');
   app.document.querySelector('#reset-portal-settings').click();
   assert.equal(app.settingsRequests.length, 0);
   app.document.querySelector('#portal-settings-form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true }));

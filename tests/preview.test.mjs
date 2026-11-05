@@ -46,7 +46,7 @@ test("Simulate success, empty, invalid, configuration, and transport states offl
 test("Restore and save themes without mixing concurrent response handlers", (t) => {
   const dom = new JSDOM(renderPreview(source, process.cwd()));
   t.after(() => dom.window.close());
-  let stored = 'shikon';
+  let stored = 'dracula';
   const pending = [];
   const context = vm.createContext({
     document: dom.window.document, URLSearchParams, location: { search: '' },
@@ -54,21 +54,21 @@ test("Restore and save themes without mixing concurrent response handlers", (t) 
     setTimeout(fn) { pending.push(fn); },
   });
   vm.runInContext(dom.window.document.querySelector('script:not([src]):not([type="application/json"])').textContent, context);
-  assert.equal(dom.window.document.documentElement.dataset.theme, 'kuri');
+  assert.equal(dom.window.document.documentElement.dataset.theme, 'dracula');
   const run = vm.runInContext('google.script.run', context);
   let catalog;
   let theme;
   run.withSuccessHandler((value) => { catalog = value; }).getCatalog();
-  run.withSuccessHandler((value) => { theme = value; }).saveTheme('sumi');
+  run.withSuccessHandler((value) => { theme = value; }).saveTheme('night');
   pending.forEach((fn) => fn());
   assert.equal(catalog.tools.length, 6);
-  assert.equal(theme.theme, 'sumi');
-  assert.equal(stored, 'sumi');
+  assert.equal(theme.theme, 'night');
+  assert.equal(stored, 'night');
 });
 
 test("Save, restore, and reset display settings while preserving the theme", (t) => {
   const settings = { PORTAL_NAME: 'Local Portal', PORTAL_ICON: 'l', PORTAL_HEADLINE: 'Local headline', PORTAL_DESCRIPTION: 'Local description' };
-  const storage = { 'portal-preview-settings': JSON.stringify(settings), 'portal-preview-theme': 'kuri' };
+  const storage = { 'portal-preview-settings': JSON.stringify(settings), 'portal-preview-theme': 'dracula' };
   const dom = new JSDOM(renderPreview(source, process.cwd()));
   t.after(() => dom.window.close());
   const context = vm.createContext({
@@ -87,7 +87,7 @@ test("Save, restore, and reset display settings while preserving the theme", (t)
   assert.equal(JSON.parse(storage['portal-preview-settings']).PORTAL_NAME, 'Updated');
   run.withSuccessHandler((value) => { result = value; }).resetPortalSettings();
   assert.equal(result.settings.PORTAL_NAME, 'My Portal');
-  assert.equal(storage['portal-preview-theme'], 'kuri');
+  assert.equal(storage['portal-preview-theme'], 'dracula');
 });
 
 

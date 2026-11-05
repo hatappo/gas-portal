@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import vm from 'node:vm';
 import { build } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
 import { Linter } from 'eslint';
 import { withPortalAssets } from './portal-html.mjs';
 
@@ -23,6 +24,8 @@ const i18n = readFileSync(path.join(root, 'src/shared/i18n.js'), 'utf8');
 checkGasSyntax(i18n, 'i18n.js');
 const urlSchemes = readFileSync(path.join(root, 'src/shared/url-schemes.js'), 'utf8');
 checkGasSyntax(urlSchemes, 'url-schemes.js');
+const portalThemes = readFileSync(path.join(root, 'src/shared/themes.js'), 'utf8');
+checkGasSyntax(portalThemes, 'themes.js');
 const serverFiles = ['Code.js', 'Catalog.js', 'SheetCatalog.js'];
 const github = readFileSync(path.join(root, 'src/server/GitHub.js'), 'utf8');
 checkGasSyntax(github, 'GitHub.js');
@@ -34,9 +37,12 @@ const bundle = await build({
   configFile: false,
   root: path.join(root, 'src'),
   publicDir: false,
+  plugins: [tailwindcss()],
   build: {
     write: false,
     target: 'es2020',
+    // Tailwind v4 already requires these browsers. Older targets add large oklch color fallbacks.
+    cssTarget: ['chrome111', 'edge111', 'firefox128', 'safari16.4'],
     // HtmlService can misparse URL-bearing template literals emitted by Oxc.
     // Keep string literals quoted and line breaks escaped in the inline bundle.
     minify: 'terser',
@@ -63,7 +69,7 @@ for (const file of ['appsscript.json']) {
 }
 writeFileSync(path.join(dist, 'Index.html'), index);
 for (const file of serverFiles) {
-  writeFileSync(path.join(dist, file), (file === 'Code.js' ? i18n + '\n' + urlSchemes + '\n' + github + '\n' : '') + readFileSync(path.join(root, 'src/server', file), 'utf8'));
+  writeFileSync(path.join(dist, file), (file === 'Code.js' ? i18n + '\n' + urlSchemes + '\n' + portalThemes + '\n' + github + '\n' : '') + readFileSync(path.join(root, 'src/server', file), 'utf8'));
 }
 writeFileSync(path.join(dist, 'Styles.html'), `<style>\n${css}\n</style>\n`);
 writeFileSync(path.join(dist, 'Client.html'), `<script>\n${client}\n</script>\n`);

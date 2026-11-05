@@ -224,7 +224,7 @@ test("Display search and theme choices in a source-free packaged preview", async
   doc.querySelector('#search').dispatchEvent(new dom.window.Event('input'));
   assert.equal(doc.querySelectorAll('#tools > li').length, 1);
   // Async persistence is also covered by browser, theme, and settings tests.
-  assert.equal(doc.querySelectorAll('input[name="portal-theme"]').length, 11);
+  assert.equal(doc.querySelectorAll('input[name="portal-theme"]').length, 22, 'auto plus 21 themes');
 });
 
 test('Add ship to existing consumers and stop before deployment if push fails', (t) => {

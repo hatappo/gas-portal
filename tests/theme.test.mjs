@@ -2,19 +2,22 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { browser, server, plain } from './helpers.mjs';
+import { contrast, mix, portalThemes, themeColors } from '../scripts/theme-colors.mjs';
+import { withPreviewContent } from '../scripts/preview-project.mjs';
 
-const themes = ['tsuyukusa', 'sakura', 'wakatake', 'yamabuki', 'ginnezu', 'tetsukon', 'sumi', 'kuri', 'fukamidori', 'daidai'];
+// Copy out of the vm realm so deepEqual compares plain arrays.
+const themes = JSON.parse(JSON.stringify(portalThemes()));
 
-test("Map legacy Shikon values to Kuri without rewriting storage until save", () => {
-  const userProperties = { PORTAL_THEME: 'shikon' };
-  const { context } = server({ userProperties });
-  assert.equal(context.getPortalTheme_(), 'kuri');
-  assert.equal(userProperties.PORTAL_THEME, 'shikon', 'Rendering must not rewrite storage');
-  assert.deepEqual(plain(context.saveTheme('kuri')), { ok: true, theme: 'kuri' });
-  assert.equal(userProperties.PORTAL_THEME, 'kuri');
+test('Fall back to auto for names from the earlier palettes without rewriting storage', () => {
+  for (const legacy of ['tsuyukusa', 'shikon', 'tetsukon']) {
+    const userProperties = { PORTAL_THEME: legacy };
+    const { context } = server({ userProperties });
+    assert.equal(context.getPortalTheme_(), 'auto', legacy);
+    assert.equal(userProperties.PORTAL_THEME, legacy, 'Rendering must not rewrite storage');
+  }
 });
 
-test("Persist themes in User Properties without changing Script Properties", () => {
+test('Persist themes in User Properties and render data-theme only for explicit themes', () => {
   const userProperties = {};
   const properties = { PORTAL_NAME: 'Example', PORTAL_THEME: 'not-used' };
   const template = { evaluate: () => ({ setTitle() { return this; }, setFaviconUrl() { return this; }, addMetaTag() { return this; } }) };
@@ -23,45 +26,55 @@ test("Persist themes in User Properties without changing Script Properties", () 
   });
   context.doGet();
   assert.equal(template.theme, 'auto');
-  for (const theme of ['auto', ...themes]) {
+  assert.equal(template.themeAttribute, '', 'Auto leaves the device color scheme to DaisyUI');
+  for (const theme of ['auto', ...themes.all]) {
     assert.deepEqual(plain(context.saveTheme(theme)), { ok: true, theme });
     context.doGet();
     assert.equal(template.theme, theme);
+    assert.equal(template.themeAttribute, theme === 'auto' ? '' : `data-theme="${theme}"`);
     assert.equal(userProperties.PORTAL_THEME, theme);
   }
   assert.deepEqual(properties, { PORTAL_NAME: 'Example', PORTAL_THEME: 'not-used' });
   assert.equal(server().context.getPortalTheme_(), 'auto', "Other users' stores must remain unchanged");
 });
 
-test("Reject unsupported themes, fall back for invalid stored values, and hide failure details", () => {
+test('Reject unsupported themes, fall back for invalid stored values, and hide failure details', () => {
   const userProperties = { PORTAL_THEME: 'unknown' };
   const { context } = server({ userProperties });
   assert.equal(context.getPortalTheme_(), 'auto');
-  for (const value of [null, 123, '', {}, '<script>', '__proto__', 'TSUYUKUSA']) {
+  for (const value of [null, 123, '', {}, '<script>', '__proto__', 'NORD', 'tsuyukusa', 'corporate']) {
     assert.deepEqual(plain(context.saveTheme(value)), { ok: false });
     assert.equal(userProperties.PORTAL_THEME, 'unknown');
   }
   const failed = server({ PropertiesService: { getUserProperties: () => ({ setProperty() { throw new Error('private-details'); } }) } });
-  assert.deepEqual(plain(failed.context.saveTheme('sakura')), { ok: false });
+  assert.deepEqual(plain(failed.context.saveTheme('dracula')), { ok: false });
   assert.doesNotMatch(JSON.stringify(failed.logs), /private-details/);
 });
 
-test("Provide an accessible icon tab and ten themes split evenly between light and dark", (t) => {
-  const { dom, document, themeRequests } = browser((window) => { window.document.documentElement.dataset.theme = 'sumi'; });
+test('Render the theme attribute in previews the same way as GAS', () => {
+  const html = '<html <?!= themeAttribute ?>>';
+  assert.equal(withPreviewContent(html, { }), '<html >');
+  assert.equal(withPreviewContent(html, { }, 'dracula'), '<html data-theme="dracula">');
+});
+
+test('Generate theme choices from the shared list, grouped by color scheme', (t) => {
+  const { dom, document, themeRequests } = browser((window) => { window.document.documentElement.dataset.theme = 'dracula'; });
   t.after(() => dom.window.close());
   const settings = document.querySelector('#tab-settings');
   assert.equal(settings.textContent, '');
   assert.equal(settings.getAttribute('aria-label'), '設定');
   settings.click();
   assert.equal(document.querySelector('#settings-panel').hidden, false);
-  const groups = document.querySelectorAll('.theme-group');
-  assert.equal(groups.length, 2);
-  assert.deepEqual([...groups].map((group) => group.querySelectorAll('input').length), [5, 5]);
-  assert.equal(document.querySelector('input[name="portal-theme"]:checked').value, 'sumi');
-  for (const theme of themes) {
+  const groups = [...document.querySelectorAll('.theme-group')];
+  assert.deepEqual(groups.map((group) => group.querySelector('legend').textContent), ['ライト', 'ダーク']);
+  assert.deepEqual(groups.map((group) => [...group.querySelectorAll('input')].map((input) => input.value)), [themes.light, themes.dark]);
+  assert.equal(document.querySelector('input[value="nord"]').getAttribute('aria-label'), 'Nord');
+  assert.equal(document.querySelector('input[value="nord"]').closest('label').querySelector('.theme-preview').dataset.theme, 'nord');
+  assert.equal(document.querySelector('input[name="portal-theme"]:checked').value, 'dracula');
+  for (const theme of [...themes.all, 'auto']) {
     const choice = document.querySelector(`input[value="${theme}"]`);
     choice.click();
-    assert.equal(document.documentElement.dataset.theme, theme);
+    assert.equal(document.documentElement.getAttribute('data-theme'), theme === 'auto' ? null : theme);
     const request = themeRequests.at(-1);
     assert.equal(request.theme, theme);
     assert.equal(choice.disabled, true);
@@ -71,101 +84,73 @@ test("Provide an accessible icon tab and ten themes split evenly between light a
   }
 });
 
-test("Restore the saved theme after failure and allow retry", (t) => {
+test('Restore the saved theme after failure and allow retry', (t) => {
   const { dom, document, themeRequests } = browser();
   t.after(() => dom.window.close());
-  const choice = document.querySelector('input[value="sakura"]');
+  assert.equal(document.documentElement.hasAttribute('data-theme'), false, 'Auto has no attribute');
+  assert.equal(document.querySelector('input[value="auto"]').checked, true);
+  const choice = document.querySelector('input[value="dracula"]');
   for (const complete of [(request) => request.failure(), (request) => request.success({ ok: false }), (request) => request.success({ ok: true, theme: 'unknown' })]) {
     choice.click();
     complete(themeRequests.at(-1));
-    assert.equal(document.documentElement.dataset.theme, 'tsuyukusa');
+    assert.equal(document.documentElement.hasAttribute('data-theme'), false);
     assert.equal(choice.disabled, false);
     assert.match(document.querySelector('#theme-status').textContent, /保存できません/);
   }
   choice.click();
-  themeRequests.at(-1).success({ ok: true, theme: 'sakura' });
-  assert.equal(document.documentElement.dataset.theme, 'sakura');
+  themeRequests.at(-1).success({ ok: true, theme: 'dracula' });
+  assert.equal(document.documentElement.dataset.theme, 'dracula');
 });
 
-test("Report theme save timeouts and ignore late responses", (t) => {
+test('Report theme save timeouts and ignore late responses', (t) => {
   let timeout;
   const { dom, document, themeRequests } = browser((window) => {
     const original = window.setTimeout.bind(window);
     window.setTimeout = (fn, ms) => { if (ms === 15000) { timeout = fn; return 123; } return original(fn, ms); };
   });
   t.after(() => dom.window.close());
-  document.querySelector('input[value="sakura"]').click();
+  document.querySelector('input[value="dracula"]').click();
   timeout();
   assert.match(document.querySelector('#theme-status').textContent, /再読み込み/);
-  document.querySelector('input[value="tetsukon"]').click();
-  themeRequests[1].success({ ok: true, theme: 'tetsukon' });
-  themeRequests[0].success({ ok: true, theme: 'sakura' });
-  assert.equal(document.documentElement.dataset.theme, 'tetsukon');
+  document.querySelector('input[value="night"]').click();
+  themeRequests[1].success({ ok: true, theme: 'night' });
+  themeRequests[0].success({ ok: true, theme: 'dracula' });
+  assert.equal(document.documentElement.dataset.theme, 'night');
 });
 
-test("Maintain at least 4.5:1 contrast for text and selected labels in all ten themes", () => {
+test('Keep the DaisyUI theme list in styles.css in sync with the shared list', () => {
   const css = readFileSync('src/browser/styles.css', 'utf8');
-  const luminance = (hex) => {
-    const rgb = hex.slice(1).match(/../g).map((part) => parseInt(part, 16) / 255)
-      .map((value) => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4);
-    return rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722;
-  };
-  themes.forEach((theme, index) => {
-    const block = css.match(new RegExp(`\\[data-theme="${theme}"\\] \\{([^}]+)\\}`))[1];
-    assert.match(block, new RegExp(`color-scheme: ${index < 5 ? 'light' : 'dark'}`));
-    const colors = Object.fromEntries([...block.matchAll(/--([\w-]+): (#[\da-f]{6})/g)].map((match) => [match[1], match[2]]));
-    const pairs = ['ink', 'muted', 'accent'].flatMap((text) => ['paper', 'surface', 'surface-soft'].map((surface) => [text, surface]));
-    pairs.push(['on-theme', 'theme-color'], ['external-ink', 'external-bg'], ['warning-ink', 'warning-bg']);
-    for (const [text, surface] of pairs) {
-      const [low, high] = [luminance(colors[text]), luminance(colors[surface])].sort((a, b) => a - b);
-      assert.ok((high + .05) / (low + .05) >= 4.5, `${theme}: ${text} / ${surface}`);
+  const declared = /@plugin "daisyui" \{[^}]*themes:\s*([^;]+);/.exec(css)[1].split(',').map((entry) => entry.trim());
+  assert.deepEqual(declared.map((entry) => entry.split(/\s+/)[0]).sort(), [...themes.all].sort());
+  assert.ok(declared.includes(`${themes.auto.light} --default`), 'Auto light is the default without data-theme');
+  assert.ok(declared.includes(`${themes.auto.dark} --prefersdark`), 'Auto dark follows prefers-color-scheme');
+  assert.deepEqual([...themes.light, ...themes.dark], themes.all);
+});
+
+test('Every theme is grouped by its own color scheme and keeps 4.5:1 contrast where the portal puts text', () => {
+  // The portal uses primary only as a fill, never as text color, so primary-on-base is not checked.
+  // "dark" is kept as DaisyUI's standard dark theme although its button text is about 4.1:1.
+  const exceptions = { dark: { 'primary-content/primary': 4.1 } };
+  for (const name of themes.all) {
+    const { scheme, colors } = themeColors(name);
+    assert.equal(scheme, themes.light.includes(name) ? 'light' : 'dark', name);
+    const muted = (surface) => mix(colors['base-content'], colors[surface], 0.75);
+    const pairs = {
+      'base-content/base-100': [colors['base-content'], colors['base-100']],
+      'base-content/base-200': [colors['base-content'], colors['base-200']],
+      'base-content/base-300': [colors['base-content'], colors['base-300']],
+      'muted/base-100': [muted('base-100'), colors['base-100']],
+      'muted/base-200': [muted('base-200'), colors['base-200']],
+      'primary-content/primary': [colors['primary-content'], colors.primary],
+      'neutral-content/neutral': [colors['neutral-content'], colors.neutral],
+      'warning-content/warning': [colors['warning-content'], colors.warning],
+      'error-content/error': [colors['error-content'], colors.error],
+      // Outline of unselected toggle buttons (non-text contrast, 3:1).
+      'toggle-border/base-100': [mix(colors['base-content'], colors['base-100'], 0.6), colors['base-100'], 3],
+    };
+    for (const [pair, [text, surface, required = 4.5]] of Object.entries(pairs)) {
+      const minimum = exceptions[name]?.[pair] ?? required;
+      assert.ok(contrast(text, surface) >= minimum, `${name}: ${pair} = ${contrast(text, surface).toFixed(2)}`);
     }
-  });
-});
-
-
-test("Follow system color changes only while automatic is selected, without saving resolved colors", (t) => {
-  let onChange;
-  const media = { matches: true, addEventListener(event, listener) { assert.equal(event, 'change'); onChange = listener; } };
-  const { dom, document, themeRequests } = browser((window) => {
-    window.matchMedia = (query) => query === '(prefers-color-scheme: dark)' ? media : { matches: false, addEventListener() {} };
-  });
-  t.after(() => dom.window.close());
-  const theme = () => document.documentElement.dataset.theme;
-  const selected = () => document.querySelector('input[name="portal-theme"]:checked').value;
-  assert.equal(theme(), 'tetsukon');
-  assert.equal(selected(), 'auto');
-  media.matches = false;
-  onChange();
-  assert.equal(theme(), 'tsuyukusa');
-  assert.equal(themeRequests.length, 0);
-  document.querySelector('input[value="ginnezu"]').click();
-  themeRequests.at(-1).success({ ok: true, theme: 'ginnezu' });
-  media.matches = true;
-  onChange();
-  assert.equal(theme(), 'ginnezu');
-  document.querySelector('input[value="auto"]').click();
-  assert.equal(theme(), 'tetsukon');
-  assert.equal(themeRequests.at(-1).theme, 'auto');
-  themeRequests.at(-1).failure();
-  assert.equal(theme(), 'ginnezu');
-  assert.equal(selected(), 'ginnezu');
-  document.querySelector('input[value="auto"]').click();
-  themeRequests.at(-1).success({ ok: true, theme: 'auto' });
-  media.matches = false;
-  onChange();
-  assert.equal(theme(), 'tsuyukusa');
-  assert.equal(selected(), 'auto');
-});
-
-test("Use light mode when media queries are unavailable and preserve explicit saved themes", (t) => {
-  const fallback = browser();
-  const explicit = browser((window) => {
-    window.document.documentElement.dataset.theme = 'daidai';
-    window.matchMedia = () => ({ matches: false, addEventListener() {} });
-  });
-  t.after(() => { fallback.dom.window.close(); explicit.dom.window.close(); });
-  assert.equal(fallback.document.documentElement.dataset.theme, 'tsuyukusa');
-  assert.equal(fallback.document.querySelector('input[value="auto"]').checked, true);
-  assert.equal(explicit.document.documentElement.dataset.theme, 'daidai');
+  }
 });

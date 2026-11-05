@@ -4,6 +4,9 @@ function doGet() {
   const portal = getPortalContent_(getPortalUserProperties_());
   template.portal = portal;
   template.theme = getPortalTheme_();
+  // Without data-theme, DaisyUI follows the device color scheme, so auto needs no script.
+  // The value is allowlisted by getPortalTheme_, so it is safe to print unescaped.
+  template.themeAttribute = template.theme === 'auto' ? '' : 'data-theme="' + template.theme + '"';
   template.initialCatalogJson = serializeCatalog_(getCatalog());
   template.projectUrl = 'https://script.google.com/home/projects/' + encodeURIComponent(ScriptApp.getScriptId()) + '/edit';
   return template.evaluate()
@@ -33,15 +36,14 @@ function saveLanguage(language) {
 
 /** @param {unknown} theme */
 function isPortalTheme_(theme) {
-  return typeof theme === 'string' && ['auto', 'tsuyukusa', 'sakura', 'wakatake', 'yamabuki', 'ginnezu', 'tetsukon', 'sumi', 'kuri', 'fukamidori', 'daidai'].includes(theme);
+  return PortalThemes.isTheme(theme);
 }
 
 /** Settings belong to the executing user; this app is personal and runs as its deployer. */
 function getPortalTheme_() {
   const theme = PropertiesService.getUserProperties().getProperty('PORTAL_THEME');
-  // Map the legacy theme when reading, without rewriting storage.
-  if (theme === 'shikon') return 'kuri';
-  return isPortalTheme_(theme) ? theme : 'auto';
+  // Names from before the DaisyUI themes (such as tsuyukusa) fall back to auto, without rewriting storage.
+  return isPortalTheme_(theme) ? /** @type {string} */ (theme) : 'auto';
 }
 
 /** @param {unknown} theme @returns {{ok: true, theme: string} | {ok: false}} */
@@ -101,7 +103,7 @@ function normalizePortalIcon_(icon) {
  * @param {string} theme @param {string} icon
  */
 function getPortalFaviconUrl_(theme, icon) {
-  const color = theme !== 'auto' && isPortalTheme_(theme) ? theme : 'tsuyukusa';
+  const color = theme !== 'auto' && isPortalTheme_(theme) ? theme : PortalThemes.auto.light;
   const normalized = normalizePortalIcon_(icon);
   const supported = /^[A-Z\u3041-\u3096\u309d-\u309e\u30a1-\u30fa\u30fc-\u30fe]$/.test(normalized);
   if (!supported) return 'https://hatappo.github.io/gas-portal/favicons/fallback.png';
@@ -430,7 +432,7 @@ function createPortalSpreadsheet(browserLanguage) {
       } }));
       requests.push({ addTable: { table: {
         name: 'PortalLinks', range,
-        // Match the portal's Tsuyukusa theme (#71a4d9); table settings own the header fill.
+        // A calm blue header (#71a4d9); table settings own the header fill.
         rowsProperties: { headerColorStyle: { rgbColor: { red: 113 / 255, green: 164 / 255, blue: 217 / 255 } } },
         columnProperties: columns.map((column, columnIndex) => ({
           columnIndex, columnName: column.name, columnType: column.type,

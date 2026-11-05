@@ -11,7 +11,7 @@ test("Default the icon to P and use the first Unicode code point", () => {
 
 test("Initialize User Properties without accessing Script Properties or repeating writes", () => {
   const scriptValues = { PORTAL_NAME: 'Legacy Portal', SPREADSHEET_ID: 'private-id', OTHER: 'keep' };
-  const userValues = { PORTAL_ICON: '', PORTAL_THEME: 'kuri', OTHER: 'user-keep' };
+  const userValues = { PORTAL_ICON: '', PORTAL_THEME: 'forest', OTHER: 'user-keep' };
   let writes = 0;
   let locks = 0;
   const store = (values) => ({
@@ -30,7 +30,7 @@ test("Initialize User Properties without accessing Script Properties or repeatin
   });
   assert.equal(userValues.PORTAL_NAME, 'My Portal');
   assert.equal(userValues.PORTAL_ICON, '');
-  assert.equal(userValues.PORTAL_THEME, 'kuri');
+  assert.equal(userValues.PORTAL_THEME, 'forest');
   assert.equal(userValues.SPREADSHEET_ID, '');
   assert.equal(userValues.SHEET_NAME, '');
   assert.equal(userValues.OTHER, 'user-keep');
