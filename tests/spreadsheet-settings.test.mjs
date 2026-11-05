@@ -143,6 +143,7 @@ test('Preview persists source settings without accessing Google and restores the
   assert.equal(restored.document.querySelector('#setting-spreadsheet').value, 'new-id');
   assert.equal(restored.document.querySelector('#setting-sheet-name').value, 'My tools');
   assert.equal(restored.document.querySelector('footer nav .spreadsheet-link').href, 'https://docs.google.com/spreadsheets/d/new-id/edit');
+  assert.equal(restored.document.querySelector('#open-spreadsheet-link').dataset.url, 'https://docs.google.com/spreadsheets/d/new-id/edit');
   restored.run.withSuccessHandler((value) => { result = value; }).getCatalog();
   assert.equal(result.tools[0].id, 'demo-address');
   restored.run.withSuccessHandler((value) => { result = value; }).saveSpreadsheetSettings(settings('https://evil.test'));
@@ -176,4 +177,39 @@ test('Preview creates a fake source once and keeps demo entries after reload', (
   assert.equal(result.tools.length, 6);
   assert.equal(result.tools[0].id, 'demo-address');
   assert.deepEqual(plain(result.issues), []);
+});
+
+test('Always link to the saved spreadsheet, follow saves, and ignore unsaved drafts', (t) => {
+  const { dom, document, sourceSettingsRequests } = browser((window) => {
+    window.document.getElementById('open-spreadsheet-link').dataset.url = 'https://docs.google.com/spreadsheets/d/saved-id/edit';
+  });
+  t.after(() => dom.window.close());
+  const link = document.getElementById('open-spreadsheet-link');
+  const id = document.getElementById('setting-spreadsheet');
+  assert.equal(link.hidden, false);
+  assert.equal(link.href, 'https://docs.google.com/spreadsheets/d/saved-id/edit');
+  assert.equal(link.target, '_blank');
+  assert.equal(link.rel, 'noopener noreferrer');
+  assert.match(link.textContent, /スプレッドシートを開く/);
+  id.value = 'draft-id';
+  id.dispatchEvent(new dom.window.Event('input'));
+  assert.equal(link.href, 'https://docs.google.com/spreadsheets/d/saved-id/edit', 'Drafts do not move the link');
+  const submit = () => document.getElementById('spreadsheet-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+  submit();
+  sourceSettingsRequests[0].success({ ok: true, settings: { SPREADSHEET_ID: 'draft-id', SHEET_NAME: '' } });
+  assert.equal(link.href, 'https://docs.google.com/spreadsheets/d/draft-id/edit');
+  id.value = '';
+  submit();
+  sourceSettingsRequests[1].failure();
+  assert.equal(link.hidden, false, 'A failed save keeps the saved link');
+  submit();
+  sourceSettingsRequests[2].success({ ok: true, settings: { SPREADSHEET_ID: '', SHEET_NAME: '' } });
+  assert.equal(link.hidden, true);
+  assert.equal(link.hasAttribute('href'), false);
+});
+
+test('Hide the spreadsheet link when no source is saved', (t) => {
+  const { dom, document } = browser();
+  t.after(() => dom.window.close());
+  assert.equal(document.getElementById('open-spreadsheet-link').hidden, true);
 });

@@ -8,12 +8,22 @@
   const reload = /** @type {HTMLButtonElement} */ (document.getElementById('reload-spreadsheet'));
   const create = /** @type {HTMLButtonElement} */ (document.getElementById('create-spreadsheet'));
   const save = /** @type {HTMLButtonElement} */ (form.querySelector('[type="submit"]'));
-  const createdLink = /** @type {HTMLAnchorElement} */ (document.getElementById('created-spreadsheet-link'));
+  const link = /** @type {HTMLAnchorElement} */ (document.getElementById('open-spreadsheet-link'));
   /** @param {string} key */
   const t = (key) => PortalI18n.t(key, document.documentElement.lang);
   let savedId = id.value;
   let uncertain = false;
   let generation = 0;
+  /** Point the link at a saved or just-created file; hide it when there is none. @param {string} spreadsheetId */
+  function showLink(spreadsheetId) {
+    const valid = /^[\w-]+$/.test(spreadsheetId);
+    link.hidden = !valid;
+    if (valid) link.href = 'https://docs.google.com/spreadsheets/d/' + spreadsheetId + '/edit';
+    else link.removeAttribute('href');
+  }
+  // The server renders the saved source's URL; the ID field may hold an unsaved draft.
+  if (link.dataset.url) link.href = link.dataset.url;
+  link.hidden = !link.dataset.url;
   function updateControls() {
     create.disabled = uncertain || Boolean(savedId.trim() || id.value.trim());
     save.disabled = uncertain;
@@ -63,8 +73,8 @@
           id.value = createdId;
           const connected = response.ok || response.connected === true;
           if (connected) savedId = createdId;
-          createdLink.href = 'https://docs.google.com/spreadsheets/d/' + createdId + '/edit';
-          createdLink.hidden = false;
+          // Show the created file even when its ID could not be saved, so it can be inspected.
+          showLink(createdId);
           reload.hidden = !connected;
           finish();
           status.textContent = response.ok ? t('Created and connected. Reload the portal to use the new spreadsheet.') : PortalI18n.translate(response.error, document.documentElement.lang);
@@ -79,6 +89,7 @@
           }
           window.clearTimeout(timeout);
           id.value = savedId = response.settings.SPREADSHEET_ID;
+          showLink(savedId);
           name.value = response.settings.SHEET_NAME;
           finish();
           reload.hidden = false;

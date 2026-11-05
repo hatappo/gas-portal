@@ -92,6 +92,7 @@ export function renderPreview(html, root, options = {}) {
           link.href = 'https://docs.google.com/spreadsheets/d/' + id + '/edit';
           link.hidden = false;
         } else { link?.remove(); }
+        document.getElementById('open-spreadsheet-link').dataset.url = id ? 'https://docs.google.com/spreadsheets/d/' + id + '/edit' : '';
       }
       const normalizeCatalogCacheTtl_ = ${context.normalizeCatalogCacheTtl_.toString()};
       let previewCacheSeconds = 21600;
