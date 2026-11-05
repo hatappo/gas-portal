@@ -89,3 +89,11 @@ test('Copy the code, or select it for manual copying when the clipboard is unava
     assert.match(app.document.getElementById('favicon-finder-status').textContent, /⌘C/);
   }
 });
+
+test('Style the copy button like the other secondary settings buttons', (t) => {
+  const { dom, document } = browser();
+  t.after(() => dom.window.close());
+  const copy = document.getElementById('favicon-finder-copy');
+  assert.equal(copy.className, document.getElementById('cancel-github').className);
+  assert.ok(copy.parentElement.classList.contains('settings-form-actions'), 'Button sizing and borders apply only inside .settings-form-actions');
+});
