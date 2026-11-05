@@ -37,8 +37,8 @@
           <div class="filter-toolbar">
             <div id="scopes" class="segmented-control" role="group" aria-label="Tool scope" data-i18n-aria-label="Tool scope">
               <button id="scope-all" type="button" aria-pressed="true" disabled><span data-i18n="All">All</span></button>
-              <button id="scope-internal" type="button" aria-pressed="false" disabled><span data-i18n="Internal">Internal</span></button>
-              <button id="scope-external" type="button" aria-pressed="false" disabled><span data-i18n="External">External</span></button>
+              <button id="scope-internal" type="button" aria-pressed="false" disabled><!-- building-2-icon --><span data-i18n="Internal">Internal</span></button>
+              <button id="scope-external" type="button" aria-pressed="false" disabled><!-- globe-icon --><span data-i18n="External">External</span></button>
             </div>
             <div class="segmented-control view-switch" role="group" aria-label="View mode" data-i18n-aria-label="View mode">
               <button id="view-cards" type="button" aria-label="Cards" title="Cards" aria-pressed="true" disabled><!-- layout-grid-icon --></button>
@@ -104,7 +104,7 @@
                 <legend class="visually-hidden"><span data-i18n="Portal display settings">Portal display settings</span></legend>
                 <div class="settings-fields-row">
                   <label class="settings-field"><span data-i18n="Portal name">Portal name</span><input id="setting-name" name="PORTAL_NAME" maxlength="80" value="<?= portal.name ?>" autocomplete="off"></label>
-                  <label class="settings-field settings-icon-field"><span data-i18n="Icon">Icon</span><input id="setting-icon" name="PORTAL_ICON" maxlength="2" value="<?= portal.icon ?>" autocomplete="off" aria-describedby="icon-help"><span id="icon-help"><span data-i18n="1 character">1 character</span></span></label>
+                  <label class="settings-field settings-icon-field"><span data-i18n="Icon">Icon</span><input id="setting-icon" name="PORTAL_ICON" maxlength="8" value="<?= portal.icon ?>" autocomplete="off" aria-describedby="icon-help"><span id="icon-help"><span data-i18n="1 character">1 character</span></span></label>
                 </div>
                 <label class="settings-field"><span data-i18n="Headline">Headline</span><input aria-describedby="intro-help" id="setting-headline" name="PORTAL_HEADLINE" maxlength="160" value="<?= portal.headline ?>" autocomplete="off"></label>
                 <label class="settings-field"><span data-i18n="Description text">Description text</span><textarea aria-describedby="intro-help" id="setting-description" name="PORTAL_DESCRIPTION" maxlength="500" rows="3"><?= portal.description ?></textarea></label>
@@ -282,6 +282,8 @@
         <!-- repository-link -->
       </nav>
     </footer>
+    <template id="scope-icon-internal"><!-- building-2-icon --></template>
+    <template id="scope-icon-external"><!-- globe-icon --></template>
     <script type="application/json" id="initial-catalog"><?!= initialCatalogJson ?></script>
     <script type="module" src="/browser/main.js"></script>
   </body>

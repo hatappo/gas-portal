@@ -14,6 +14,24 @@
   const keys = /** @type {(keyof PortalSettings)[]} */ (Object.keys(inputs));
   let generation = 0;
 
+  /** Keep the icon to one character while typing. maxlength counts UTF-16 units, so it cannot
+   * do this for emoji or combining kana marks. Keep the character just typed, so typing next to
+   * an existing letter replaces it. Wait for IME composition to finish before trimming.
+   */
+  function limitIcon() {
+    const input = inputs.PORTAL_ICON;
+    /** @param {string} text */
+    const characters = (text) => Array.from(text.normalize('NFC')).filter((character) => character.trim());
+    const all = characters(input.value);
+    if (all.length <= 1 && input.value === input.value.normalize('NFC').trim()) return;
+    const typed = characters(input.value.slice(0, input.selectionEnd ?? input.value.length));
+    input.value = typed[typed.length - 1] ?? all[0] ?? '';
+  }
+  inputs.PORTAL_ICON.addEventListener('input', (event) => {
+    if (!(/** @type {InputEvent} */ (event)).isComposing) limitIcon();
+  });
+  inputs.PORTAL_ICON.addEventListener('compositionend', limitIcon);
+
   function readForm() {
     return {
       PORTAL_NAME: inputs.PORTAL_NAME.value,

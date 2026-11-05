@@ -238,7 +238,8 @@ test("Render multiple related links as independent safe links in both views", (t
       assert.match(link.textContent, /新しいタブ/);
     });
     assert.equal(document.querySelectorAll(`${container} .related-links`).length, 1);
-    assert.equal(document.querySelectorAll('img:not(.tool-favicon img), [onerror]').length, 0);
+    assert.equal(document.querySelectorAll('img:not(.tool-favicon img, .related-favicon img), [onerror]').length, 0);
+    assert.equal(document.querySelectorAll(`${container} .related-links .related-favicon img`).length, 2);
     assert.equal(document.querySelector(`${container} a`).href, entry().url);
     assert.doesNotMatch(document.querySelector(container).textContent, /↗/);
     for (const link of document.querySelectorAll(`${container} a`)) {
@@ -460,7 +461,7 @@ test('Use only the refresh spinner during initial loading, refresh, and retry af
   assert.match(status.textContent, /表示する項目がありません/);
 });
 
-test('Tool favicons share hostname-only URLs across cards and lists without exposing URL details', (t) => {
+test('Tool and related-link favicons share hostname-only URLs across cards and lists without exposing URL details', (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   requests[0].success({ ...catalog, tools: [{ ...catalog.tools[0],
@@ -476,13 +477,24 @@ test('Tool favicons share hostname-only URLs across cards and lists without expo
   assert.equal(image.width, 20);
   assert.equal(image.height, 20);
   assert.equal(image.parentElement.getAttribute('aria-hidden'), 'true');
-  assert.equal(document.querySelectorAll('#tools img').length, 1);
+  assert.equal(document.querySelectorAll('#tools img').length, 2);
+  const related = document.querySelector('#tools .related-favicon img');
+  assert.equal(related.src, 'https://www.google.com/s2/favicons?domain=example.org&sz=64');
+  assert.equal(related.width, 14);
+  assert.equal(related.referrerPolicy, 'no-referrer');
+  assert.equal(related.parentElement.getAttribute('aria-hidden'), 'true');
+  assert.equal(related.closest('a').textContent.includes('Related'), true);
+  Object.defineProperties(related, { naturalWidth: { value: 12 }, naturalHeight: { value: 12 } });
+  related.dispatchEvent(new dom.window.Event('load'));
+  assert.equal(document.querySelector('#tools .related-favicon img'), null, 'Undersized related icons keep the fallback');
+  assert.equal(document.querySelector('#tools .related-favicon-fallback').textContent, '🌐');
   Object.defineProperties(image, { naturalWidth: { value: 64 }, naturalHeight: { value: 64 } });
   image.dispatchEvent(new dom.window.Event('load'));
   assert.equal(image.parentElement.classList.contains('is-loaded'), true);
   document.querySelector('#view-list').click();
   assert.equal(document.querySelector('#tool-rows img').src, image.src);
-  assert.equal(document.querySelectorAll('#tool-rows img').length, 1);
+  assert.equal(document.querySelectorAll('#tool-rows .tool-favicon img').length, 1);
+  assert.equal(document.querySelectorAll('#tool-rows .related-favicon img').length, 1);
   assert.equal(document.querySelector('#tool-rows a').target, '_blank');
 });
 
@@ -534,4 +546,29 @@ test('Use the globe emoji for undersized images in both views and retain adequat
       assert.equal(frame.getAttribute('aria-hidden'), 'true');
     }
   }
+});
+
+test('Scope badges add distinct shape icons and keep their text labels', (t) => {
+  const { dom, document, requests } = browser();
+  t.after(() => dom.window.close());
+  document.getElementById('scope-icon-internal').innerHTML = '<svg class="building-2-icon" aria-hidden="true"></svg>';
+  document.getElementById('scope-icon-external').innerHTML = '<svg class="globe-icon" aria-hidden="true"></svg>';
+  requests[0].success({ ...catalog, tools: [catalog.tools[0], { ...catalog.tools[1], scope: 'external' }] });
+  const badges = [...document.querySelectorAll('#tools .scope-badge')];
+  assert.deepEqual(badges.map((badge) => badge.textContent), ['社内', '社外']);
+  assert.deepEqual(badges.map((badge) => badge.querySelector('svg')?.getAttribute('class')), ['building-2-icon', 'globe-icon']);
+  assert.ok(badges.every((badge) => badge.querySelector('svg').getAttribute('aria-hidden') === 'true'));
+  assert.equal(document.getElementById('scope-icon-internal').content.querySelectorAll('svg').length, 1, 'Templates stay reusable');
+  document.querySelector('#view-list').click();
+  assert.equal(document.querySelectorAll('#tool-rows .scope-badge svg').length, 2);
+});
+
+test('Scope badges still render text when icon templates are unavailable', (t) => {
+  const { dom, document, requests } = browser();
+  t.after(() => dom.window.close());
+  document.getElementById('scope-icon-internal').remove();
+  requests[0].success(catalog);
+  const badge = document.querySelector('#tools .scope-badge');
+  assert.equal(badge.textContent, '社内');
+  assert.equal(badge.querySelector('svg'), null);
 });
