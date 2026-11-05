@@ -3,10 +3,10 @@
   "version": "0.5.0",
   "description": "A personal work portal built with Google Apps Script.",
   "type": "module",
-  "packageManager": "npm@12.2.1",
+  "packageManager": "npm@11.20.0",
   "engines": {
     "node": "26.x",
-    "npm": ">=12.2.1"
+    "npm": ">=11.20.0"
   },
   "scripts": {
     "lint": "eslint .",
