@@ -20,10 +20,10 @@
         <h1 id="page-title" <? if (!portal.headline) { ?>hidden<? } ?>><?= portal.headline ?></h1>
         <p class="intro-copy" <? if (!portal.description) { ?>hidden<? } ?>><?= portal.description ?></p>
       </section>
-      <div class="portal-tabs" role="tablist" aria-label="Portal sections" data-i18n-aria-label="Portal sections">
-        <button type="button" id="tab-tools" role="tab" aria-selected="true" aria-controls="directory" tabindex="0"><!-- tool-case-icon --><span>Tools &amp; Links</span></button>
-        <button type="button" id="tab-actions" role="tab" aria-selected="false" aria-controls="actions-panel" tabindex="-1"><!-- list-checks-icon --><span>Action Items</span></button>
-        <button type="button" id="tab-settings" class="settings-tab" role="tab" aria-label="Settings" data-i18n-aria-label="Settings" title="Settings" data-i18n-title="Settings" aria-selected="false" aria-controls="settings-panel" tabindex="-1"><!-- settings-icon --></button>
+      <div class="portal-tabs tabs tabs-border" role="tablist" aria-label="Portal sections" data-i18n-aria-label="Portal sections">
+        <button type="button" id="tab-tools" class="tab" role="tab" aria-selected="true" aria-controls="directory" tabindex="0"><!-- tool-case-icon --><span>Tools &amp; Links</span></button>
+        <button type="button" id="tab-actions" class="tab" role="tab" aria-selected="false" aria-controls="actions-panel" tabindex="-1"><!-- list-checks-icon --><span>Action Items</span></button>
+        <button type="button" id="tab-settings" class="tab settings-tab" role="tab" aria-label="Settings" data-i18n-aria-label="Settings" title="Settings" data-i18n-title="Settings" aria-selected="false" aria-controls="settings-panel" tabindex="-1"><!-- settings-icon --></button>
       </div>
       <section class="directory" role="tabpanel" aria-labelledby="tab-tools" aria-busy="true" id="directory" tabindex="0">
         <div class="directory-toolbar">
@@ -148,7 +148,7 @@
                 <div class="settings-form-actions"><button type="submit" class="settings-save" data-i18n="Save changes">Save changes</button><button type="button" id="create-spreadsheet" class="settings-reset" aria-describedby="create-spreadsheet-help" data-i18n="Create new spreadsheet">Create new spreadsheet</button><button type="button" id="reload-spreadsheet" class="settings-reset" hidden data-i18n="Reload portal">Reload portal</button></div>
               </fieldset>
               <p id="create-spreadsheet-help" class="settings-help" data-i18n="Create a new spreadsheet with a ready-to-use table when no spreadsheet ID is saved or entered. Existing spreadsheets are never initialized.">Create a new spreadsheet with a ready-to-use table when no spreadsheet ID is saved or entered. Existing spreadsheets are never initialized.</p>
-              <a id="open-spreadsheet-link" class="footer-link" data-url="<?= portal.spreadsheetUrl ?>" target="_blank" rel="noopener noreferrer" hidden><span data-i18n="Open spreadsheet">Open spreadsheet</span> <!-- external-link-icon --><span class="visually-hidden" data-i18n="(opens in a new tab)">(opens in a new tab)</span></a>
+              <a id="open-spreadsheet-link" class="link footer-link" data-url="<?= portal.spreadsheetUrl ?>" target="_blank" rel="noopener noreferrer" hidden><span data-i18n="Open spreadsheet">Open spreadsheet</span> <!-- external-link-icon --><span class="visually-hidden" data-i18n="(opens in a new tab)">(opens in a new tab)</span></a>
               <p id="spreadsheet-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
             </form>
           </section>
@@ -203,7 +203,7 @@
                 <li id="github-pat-permissions" data-i18n="Permissions: Issues and Pull requests — Read-only. Metadata is included automatically.">Permissions: Issues and Pull requests — Read-only. Metadata is included automatically.</li>
               </ul>
               <p data-i18n="Organization approval may be required. The portal’s owner field is only a search filter.">Organization approval may be required. The portal’s owner field is only a search filter.</p>
-              <div class="github-connection-controls"><a class="footer-link" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer"><span data-i18n="Create a fine-grained PAT">Create a fine-grained PAT</span> <!-- external-link-icon --></a><a class="footer-link" href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens" target="_blank" rel="noopener noreferrer"><span data-i18n="GitHub token documentation">GitHub token documentation</span> <!-- external-link-icon --></a></div>
+              <div class="github-connection-controls"><a class="link footer-link" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer"><span data-i18n="Create a fine-grained PAT">Create a fine-grained PAT</span> <!-- external-link-icon --></a><a class="link footer-link" href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens" target="_blank" rel="noopener noreferrer"><span data-i18n="GitHub token documentation">GitHub token documentation</span> <!-- external-link-icon --></a></div>
             </details>
             <div id="github-settings-loading" class="refresh-catalog actions-loading" role="status" aria-label="Loading…" data-i18n-aria-label="Loading…" aria-busy="true" hidden><!-- refresh-cw-icon --></div>
             <ul id="github-connections" class="github-connections"></ul>
@@ -226,9 +226,9 @@
     </main>
     <footer class="site-footer">
       <nav aria-label="Management links" data-i18n-aria-label="Management links">
-        <a class="footer-link project-link" href="<?= projectUrl ?>" target="_blank" rel="noopener noreferrer">GAS <!-- external-link-icon --><span class="visually-hidden"><span data-i18n="(opens in a new tab)">(opens in a new tab)</span></span></a>
+        <a class="link footer-link project-link" href="<?= projectUrl ?>" target="_blank" rel="noopener noreferrer">GAS <!-- external-link-icon --><span class="visually-hidden"><span data-i18n="(opens in a new tab)">(opens in a new tab)</span></span></a>
         <? if (portal.spreadsheetUrl) { ?>
-        <a class="footer-link spreadsheet-link" href="<?= portal.spreadsheetUrl ?>" target="_blank" rel="noopener noreferrer">Spreadsheet <!-- external-link-icon --><span class="visually-hidden"><span data-i18n="(opens in a new tab)">(opens in a new tab)</span></span></a>
+        <a class="link footer-link spreadsheet-link" href="<?= portal.spreadsheetUrl ?>" target="_blank" rel="noopener noreferrer">Spreadsheet <!-- external-link-icon --><span class="visually-hidden"><span data-i18n="(opens in a new tab)">(opens in a new tab)</span></span></a>
         <? } ?>
         <!-- repository-link -->
       </nav>

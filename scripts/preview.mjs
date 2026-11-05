@@ -89,7 +89,7 @@ export function renderPreview(html, root, options = {}) {
         if (id) {
           if (!link) {
             link = document.querySelector('.project-link').cloneNode(true);
-            link.className = 'footer-link spreadsheet-link';
+            link.className = 'link footer-link spreadsheet-link';
             link.firstChild.textContent = 'Spreadsheet ';
             document.querySelector('.project-link').after(link);
           }

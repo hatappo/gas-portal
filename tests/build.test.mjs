@@ -31,7 +31,7 @@ test("Build stays offline, removes stale data, and preserves output after syntax
     assert.match(html, new RegExp(`class="${icon}-icon"`));
     assert.doesNotMatch(html, new RegExp(`<!-- ${icon}-icon -->`));
   }
-  assert.doesNotMatch(html, /LOCAL PREVIEW|__preview\/version|class="footer-link repository-link"/);
+  assert.doesNotMatch(html, /LOCAL PREVIEW|__preview\/version|class="link footer-link repository-link"/);
   spawnSync('git', ['init', '-q'], { cwd: root });
   spawnSync('git', ['remote', 'add', 'origin', 'git@github.com:example/portal.git'], { cwd: root });
   assert.equal(build().status, 0);
