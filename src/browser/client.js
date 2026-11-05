@@ -325,21 +325,29 @@
 
   /** @param {CatalogTool} tool */
   function toolFavicon(tool) {
-    return favicon(tool.url, 'tool-favicon', 20);
+    return favicon(tool.url, 'tool-favicon', 20, tool.icon);
   }
 
+  /** @param {string} icon */
+  const isIconUrl = (icon) => /^https:/i.test(icon);
+
   /** A decorative icon with an emoji fallback that stays visible until an icon loads.
-   * @param {string} url @param {string} className @param {number} size
+   * A spreadsheet icon overrides detection: text replaces the fallback, and an image URL is tried first.
+   * @param {string} url @param {string} className @param {number} size @param {string} [icon]
    */
-  function favicon(url, className, size) {
+  function favicon(url, className, size, icon = '') {
     const frame = document.createElement('span');
     frame.className = className;
     frame.setAttribute('aria-hidden', 'true');
     const fallback = document.createElement('span');
     fallback.className = className + '-fallback';
-    fallback.textContent = '🌐';
+    fallback.textContent = icon && !isIconUrl(icon) ? icon : '🌐';
     frame.append(fallback);
-    const sources = faviconSources(url);
+    if (icon && !isIconUrl(icon)) {
+      frame.classList.add('is-text');
+      return frame;
+    }
+    const sources = icon ? [icon, ...faviconSources(url)] : faviconSources(url);
     if (sources.length) {
       const image = document.createElement('img');
       image.width = size;
@@ -525,6 +533,8 @@
       typeof tool[/** @type {keyof CatalogTool} */ (key)] !== 'string')) return false;
     if (!['internal', 'external'].includes(tool.scope) || !Array.isArray(tool.tags) ||
         !tool.tags.every((tag) => typeof tag === 'string')) return false;
+    if (tool.icon !== undefined && (typeof tool.icon !== 'string' || !tool.icon.trim() ||
+        (isIconUrl(tool.icon) ? !safeUrl(tool.icon) : /\s/.test(tool.icon) || Array.from(tool.icon).length > 8))) return false;
     if (tool.relatedLinks !== undefined && (!Array.isArray(tool.relatedLinks) ||
         !tool.relatedLinks.every((link) => link && typeof link.label === 'string' &&
           link.label.trim() && typeof link.url === 'string' && safeUrl(link.url)))) return false;

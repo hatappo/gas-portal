@@ -1,7 +1,7 @@
 /**
  * @typedef {{label: string, url: string}} RelatedLink
- * @typedef {{id: string, name: string, url: string, description?: string, tags?: string[], relatedLinks?: RelatedLink[], scope?: 'internal' | 'external' | '社内' | '社外'}} CatalogEntry
- * @typedef {{id: string, name: string, url: string, description: string, category: string, tags: string[], relatedLinks: RelatedLink[], scope: 'internal' | 'external'}} Tool
+ * @typedef {{id: string, name: string, url: string, description?: string, tags?: string[], relatedLinks?: RelatedLink[], scope?: 'internal' | 'external' | '社内' | '社外', icon?: string}} CatalogEntry
+ * @typedef {{id: string, name: string, url: string, description: string, category: string, tags: string[], relatedLinks: RelatedLink[], scope: 'internal' | 'external', icon?: string}} Tool
  * @typedef {{row: number, message: string}} CatalogIssue row is the one-based array position.
  * @typedef {{tools: Tool[], issues: CatalogIssue[]}} Catalog
  */
@@ -56,6 +56,8 @@ function parseCatalog_(entries) {
         entry.relatedLinks.some((/** @type {RelatedLink} */ link) => !link || Array.isArray(link) ||
           !text_(link.label) || !text_(link.url) || !isValidLinkUrl_(link.url)))) {
       message = PortalI18n.t("relatedLinks must be an array of objects with a non-empty label and a valid url.");
+    } else if (entry.icon !== undefined && !isValidIcon_(entry.icon)) {
+      message = PortalI18n.t("icon must be an image URL starting with https:// or an emoji.");
     }
     if (message) {
       issues.push({ row: index + 1, message });
@@ -63,6 +65,7 @@ function parseCatalog_(entries) {
     }
     const tags = /** @type {string[]} */ (entry.tags || []);
     const autoTags = AUTO_TAG_RULES_.filter((rule) => rule.pattern.test(url)).map((rule) => rule.tag);
+    const icon = text_(entry.icon);
     tools.push({
       id, name, url, description: text_(entry.description),
       // Retain category for RPC compatibility; the current UI does not use it.
@@ -71,6 +74,8 @@ function parseCatalog_(entries) {
       relatedLinks: (/** @type {RelatedLink[]} */ (entry.relatedLinks || []))
         .map((link) => ({ label: link.label.trim(), url: link.url.trim() })),
       scope: rawScope === '社外' || rawScope === 'external' ? 'external' : 'internal',
+      // Omit the field when blank, keeping the response unchanged for tools without an icon.
+      ...(icon ? { icon } : {}),
     });
   });
   // Sort string IDs independently of locale.
@@ -101,6 +106,21 @@ function isValidLinkUrl_(value) {
   if (!scheme) return false;
   if (/^https?$/i.test(scheme[1])) return isSafeWebUrl_(url);
   return url.length > scheme[0].length;
+}
+
+/**
+ * An icon overrides the automatic favicon: an https image URL, or a short text such as an emoji.
+ * Emoji sequences (flags, skin tones, ZWJ families) span several code points, so allow up to eight.
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+function isValidIcon_(value) {
+  if (typeof value !== 'string') return false;
+  const icon = value.trim();
+  if (!icon) return true;
+  if (/^[a-z][a-z\d+.-]*:/i.test(icon)) return /^https:/i.test(icon) && isValidLinkUrl_(icon);
+  // eslint-disable-next-line no-control-regex -- Reject control characters in icon text.
+  return !/[\s\u0000-\u001f\u007f]/.test(icon) && Array.from(icon).length <= 8;
 }
 
 /**

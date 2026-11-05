@@ -54,7 +54,7 @@ function readCachedSheetCatalog_(forceRefresh) {
   try {
     // Version the key whenever cached catalog semantics change. Include the source, sharing one entry across duration choices.
     const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, JSON.stringify([source.id, source.name]), Utilities.Charset.UTF_8);
-    key = 'catalog-v3:' + digest.map((byte) => (byte & 255).toString(16).padStart(2, '0')).join('');
+    key = 'catalog-v4:' + digest.map((byte) => (byte & 255).toString(16).padStart(2, '0')).join('');
     cache = CacheService.getUserCache();
   } catch { /* Cache availability must never prevent a live read. */ }
 
@@ -124,6 +124,7 @@ function parseSheetCatalog_(rows) {
     entries.push({
       id: cell('id'), name: cell('name'), url: cell('url'), description: cell('description'),
       scope: /** @type {CatalogEntry['scope']} */ (cell('scope')),
+      icon: cell('icon'),
       tags: cell('tags').split(/[,、\n\r]+/),
       relatedLinks: cell('relatedLinks').split(/\r\n?|\n/).map((line) => line.trim()).filter(Boolean).map((line) => {
         // Split URL and label at the first whitespace; preserve spaces within labels.

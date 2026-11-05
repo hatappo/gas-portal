@@ -487,6 +487,10 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .tool-favicon img { position: absolute; inset: 0; width: 20px; height: 20px; object-fit: contain; opacity: 0; }
 .tool-favicon.is-loaded img { opacity: 1; }
 .tool-favicon.is-loaded .tool-favicon-fallback { visibility: hidden; }
+/* A text icon from the spreadsheet: an emoji or a letter, clipped to the icon box. */
+.tool-favicon.is-text { flex: 0 0 auto; width: auto; min-width: 20px; color: var(--ink); font-weight: 600; }
+/* Emoji glyphs carry built-in padding, so 18px looked smaller than a 20px favicon image. */
+.tool-favicon.is-text .tool-favicon-fallback { font-size: 21px; line-height: 20px; white-space: nowrap; }
 .related-links a, .table-view .related-links a { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
 .related-label { text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
 .related-links a:hover .related-label { text-decoration-color: currentColor; }

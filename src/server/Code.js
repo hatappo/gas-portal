@@ -363,6 +363,7 @@ function portalSpreadsheetColumns_(language) {
     { name: 'hidden', type: 'BOOLEAN', width: 100, note: t('Optional. Check TRUE to hide this entry. FALSE or blank keeps it visible. Hidden rows are excluded from search, tags, and counts.') },
     { name: 'scope', type: 'DROPDOWN', width: 130, note: t('Optional. Choose internal or external. Blank means internal.') },
     { name: 'tags', type: 'TEXT', width: 200, note: t('Optional. Separate tags with commas or line breaks.') },
+    { name: 'icon', type: 'TEXT', width: 120, note: t('Optional. An image URL starting with https:// or an emoji, shown instead of the automatic favicon. Leave blank to detect the favicon automatically.') },
     { name: 'name', type: 'TEXT', width: 220, note: t('Required. Display name shown in the portal.') },
     { name: 'url', type: 'TEXT', width: 320, note: t('Required. Primary URL, such as https:// or vscode://, entered as plain text rather than a file chip.') },
     { name: 'description', type: 'TEXT', width: 320, note: t('Optional. Plain-text description. HTML and Markdown are not interpreted.') },
@@ -399,7 +400,7 @@ function createPortalSpreadsheet(browserLanguage) {
       const resource = {
         properties: { title: name },
         sheets: [{
-          // Create only A:H; unused I:Z columns do not exist, rather than being hidden.
+          // Create only the defined columns; unused ones do not exist, rather than being hidden.
           properties: { sheetId: 0, title: 'Tools', gridProperties: { rowCount: 101, columnCount: columns.length, frozenRowCount: 1 } },
           data: [{
             startRow: 0, startColumn: 0,

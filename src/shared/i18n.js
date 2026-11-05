@@ -216,6 +216,8 @@ globalThis.PortalI18n = (() => {
   "id, name, and url must be non-empty strings.": "id・name・url は空でない文字列で指定してください。",
   "Duplicate id.": "id が重複しています。",
   "Enter a valid URL in url.": "url に有効な URL を入力してください。",
+  "icon must be an image URL starting with https:// or an emoji.": "icon には https:// で始まる画像の URL か、絵文字を入力してください。",
+  "Optional. An image URL starting with https:// or an emoji, shown instead of the automatic favicon. Leave blank to detect the favicon automatically.": "任意。https:// で始まる画像の URL か絵文字。自動取得した favicon の代わりに表示します。空欄の場合は自動で取得します。",
   "scope must be internal or external.": "scope は internal（社内）または external（社外）にしてください。",
   "description must be a string.": "description は文字列で指定してください。",
   "tags must be an array of strings.": "tags は文字列の配列で指定してください。",
