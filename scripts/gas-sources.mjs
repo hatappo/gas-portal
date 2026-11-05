@@ -7,4 +7,5 @@ export const sharedSources = [
   'src/shared/url-schemes.js',
   'src/shared/themes.js',
   'src/shared/catalog-rules.js',
+  'src/shared/cache-durations.js',
 ];

@@ -8,7 +8,8 @@
     "PortalI18n": "readonly",
     "PortalUrlSchemes": "readonly",
     "PortalThemes": "readonly",
-    "PortalCatalogRules": "readonly"
+    "PortalCatalogRules": "readonly",
+    "PortalCacheDurations": "readonly"
   },
   "rules": {
     "no-undef": "error",
