@@ -162,7 +162,7 @@ test('Create from Settings once, keep unsaved sheet-name text, and offer the cre
   assert.equal(name.value, 'Unsaved sheet-name draft');
   assert.equal(create.disabled, true);
   assert.equal(document.getElementById('reload-spreadsheet').hidden, false);
-  const link = document.getElementById('created-spreadsheet-link');
+  const link = document.getElementById('open-spreadsheet-link');
   assert.equal(link.href, 'https://docs.google.com/spreadsheets/d/created-sheet/edit');
   assert.equal(link.hidden, false);
   assert.equal(link.target, '_blank');
@@ -202,7 +202,7 @@ test('Expose recoverable partial creation failures without losing the created ID
   document.getElementById('create-spreadsheet').click();
   creationRequests[0].success({ ok: false, spreadsheetId: 'created-sheet', connected: false, error: 'Spreadsheet created, but its ID could not be saved. Save the ID shown in this form before reloading.' });
   assert.equal(document.getElementById('setting-spreadsheet').value, 'created-sheet');
-  assert.equal(document.getElementById('created-spreadsheet-link').hidden, false);
+  assert.equal(document.getElementById('open-spreadsheet-link').hidden, false);
   assert.equal(document.querySelector('#spreadsheet-settings-form [type=submit]').disabled, false);
   assert.equal(document.getElementById('reload-spreadsheet').hidden, true);
   assert.match(document.getElementById('spreadsheet-settings-status').textContent, /ID を保存できません/);

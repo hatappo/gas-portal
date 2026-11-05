@@ -73,7 +73,7 @@ globalThis.PortalI18n = (() => {
 
   "Additional authorization is required. Run initializeProperties in the GAS editor as the deploying account, grant the requested permissions, then reload the portal.": "追加の権限の許可が必要です。デプロイしたアカウントで GAS エディタから initializeProperties を実行し、要求された権限を許可してからポータルを再読み込みしてください。",
   "Create new spreadsheet": "スプレッドシートを新規作成",
-  "Open created spreadsheet": "作成したスプレッドシートを開く",
+  "Open spreadsheet": "スプレッドシートを開く",
   "Create a new spreadsheet with a ready-to-use table when no spreadsheet ID is saved or entered. Existing spreadsheets are never initialized.": "ID が未設定・未入力の場合に、テーブル付きのスプレッドシートを新規作成します。既存のスプレッドシートは初期化しません。",
   "A spreadsheet ID is already configured. No spreadsheet was created.": "スプレッドシート ID が設定済みのため、作成しませんでした。",
   "Creating spreadsheet\u2026": "スプレッドシートを作成中…",
