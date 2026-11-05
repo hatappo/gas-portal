@@ -26,6 +26,8 @@ const urlSchemes = readFileSync(path.join(root, 'src/shared/url-schemes.js'), 'u
 checkGasSyntax(urlSchemes, 'url-schemes.js');
 const portalThemes = readFileSync(path.join(root, 'src/shared/themes.js'), 'utf8');
 checkGasSyntax(portalThemes, 'themes.js');
+const catalogRules = readFileSync(path.join(root, 'src/shared/catalog-rules.js'), 'utf8');
+checkGasSyntax(catalogRules, 'catalog-rules.js');
 const serverFiles = ['Code.js', 'Catalog.js', 'SheetCatalog.js'];
 const github = readFileSync(path.join(root, 'src/server/GitHub.js'), 'utf8');
 checkGasSyntax(github, 'GitHub.js');
@@ -69,7 +71,7 @@ for (const file of ['appsscript.json']) {
 }
 writeFileSync(path.join(dist, 'Index.html'), index);
 for (const file of serverFiles) {
-  writeFileSync(path.join(dist, file), (file === 'Code.js' ? i18n + '\n' + urlSchemes + '\n' + portalThemes + '\n' + github + '\n' : '') + readFileSync(path.join(root, 'src/server', file), 'utf8'));
+  writeFileSync(path.join(dist, file), (file === 'Code.js' ? i18n + '\n' + urlSchemes + '\n' + portalThemes + '\n' + catalogRules + '\n' + github + '\n' : '') + readFileSync(path.join(root, 'src/server', file), 'utf8'));
 }
 writeFileSync(path.join(dist, 'Styles.html'), `<style>\n${css}\n</style>\n`);
 writeFileSync(path.join(dist, 'Client.html'), `<script>\n${client}\n</script>\n`);

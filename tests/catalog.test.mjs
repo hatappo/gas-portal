@@ -99,6 +99,7 @@ test("Reject malformed URLs and embedded web credentials", () => {
   for (const url of ['//example.com', 'example.com', 'vscode:', '1app://x', 'mailto: a@example.com',
     'https://', 'https://user:pass@example.com', 'http://user@example.com', 'https://example.com\\@evil.com',
     'http://-bad.com', 'vscode://file/<script>', 'x:' + 'a'.repeat(2047),
+    'https://1.2.3.999/', 'ssh://git@github.com:org/repo.git', 'vscode://h:99999', 'wss://a:99999',
     'https://exa mple.com', 'https://example.com/\nattack', 'https://-bad.com',
     'https://example.com:99999', 'https://example.com/<script>', 'https://example.com/%zz']) {
     const result = parse([entry({ url })]);

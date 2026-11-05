@@ -21,3 +21,8 @@ declare var PortalThemes: {
   resolve(theme: string, prefersDark: boolean): string;
   label(theme: string): string;
 };
+declare var PortalCatalogRules: {
+  isValidLinkUrl(value: unknown): boolean;
+  isValidIcon(value: unknown): boolean;
+  isIconUrl(icon: string): boolean;
+};

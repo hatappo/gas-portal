@@ -33,6 +33,7 @@ export function renderPreview(html, root, options = {}) {
   const urlSchemes = readFileSync(path.join(root, 'src/shared/url-schemes.js'), 'utf8');
   vm.runInContext(urlSchemes, context);
   vm.runInContext(readFileSync(path.join(root, 'src/shared/themes.js'), 'utf8'), context);
+  vm.runInContext(readFileSync(path.join(root, 'src/shared/catalog-rules.js'), 'utf8'), context);
   for (const name of ['Catalog', 'Code']) {
     vm.runInContext(readFileSync(new URL(`${name}.js`, url), 'utf8'), context);
   }

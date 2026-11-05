@@ -57,7 +57,7 @@ const mixed = {
       { id: 'c1', name: 'Local', url: 'http://localhost:4174/', description: '' },
       { id: 'c2', name: 'Inline', url: 'data:text/plain,hello', description: '' },
     ] },
-    { ...catalog.tools[0], id: 'b-data', name: 'Data page', url: 'data:text/html,<marquee>x</marquee>' },
+    { ...catalog.tools[0], id: 'b-data', name: 'Data page', url: 'data:text/html,%3Cmarquee%3Ex%3C/marquee%3E' },
     { ...catalog.tools[0], id: 'c-script', name: 'Script', url: 'javascript:alert(1)' },
   ],
 };
@@ -78,7 +78,7 @@ test('Show blocked links as plain text without href in both views', (t) => {
       assert.equal(element.hasAttribute('href'), false);
     });
     const texts = [...document.querySelectorAll(`${container} .blocked-url-text`)].map((text) => text.textContent);
-    assert.deepEqual(texts, ['data:text/plain,hello', 'data:text/html,<marquee>x</marquee>', 'javascript:alert(1)'], container);
+    assert.deepEqual(texts, ['data:text/plain,hello', 'data:text/html,%3Cmarquee%3Ex%3C/marquee%3E', 'javascript:alert(1)'], container);
     assert.match(document.querySelector(`${container} .blocked-url-label`).textContent, /ブロック中/);
     assert.equal(document.querySelectorAll('marquee, [onerror]').length, 0);
   }
@@ -105,7 +105,7 @@ test('Save checkbox changes, re-render links, and restore choices after failure'
   assert.equal(fieldset.dataset.savedValue, 'data');
   assert.equal(document.querySelector('#url-scheme-settings-status').textContent, '保存しました');
   const hrefs = [...document.querySelectorAll('#tools a')].map((link) => link.getAttribute('href'));
-  assert.ok(hrefs.includes('data:text/html,<marquee>x</marquee>'));
+  assert.ok(hrefs.includes('data:text/html,%3Cmarquee%3Ex%3C/marquee%3E'));
   assert.ok(!hrefs.includes('javascript:alert(1)'), 'Script schemes stay blocked');
   assert.equal(requests.length, 1, 'Re-rendering must not refetch the catalog');
 
