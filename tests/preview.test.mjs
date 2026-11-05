@@ -123,3 +123,35 @@ test('Preview cache settings persist, cached loads restore, and forced refresh a
   assert.equal(load(restored.run).cache.hit, false);
   assert.equal(load(restored.run).cache.hit, false);
 });
+
+test('The preview mock checks input with the server code and replies like the server', (t) => {
+  const storage = {};
+  const create = (search = '') => {
+    const dom = new JSDOM(renderPreview(source, process.cwd()));
+    t.after(() => dom.window.close());
+    const context = vm.createContext({
+      document: dom.window.document, URLSearchParams, location: { search }, setTimeout(fn) { fn(); },
+      localStorage: { getItem: (key) => storage[key], setItem: (key, value) => { storage[key] = value; }, removeItem: (key) => { delete storage[key]; } },
+    });
+    vm.runInContext(dom.window.document.querySelector('script:not([src]):not([type="application/json"])').textContent, context);
+    const run = vm.runInContext('google.script.run', context);
+    return (method, ...args) => {
+      let result;
+      run.withSuccessHandler((value) => { result = value; })[method](...args);
+      return JSON.parse(JSON.stringify(result));
+    };
+  };
+  const call = create();
+  assert.deepEqual(call('saveTheme', 'no-such-theme'), { ok: false });
+  assert.deepEqual(call('saveTheme', 'night'), { ok: true, theme: 'night' });
+  assert.deepEqual(call('saveLanguage', 'fr'), { ok: false });
+  assert.deepEqual(call('saveUnblockedUrlSchemes', ['javascript']), { ok: false });
+  assert.deepEqual(call('saveUnblockedUrlSchemes', ['file', 'data', 'file']), { ok: false });
+  assert.deepEqual(call('saveUnblockedUrlSchemes', ['file', 'data']), { ok: true, schemes: ['data', 'file'] });
+  // An existing source stops creation before anything is made, so the form stays usable.
+  assert.deepEqual(call('saveSpreadsheetSettings', { SPREADSHEET_ID: 'existing-sheet', SHEET_NAME: '' }).ok, true);
+  assert.deepEqual(call('createPortalSpreadsheet'), { ok: false, notCreated: true, error: 'A spreadsheet ID is already configured. No spreadsheet was created.' });
+  // Messages are English keys, translated by the browser as for the server.
+  assert.equal(create('?state=config')('getCatalog').error, 'The first row must contain id, name, and url columns. Also check for duplicate column names.');
+  assert.equal(create('?state=invalid')('getCatalog').issues[0].message, 'Enter a valid URL in url.');
+});
