@@ -31,7 +31,7 @@ test("Skip blank rows, preserve sheet row numbers, and exclude all duplicate IDs
 });
 
 test("Handle missing optional columns, trailing cells, and header-only sheets", () => {
-  const headers = ['id', 'name', 'url', 'parent'];
+  const headers = ['id', 'name', 'url', 'memo'];
   assert.deepEqual(parse([headers]), { tools: [], issues: [] });
   const tool = parse([headers, [1, '数値 ID', 'https://example.com']]).tools[0];
   assert.equal(tool.id, '1');
