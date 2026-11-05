@@ -107,8 +107,7 @@ function getPortalFaviconUrl_(theme, icon) {
   const normalized = normalizePortalIcon_(icon);
   const supported = /^[A-Z\u3041-\u3096\u309d-\u309e\u30a1-\u30fa\u30fc-\u30fe]$/.test(normalized);
   if (!supported) return 'https://hatappo.github.io/gas-portal/favicons/fallback.png';
-  const letter = normalized;
-  const filename = /^[A-Z]$/.test(letter) ? letter : 'u' + letter.charCodeAt(0).toString(16);
+  const filename = /^[A-Z]$/.test(normalized) ? normalized : 'u' + normalized.charCodeAt(0).toString(16);
   return 'https://hatappo.github.io/gas-portal/favicons/' + color + '/' + filename + '.png';
 }
 
@@ -261,11 +260,6 @@ function saveSpreadsheetSettings(input) {
   }
 }
 
-/** Restore display defaults while preserving theme and connection settings. */
-function resetPortalSettings() {
-  return savePortalSettings(getPortalPropertyDefaults_(getPortalLanguage_()));
-}
-
 /** Embed only the approved static files in the template. @param {string} filename */
 function include_(filename) {
   if (!['Styles', 'Client'].includes(filename)) throw new Error('INVALID_INCLUDE');
@@ -295,7 +289,6 @@ function getCatalog(forceRefresh = false) {
   }
 }
 
-
 /** @param {unknown} value */
 function normalizeCatalogCacheTtl_(value) {
   return ['0', '300', '3600', '21600'].includes(String(value)) ? Number(value) : 21600;
@@ -312,7 +305,6 @@ function saveCatalogCacheTtl(seconds) {
     return { ok: false };
   }
 }
-
 
 /** Shared duration for all Action Items providers; kept separate from the catalog. @param {unknown} value */
 function normalizeActionsCacheTtl_(value) {

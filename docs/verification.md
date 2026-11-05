@@ -1,5 +1,7 @@
 # Verification log
 
+Historical record of manual verification for the 0.1.x releases. It is not updated for later versions; current behavior is covered by `npm run check` and described in README.md and docs/usage.md.
+
 ## 0.1.0 / 2026-11-04
 
 - npm ci, lint, browser/GAS type checks, asset generation, and 98 tests passed with Node.js 26.12.1 and npm 12.2.1.

@@ -83,8 +83,8 @@ test("Search tags without showing labels for tools that have no tags", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   requests[0].success({ ...catalog, tools: [
-    { ...catalog.tools[0], scope: 'internal', tags: ['人事'] },
-    { ...catalog.tools[1], scope: 'external', tags: [] },
+    { ...catalog.tools[0], tags: ['人事'] },
+    { ...catalog.tools[1], tags: [] },
   ] });
   assert.doesNotMatch(document.querySelector('#tools').textContent, /タグなし/);
   assert.equal(document.querySelectorAll('#tools .tool-tags')[1].hidden, true);

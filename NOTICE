@@ -1,8 +1,8 @@
 gas-portal uses the Lucide external-link, refresh-cw, layout-grid, list,
 tool-case, list-checks, and settings icons.
 Their ISC and applicable MIT copyright/license notices are retained in
-src/assets/*.svg, the distributed assets/*.svg, and the generated HTML
-that embeds these icons.
+src/assets/*.svg, the distributed assets/external-link.svg, and the
+generated HTML that embeds these icons.
 
 Runtime dependencies @google/clasp and Vite are installed separately by npm
 and retain their own licenses. They are not copied into gas-portal's sources.

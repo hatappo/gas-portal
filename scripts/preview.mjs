@@ -171,7 +171,6 @@ export function renderPreview(html, root, options = {}) {
             this.success({ok:true, spreadsheetId:next.SPREADSHEET_ID});
           } catch { this.failure(); }
         }, 350);},
-        resetPortalSettings() {this.savePortalSettings(getPortalPropertyDefaults_(previewLanguage));},
         saveLanguage(language) {setTimeout(() => {
           if (!['auto', 'ja', 'en'].includes(language)) return this.success({ok:false});
           try {

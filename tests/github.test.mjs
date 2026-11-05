@@ -207,9 +207,10 @@ test('An empty owner searches across accessible repositories without repository 
   assert.ok(app.requests.every(({ url }) => url.includes('/search/issues?')));
 });
 
-test('Fetch the fourth category instead of reusing a three-category cache and preserve other results if it fails', () => {
+test('Ignore caches from the three-category format (v2) and do not cache a response with a failed category', () => {
   const app = fixture(); const connection = app.connect();
   const saved = JSON.parse(Object.values(app.userProperties)[0]);
+  // The key version changed when the fourth category was added, so this old entry must not be read.
   app.cache.set('github-actions-v2:' + connection.id + ':' + saved.revision, JSON.stringify({ connectionId: connection.id, revision: saved.revision, fetchedAt: Date.now(), groups: [] }));
   app.respond((url) => url.includes('/search/') && new URL(url).searchParams.get('q').includes('review:changes_requested')
     ? { status: 503 } : searchReply(url));
@@ -220,7 +221,7 @@ test('Fetch the fourth category instead of reusing a three-category cache and pr
   assert.equal(result.groups[3].error, 'REQUEST_FAILED');
   assert.equal(result.groups[3].partial, true);
   assert.equal(new URL(result.groups[3].searchUrl).searchParams.get('q'), 'is:open is:pr author:octocat review:changes_requested org:acme');
-  assert.ok([...app.cache.keys()].every((key) => key.startsWith('github-actions-v2:')), 'Failed four-category responses must not be cached');
+  assert.deepEqual([...app.cache.keys()].filter((key) => !key.startsWith('github-actions-v2:')), [], 'A response with a failed category is not cached');
 });
 
 test('Apply the shared Action Items duration to every connection and bypass reads and writes when disabled', () => {

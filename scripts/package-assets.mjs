@@ -15,9 +15,9 @@ if (/<\?/.test(preview)) throw new Error('The preview contains unresolved GAS te
 rmSync(path.join(root, 'assets'), { recursive: true, force: true });
 mkdirSync(path.join(root, 'assets/preview'), { recursive: true });
 cpSync(path.join(root, 'dist'), path.join(root, 'assets/gas'), { recursive: true });
-for (const name of ['external-link', 'refresh-cw', 'layout-grid', 'list', 'tool-case', 'list-checks', 'settings']) {
-  cpSync(path.join(root, `src/assets/${name}.svg`), path.join(root, `assets/${name}.svg`));
-}
+// The other icons are already embedded, with their license comments, in assets/gas/Index.html.
+// The CLI reads only this one, for the repository link it adds to consumer builds.
+cpSync(path.join(root, 'src/assets/external-link.svg'), path.join(root, 'assets/external-link.svg'));
 cpSync(path.join(root, 'src/mobile.html'), path.join(root, 'assets/preview/mobile.html'));
 writeFileSync(path.join(root, 'assets/preview/index.html'), preview);
 console.log('Generated packaged GAS code and mock preview in assets/.');

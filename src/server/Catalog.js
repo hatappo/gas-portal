@@ -1,7 +1,7 @@
 /**
  * @typedef {{id: string, name: string, url: string, description?: string, tags?: string[], icon?: string}} CatalogEntry
  * @typedef {{name: string, url: string, description: string, icon?: string}} ChildLink
- * @typedef {{id: string, name: string, url: string, description: string, category: string, tags: string[], children: ChildLink[], icon?: string}} Tool
+ * @typedef {{id: string, name: string, url: string, description: string, tags: string[], children: ChildLink[], icon?: string}} Tool
  * @typedef {{row: number, message: string}} CatalogIssue row is the one-based array position.
  * @typedef {{tools: Tool[], issues: CatalogIssue[]}} Catalog
  */
@@ -81,8 +81,6 @@ function parseCatalog_(entries) {
     }
     parent = {
       id, name, url, description: text_(entry.description),
-      // Retain category for RPC compatibility; the current UI does not use it.
-      category: 'その他',
       tags: [...new Set([...tags, ...autoTags])],
       children: [],
       ...iconField,

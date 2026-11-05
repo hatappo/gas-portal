@@ -6,7 +6,6 @@ declare var PortalI18n: {
   translate(text: string, language: string): string;
 };
 declare var PortalUrlSchemes: {
-  fixed: readonly string[];
   optional: readonly string[];
   normalizeUnblocked(value: unknown): string[];
   schemeOf(url: string): string;
@@ -18,7 +17,6 @@ declare var PortalThemes: {
   auto: { light: string; dark: string };
   all: readonly string[];
   isTheme(theme: unknown): boolean;
-  resolve(theme: string, prefersDark: boolean): string;
   label(theme: string): string;
 };
 declare var PortalCatalogRules: {

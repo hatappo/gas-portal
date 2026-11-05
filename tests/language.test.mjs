@@ -51,7 +51,7 @@ test('Use localized preset text while preserving custom content and preserving i
   assert.equal(app.context.getPortalContent_(custom).headline, custom.PORTAL_HEADLINE);
   assert.equal(app.context.getPortalContent_(custom).description, custom.PORTAL_DESCRIPTION);
   assert.equal(app.context.savePortalSettings({ ...preset, PORTAL_HEADLINE: '' }).settings.PORTAL_HEADLINE, '');
-  assert.equal(app.context.resetPortalSettings().settings.PORTAL_HEADLINE, content.headline);
+  assert.equal(app.context.savePortalSettings(app.context.getPortalPropertyDefaults_('en')).settings.PORTAL_HEADLINE, content.headline);
 });
 
 test('Release the language lock and do not expose storage errors', () => {

@@ -3,7 +3,6 @@ interface CatalogTool {
   name: string;
   url: string;
   description: string;
-  category: string;
   tags: string[];
   children?: CatalogChild[];
   icon?: string;
@@ -49,7 +48,6 @@ interface GasRunner {
   saveLanguage(language: string): void;
   saveTheme(theme: string): void;
   savePortalSettings(settings: PortalSettings, browserLanguage?: string): void;
-  resetPortalSettings(): void;
 }
 interface GasLocation { hash: string }
 interface GasHistory {

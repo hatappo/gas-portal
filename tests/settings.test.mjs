@@ -28,7 +28,7 @@ test("Save and reset only four display fields without reading Script Properties"
   const { context } = server({ properties, userProperties });
   assert.deepEqual(plain(context.savePortalSettings(values())), { ok: true, settings: values() });
   assert.equal(context.getPortalContent_(userProperties).name, 'Fumi Portal');
-  const reset = plain(context.resetPortalSettings());
+  const reset = plain(context.savePortalSettings(context.getPortalPropertyDefaults_()));
   assert.deepEqual(reset.settings, plain(context.getPortalPropertyDefaults_()));
   context.getPortalUserProperties_();
   context.initializeProperties();

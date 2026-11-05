@@ -85,7 +85,7 @@ test("Save, restore, and reset display settings while preserving the theme", (t)
   assert.equal(result.settings.PORTAL_ICON, 'L');
   assert.equal(JSON.parse(storage['portal-preview-settings']).PORTAL_ICON, 'L');
   assert.equal(JSON.parse(storage['portal-preview-settings']).PORTAL_NAME, 'Updated');
-  run.withSuccessHandler((value) => { result = value; }).resetPortalSettings();
+  run.withSuccessHandler((value) => { result = value; }).savePortalSettings(vm.runInContext("getPortalPropertyDefaults_('en')", context));
   assert.equal(result.settings.PORTAL_NAME, 'My Portal');
   assert.equal(storage['portal-preview-theme'], 'dracula');
 });
