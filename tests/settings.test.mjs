@@ -207,3 +207,26 @@ test('Show the normalized icon returned by a successful save in the form and hea
   assert.equal(document.querySelector('#setting-icon').value, 'T');
   assert.equal(document.querySelector('.brand-mark').textContent, 'T');
 });
+
+test('Keep the icon field to the one character just typed, including emoji and combining kana', (t) => {
+  const { dom, document } = browser();
+  t.after(() => dom.window.close());
+  const input = document.getElementById('setting-icon');
+  const type = (value, caret = value.length, options = {}) => {
+    input.value = value;
+    input.setSelectionRange(caret, caret);
+    input.dispatchEvent(new dom.window.InputEvent('input', options));
+    return input.value;
+  };
+  assert.equal(type('AB'), 'B', 'Typing after a letter replaces it');
+  assert.equal(type('BA', 1), 'B', 'Typing before a letter keeps the new one');
+  assert.equal(type('A😀'), '😀');
+  assert.equal(type('😀'), '😀');
+  assert.equal(type('が'), 'が', 'Combining marks are composed');
+  assert.equal(type('A '), 'A', 'Whitespace is ignored');
+  assert.equal(type(' '), '');
+  assert.equal(type('あい', 2, { isComposing: true }), 'あい', 'Wait while an IME is composing');
+  input.dispatchEvent(new dom.window.CompositionEvent('compositionend'));
+  assert.equal(input.value, 'い');
+  assert.equal(Number(input.getAttribute('maxlength')) >= 2, true, 'Leave room for surrogate pairs');
+});
