@@ -9,24 +9,10 @@
   logs: false;
 }
 
-/* Bridge the portal's earlier tokens to the active DaisyUI theme.
-   Components move to DaisyUI classes over time; remove a token once nothing uses it. */
+/* Muted text: base-content at 75%, which the theme contrast test checks.
+   Declared on every [data-theme] so theme previews compute it from their own colors. */
 :root, [data-theme] {
-  --theme-color: var(--color-primary);
-  --on-theme: var(--color-primary-content);
-  --ink: var(--color-base-content);
-  --muted: color-mix(in oklab, var(--color-base-content) 75%, var(--color-base-100));
-  --accent: var(--color-base-content);
-  --line: var(--color-base-300);
-  --paper: var(--color-base-200);
-  --surface: var(--color-base-100);
-  --surface-soft: var(--color-base-200);
-  --hover: var(--color-base-300);
-  --external-ink: var(--color-neutral-content);
-  --external-bg: var(--color-neutral);
-  --warning-ink: var(--color-warning-content);
-  --warning-bg: var(--color-warning);
-  --warning-line: var(--color-warning);
+  --portal-muted: color-mix(in oklab, var(--color-base-content) 75%, transparent);
 }
 
 * { box-sizing: border-box; }
@@ -54,14 +40,13 @@ main { width: 100%; max-width: 1040px; flex: 1; margin: 0 auto; padding: 0 40px 
 .preview-label span { white-space: nowrap; }
 h1 { margin: 0; font-size: clamp(25px, 3.5vw, 36px); line-height: 1.6; font-weight: 600; letter-spacing: .045em; overflow-wrap: anywhere; }
 #page-title[hidden] + .intro-copy { margin-top: 0; }
-.intro-copy { margin: 14px 0 0; color: color-mix(in oklab, var(--color-base-content) 75%, transparent); font-size: 13px; overflow-wrap: anywhere; }
+.intro-copy { margin: 14px 0 0; color: var(--portal-muted); font-size: 13px; overflow-wrap: anywhere; }
 /* DaisyUI tabs-border marks the tab whose aria-selected is true. */
 .portal-tabs { margin-bottom: 28px; border-bottom: 1px solid var(--color-base-300); }
 .portal-tabs .tab { --tab-height: 48px; gap: 8px; font-size: 15px; font-weight: 600; }
 .portal-tabs .tab > svg { width: 18px; height: 18px; flex-shrink: 0; stroke-width: 1.75; }
 h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 600; margin: 0; }
-/* Muted text: base-content at 75%, which the theme contrast test checks. */
-.count, .tool-description, .status p, .table-view td, .intro-copy, .settings-help { color: color-mix(in oklab, var(--color-base-content) 75%, transparent); }
+.count, .tool-description, .status p, .table-view td, .intro-copy, .settings-help { color: var(--portal-muted); }
 .count { flex-shrink: 0; min-width: calc(var(--count-digits, 1) * 2ch + 9ch); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-family: "Avenir Next", Avenir, sans-serif; font-size: 12px; font-weight: 400; }
 .directory-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 .search-controls { display: flex; flex: 1; min-width: 0; align-items: center; gap: 12px; }
@@ -151,84 +136,74 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .portal-tabs .settings-tab { margin-left: auto; min-width: 44px; flex-shrink: 0; }
 .settings-tab svg { width: 20px; height: 20px; }
 .settings-heading h2 { font-size: 20px; }
-.settings-heading p { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
-.theme-save-status { min-height: 38px; padding: 8px 0; color: var(--accent); font-size: 12px; }
+.settings-heading p { margin: 8px 0 0; color: var(--portal-muted); font-size: 13px; }
+.theme-save-status { min-height: 38px; padding: 8px 0; font-size: 12px; }
 .theme-group { min-width: 0; padding: 0; margin: 12px 0 32px; border: 0; }
-.theme-group legend { margin-bottom: 14px; padding: 0; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .12em; }
+.theme-group legend { margin-bottom: 14px; padding: 0; color: var(--portal-muted); font-size: 12px; font-weight: 600; letter-spacing: .12em; }
 .theme-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
-.theme-choice { min-width: 0; position: relative; cursor: pointer; padding: 10px 10px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
-.theme-choice:hover { border-color: var(--theme-color); }
-.theme-choice:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.theme-choice:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 4px; }
+/* Theme cards are drawn in the page theme; each preview inside carries its own data-theme. */
+.theme-choice { min-width: 0; position: relative; cursor: pointer; padding: 10px 10px 12px; border: var(--border) solid var(--color-base-300); border-radius: var(--radius-box); background: var(--color-base-100); transition: border-color .15s; }
+.theme-choice:hover { border-color: color-mix(in oklab, var(--color-base-content) 40%, transparent); }
+.theme-choice:has(input:checked) { border-color: var(--color-base-content); box-shadow: 0 0 0 1px var(--color-base-content); }
+.theme-choice:has(input:focus-visible) { outline: 3px solid var(--color-base-content); outline-offset: 4px; }
 .theme-choice:has(input:disabled) { cursor: wait; }
-.theme-preview { display: block; overflow: hidden; padding: 16px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+.theme-preview { display: block; overflow: hidden; padding: 14px; border-radius: var(--radius-field); background: var(--color-base-200); color: var(--color-base-content); }
 .mini-header { display: flex; align-items: center; gap: 6px; }
-.mini-header i { width: 12px; height: 12px; background: var(--theme-color); border-radius: 4px; }
-.mini-header b { width: 35%; height: 4px; background: var(--ink); opacity: .7; border-radius: 3px; }
-.mini-title { display: block; width: 68%; height: 6px; margin: 15px 0 12px; background: var(--ink); border-radius: 3px; }
+.mini-header i { width: 12px; height: 12px; background: var(--color-primary); border-radius: 4px; }
+.mini-header b { width: 35%; height: 4px; background: var(--color-base-content); opacity: .7; border-radius: 3px; }
+.mini-title { display: block; width: 68%; height: 6px; margin: 13px 0 10px; background: var(--color-base-content); border-radius: 3px; }
 .mini-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.mini-layout i { height: 34px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
-.mini-swatches { display: flex; gap: 5px; margin-top: 12px; }
-.mini-swatches i { width: 10px; height: 10px; border-radius: 50%; background: var(--theme-color); }
-.mini-swatches i:nth-child(2) { background: var(--accent); }
-.mini-swatches i:nth-child(3) { background: var(--muted); }
-.theme-label { display: flex; align-items: center; justify-content: space-between; margin: 10px 4px 0; font-size: 15px; font-weight: 600; }
-.theme-check { visibility: hidden; color: var(--accent); }
+.mini-layout i { height: 30px; border: 1px solid var(--color-base-300); border-radius: 4px; background: var(--color-base-100); }
+.mini-swatches { display: flex; gap: 5px; margin-top: 10px; }
+.mini-swatches i { width: 10px; height: 10px; border-radius: 50%; background: var(--color-primary); }
+.mini-swatches i:nth-child(2) { background: var(--color-secondary); }
+.mini-swatches i:nth-child(3) { background: var(--color-accent); }
+.theme-label { display: flex; align-items: center; justify-content: space-between; margin: 10px 4px 0; font-size: 14px; font-weight: 600; }
+.theme-check { visibility: hidden; }
 .theme-choice:has(input:checked) .theme-check { visibility: visible; }
-.theme-reading { display: block; margin: 0 4px; color: var(--muted); font-size: 9px; letter-spacing: .09em; }
-.theme-caption { display: block; margin: 7px 4px 0; color: var(--muted); font-size: 10px; }
 @media (max-width: 900px) {
   .theme-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 600px) {
-  .portal-tabs { gap: 14px; }
-  .portal-tabs button { font-size: 13px; gap: 6px; }
+  .portal-tabs .tab { font-size: 13px; gap: 6px; padding-inline: 10px; }
   .theme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
   .theme-preview { padding: 12px; }
 }
 
-.settings-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin: -8px 0 28px; }
-.settings-tabs button { min-height: 40px; padding: 8px 14px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; }
-.settings-tabs button:hover { color: var(--accent); background: var(--surface); }
-.settings-tabs button[aria-selected="true"] { color: var(--accent); background: var(--surface); border-color: var(--line); }
+/* DaisyUI tabs-box marks the tab whose aria-selected is true. */
+.settings-tabs { width: fit-content; max-width: 100%; margin: -8px 0 28px; }
+.settings-tabs .tab { font-size: 13px; font-weight: 600; }
 .settings-subpanel > :last-child { margin-bottom: 0; }
 .settings-subpanel > .display-settings:last-child { padding-bottom: 0; border-bottom: 0; }
-.settings-subpanel > .language-settings { padding-top: 24px; border-top: 1px solid var(--line); }
-@media (max-width: 420px) { .settings-tabs { gap: 2px; } .settings-tabs button { padding-inline: 10px; font-size: 12px; } }
+.settings-subpanel > .language-settings { padding-top: 24px; border-top: 1px solid var(--color-base-300); }
+@media (max-width: 420px) { .settings-tabs .tab { padding-inline: 10px; font-size: 12px; } }
 
-.display-settings { margin-bottom: 36px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+.display-settings { margin-bottom: 36px; padding-bottom: 24px; border-bottom: 1px solid var(--color-base-300); }
 .portal-settings-form { margin: 0; }
 .display-settings > :last-child { margin-bottom: 0; }
 .portal-settings-form fieldset { padding: 0; margin: 24px 0 0; border: 0; min-width: 0; }
 .settings-fields-row { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 20px; }
-.settings-field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; color: var(--muted); font-size: 12px; }
-.settings-field input, .settings-field textarea { width: 100%; min-width: 0; padding: 12px 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 7px; font-size: 16px; }
-.settings-field textarea { resize: vertical; min-height: 96px; }
-.settings-field input:focus, .settings-field textarea:focus { border-color: var(--accent); }
-.settings-icon-field input { text-align: center; }
+.settings-field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; font-size: 12px; }
+.settings-field > span:first-child { color: var(--portal-muted); }
+.settings-field .input, .settings-field .textarea { font-size: 16px; }
+.settings-field .textarea { resize: vertical; min-height: 96px; }
+.settings-icon-field .input { text-align: center; }
 .settings-icon-field span { font-size: 11px; }
 .settings-form-actions { display: flex; flex-wrap: wrap; gap: 12px; }
-.settings-form-actions button { min-height: 44px; padding: 10px 20px; border: 1px solid var(--line); border-radius: 7px; }
-.settings-save { background: var(--theme-color); color: var(--on-theme); font-weight: 600; }
-.settings-reset { background: transparent; color: var(--muted); }
-.settings-form-status { min-height: 24px; margin: 12px 0 0; color: var(--accent); font-size: 12px; }
+.settings-form-status { min-height: 24px; margin: 12px 0 0; font-size: 12px; }
 @media (max-width: 600px) { .settings-fields-row { grid-template-columns: minmax(0, 1fr) 80px; gap: 12px; } }
 
 .language-settings, .cache-settings { margin: 28px 0; }
 .language-settings .settings-field, .cache-settings .settings-field { max-width: 280px; }
-.language-settings select, .cache-settings select { min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); }
-.language-settings p, .cache-settings p { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+.language-settings p, .cache-settings p { margin: 8px 0 0; color: var(--portal-muted); font-size: 12px; }
 #language-status:empty { display: none; }
-
-/* Accent colors from https://www.colordic.org/w; companion shades preserve text contrast. */
-
 
 .theme-auto { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding: 16px; }
 .theme-auto-copy { flex: 1; min-width: 0; display: grid; gap: 6px; }
 .theme-auto-copy strong { font-size: 14px; }
-.theme-auto-copy > span { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.theme-auto-copy > span { color: var(--portal-muted); font-size: 12px; line-height: 1.6; }
 .theme-auto-swatches { display: flex; flex-shrink: 0; }
-.theme-auto-swatches i { width: 24px; height: 32px; background: var(--paper); border: 1px solid var(--line); }
+.theme-auto-swatches i { width: 24px; height: 32px; background: var(--color-base-200); border: 1px solid var(--color-base-300); }
 .theme-auto-swatches i:first-child { border-radius: 16px 0 0 16px; }
 .theme-auto-swatches i:last-child { border-radius: 0 16px 16px 0; }
 
@@ -239,7 +214,7 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .catalog-freshness { color: inherit; font-size: 11px; }
 @media (max-width: 1100px) { .directory-toolbar { flex-wrap: wrap; } .search-controls { flex-basis: 100%; } .filter-toolbar { width: 100%; justify-content: flex-start; } }
 
-.settings-help { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 0 0 20px; }
+.settings-help { color: var(--portal-muted); font-size: 12px; line-height: 1.6; margin: 0 0 20px; }
 #create-spreadsheet-help { margin-top: 12px; }
 #create-spreadsheet:disabled { cursor: not-allowed; }
 #spreadsheet-settings-fields:disabled #create-spreadsheet { cursor: wait; }
@@ -261,7 +236,7 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .action-item-list > li:first-child { border-top: 1px solid var(--color-base-300); }
 .action-item-title { font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
 .action-items-list a svg, .action-notice a svg { width: 13px; height: 13px; margin-inline-start: 5px; vertical-align: middle; }
-.action-item-meta { grid-column: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; color: color-mix(in oklab, var(--color-base-content) 75%, transparent); font-size: 11px; overflow-wrap: anywhere; }
+.action-item-meta { grid-column: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; color: var(--portal-muted); font-size: 11px; overflow-wrap: anywhere; }
 .action-service { color: var(--color-base-content); font-weight: 600; }
 .action-item-reasons { grid-column: 2; grid-row: 1 / 3; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; max-width: 280px; }
 .action-item-kind { height: auto; }
@@ -278,7 +253,7 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 @media (max-width: 600px) { .github-connection { flex-wrap: wrap; } }
 
 .github-pat-help { margin: 12px 0; line-height: 1.8; }
-.github-pat-help summary { color: var(--accent); cursor: pointer; }
+.github-pat-help summary { cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
 .github-pat-help .github-connection-controls { flex-wrap: wrap; }
 
 @media (max-width: 600px) { .search-controls { flex-wrap: wrap; gap: 6px; } .search-controls .search-box { flex-basis: 100%; } }
@@ -292,17 +267,17 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .action-items-list > .status { margin-top: 16px; }
 
 /* Reserve identical space before, during, and after the decorative image request. */
-.tool-favicon { position: relative; display: inline-flex; flex: 0 0 20px; width: 20px; height: 20px; margin-top: 2px; align-items: center; justify-content: center; color: var(--muted); }
+.tool-favicon { position: relative; display: inline-flex; flex: 0 0 20px; width: 20px; height: 20px; margin-top: 2px; align-items: center; justify-content: center; color: var(--portal-muted); }
 .tool-favicon-fallback { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: 18px; line-height: 20px; }
 .tool-favicon img { position: absolute; inset: 0; width: 20px; height: 20px; object-fit: contain; opacity: 0; }
 .tool-favicon.is-loaded img { opacity: 1; }
 .tool-favicon.is-loaded .tool-favicon-fallback { visibility: hidden; }
 /* A text icon from the spreadsheet: an emoji or a letter, clipped to the icon box. */
-.tool-favicon.is-text { flex: 0 0 auto; width: auto; min-width: 20px; color: var(--ink); font-weight: 600; }
+.tool-favicon.is-text { flex: 0 0 auto; width: auto; min-width: 20px; color: var(--color-base-content); font-weight: 600; }
 /* Emoji glyphs carry built-in padding, so 18px looked smaller than a 20px favicon image. */
 .tool-favicon.is-text .tool-favicon-fallback { font-size: 21px; line-height: 20px; white-space: nowrap; }
 .related-links a, .table-view .related-links a { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
-.related-label { text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
+.related-label { text-decoration: underline; text-decoration-color: var(--color-base-300); text-underline-offset: 4px; }
 .related-links a:hover .related-label { text-decoration-color: currentColor; }
 .related-favicon { position: relative; display: inline-flex; flex: 0 0 14px; width: 14px; height: 14px; align-items: center; justify-content: center; }
 .related-favicon-fallback { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: 12px; line-height: 14px; }
@@ -312,27 +287,26 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .table-view .tool-name-link { display: inline-flex; align-items: flex-start; gap: 10px; }
 
 /* Links with a blocked URL scheme: shown for reference, never opened. */
-.tool-card.is-blocked { border-style: dashed; background: var(--paper); }
-.tool-card.is-blocked:hover { border-color: var(--line); transform: none; }
-.is-blocked { cursor: not-allowed; color: var(--muted); }
-.tool-main.is-blocked h3, .tool-main.is-blocked:hover h3 { color: var(--muted); }
+.tool-card.is-blocked { border-style: dashed; background: var(--color-base-200); }
+.tool-card.is-blocked:hover { border-color: var(--color-base-300); transform: none; }
+.is-blocked { cursor: not-allowed; color: var(--portal-muted); }
+.tool-main.is-blocked h3, .tool-main.is-blocked:hover h3 { text-decoration: none; }
 .tool-main.is-blocked .tool-favicon { opacity: .55; }
 .blocked-url { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 0 0 12px; min-width: 0; font-size: 11px; line-height: 1.6; }
-.blocked-url-label { flex: none; padding: 1px 7px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); white-space: nowrap; }
-.blocked-url-text { min-width: 0; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; cursor: text; user-select: all; }
+.blocked-url-label { flex: none; white-space: nowrap; }
+.blocked-url-text { min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; cursor: text; user-select: all; }
 .related-links .is-blocked { display: inline-flex; flex-direction: column; padding: 10px 0; font-size: 12px; overflow-wrap: anywhere; }
 .related-links .is-blocked .blocked-url { margin: 4px 0 0; }
 .table-view th .blocked-url { margin: 6px 0 0; font-weight: normal; }
 .url-scheme-settings { padding: 0; border: 0; min-width: 0; }
-.url-scheme-settings legend { padding: 0; margin-bottom: 4px; color: var(--muted); font-size: 12px; }
+.url-scheme-settings legend { padding: 0; margin-bottom: 4px; color: var(--portal-muted); font-size: 12px; }
 .url-scheme-choices { display: flex; flex-wrap: wrap; gap: 4px 20px; }
-.url-scheme-choice { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--ink); font-size: 14px; cursor: pointer; }
-.url-scheme-choice input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+.url-scheme-choice { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 14px; cursor: pointer; }
 .url-scheme-settings:disabled .url-scheme-choice { cursor: progress; opacity: .7; }
 
 /* Favicon finder bookmarklet: a link meant to be dragged to the bookmarks bar. */
-.bookmarklet-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 14px; border: 1px dashed var(--accent); border-radius: 7px; color: var(--accent); background: var(--surface-soft); font-size: 13px; font-weight: 600; text-decoration: none; cursor: grab; }
+.bookmarklet-link { border-style: dashed; cursor: grab; }
 .bookmarklet-link:active { cursor: grabbing; }
 .favicon-finder details { margin-top: 8px; }
 .favicon-finder summary { cursor: pointer; }
-.bookmarklet-code { display: block; width: 100%; margin: 8px 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: var(--surface); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; resize: vertical; }
+.bookmarklet-code { display: block; margin: 8px 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; resize: vertical; }

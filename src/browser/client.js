@@ -385,7 +385,6 @@
       const link = toolLink(related);
       const label = document.createElement('span');
       label.className = 'related-label';
-      if (!link.classList.contains('is-blocked')) link.classList.add('link');
       label.textContent = related.label;
       if (link.classList.contains('is-blocked')) {
         link.prepend(label);

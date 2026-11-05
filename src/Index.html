@@ -91,10 +91,10 @@
         <template id="action-external-icon"><!-- external-link-icon --></template>
       </section>
       <section id="settings-panel" class="settings-panel" role="tabpanel" aria-labelledby="tab-settings" tabindex="0" hidden>
-        <div class="settings-tabs" role="tablist" aria-label="Settings sections" data-i18n-aria-label="Settings sections">
-          <button type="button" id="settings-tab-appearance" role="tab" aria-selected="true" aria-controls="settings-appearance-panel" tabindex="0" data-i18n="Appearance">Appearance</button>
-          <button type="button" id="settings-tab-tools" role="tab" aria-selected="false" aria-controls="settings-tools-panel" tabindex="-1">Tools &amp; Links</button>
-          <button type="button" id="settings-tab-actions" role="tab" aria-selected="false" aria-controls="settings-actions-panel" tabindex="-1">Action Items</button>
+        <div class="settings-tabs tabs tabs-box" role="tablist" aria-label="Settings sections" data-i18n-aria-label="Settings sections">
+          <button type="button" id="settings-tab-appearance" class="tab" role="tab" aria-selected="true" aria-controls="settings-appearance-panel" tabindex="0" data-i18n="Appearance">Appearance</button>
+          <button type="button" id="settings-tab-tools" class="tab" role="tab" aria-selected="false" aria-controls="settings-tools-panel" tabindex="-1">Tools &amp; Links</button>
+          <button type="button" id="settings-tab-actions" class="tab" role="tab" aria-selected="false" aria-controls="settings-actions-panel" tabindex="-1">Action Items</button>
         </div>
         <div id="settings-appearance-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-appearance" tabindex="0">
           <section class="display-settings" aria-labelledby="display-settings-title">
@@ -103,13 +103,13 @@
               <fieldset id="portal-settings-fields">
                 <legend class="visually-hidden"><span data-i18n="Portal display settings">Portal display settings</span></legend>
                 <div class="settings-fields-row">
-                  <label class="settings-field"><span data-i18n="Portal name">Portal name</span><input id="setting-name" name="PORTAL_NAME" maxlength="80" value="<?= portal.name ?>" autocomplete="off"></label>
-                  <label class="settings-field settings-icon-field"><span data-i18n="Icon">Icon</span><input id="setting-icon" name="PORTAL_ICON" maxlength="8" value="<?= portal.icon ?>" autocomplete="off" aria-describedby="icon-help"><span id="icon-help"><span data-i18n="1 character">1 character</span></span></label>
+                  <label class="settings-field"><span data-i18n="Portal name">Portal name</span><input id="setting-name" class="input w-full" name="PORTAL_NAME" maxlength="80" value="<?= portal.name ?>" autocomplete="off"></label>
+                  <label class="settings-field settings-icon-field"><span data-i18n="Icon">Icon</span><input id="setting-icon" class="input w-full" name="PORTAL_ICON" maxlength="8" value="<?= portal.icon ?>" autocomplete="off" aria-describedby="icon-help"><span id="icon-help"><span data-i18n="1 character">1 character</span></span></label>
                 </div>
-                <label class="settings-field"><span data-i18n="Headline">Headline</span><input aria-describedby="intro-help" id="setting-headline" name="PORTAL_HEADLINE" maxlength="160" value="<?= portal.headline ?>" autocomplete="off"></label>
-                <label class="settings-field"><span data-i18n="Description text">Description text</span><textarea aria-describedby="intro-help" id="setting-description" name="PORTAL_DESCRIPTION" maxlength="500" rows="3"><?= portal.description ?></textarea></label>
+                <label class="settings-field"><span data-i18n="Headline">Headline</span><input aria-describedby="intro-help" id="setting-headline" class="input w-full" name="PORTAL_HEADLINE" maxlength="160" value="<?= portal.headline ?>" autocomplete="off"></label>
+                <label class="settings-field"><span data-i18n="Description text">Description text</span><textarea aria-describedby="intro-help" id="setting-description" class="textarea w-full" name="PORTAL_DESCRIPTION" maxlength="500" rows="3"><?= portal.description ?></textarea></label>
                 <p id="intro-help" class="settings-help" data-i18n="Leave the headline or description blank to hide it. Leave both blank to give more space to your content.">Leave the headline or description blank to hide it. Leave both blank to give more space to your content.</p>
-                <div class="settings-form-actions"><button type="submit" class="settings-save"><span data-i18n="Save changes">Save changes</span></button><button type="button" id="reset-portal-settings" class="settings-reset"><span data-i18n="Restore defaults">Restore defaults</span></button></div>
+                <div class="settings-form-actions"><button type="submit" class="settings-save btn btn-primary"><span data-i18n="Save changes">Save changes</span></button><button type="button" id="reset-portal-settings" class="settings-reset btn"><span data-i18n="Restore defaults">Restore defaults</span></button></div>
               </fieldset>
               <p id="portal-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
             </form>
@@ -130,7 +130,7 @@
           <section class="language-settings" aria-labelledby="language-settings-title">
             <div class="settings-heading"><h2 id="language-settings-title" data-i18n="Language">Language</h2></div>
             <div class="settings-field">
-              <select id="portal-language" aria-labelledby="language-settings-title" aria-describedby="language-help language-status"><option value="auto" data-i18n="Automatic (browser)">Automatic (browser)</option><option value="ja" lang="ja">日本語</option><option value="en" lang="en">English</option></select>
+              <select id="portal-language" class="select" aria-labelledby="language-settings-title" aria-describedby="language-help language-status"><option value="auto" data-i18n="Automatic (browser)">Automatic (browser)</option><option value="ja" lang="ja">日本語</option><option value="en" lang="en">English</option></select>
             </div>
             <p id="language-help" data-i18n="Automatic uses your browser language, with English as the fallback. Custom text and spreadsheet data keep their original language.">Automatic uses your browser language, with English as the fallback. Custom text and spreadsheet data keep their original language.</p>
             <p id="language-status" role="status" aria-live="polite"></p>
@@ -142,10 +142,10 @@
               <div class="settings-heading"><h2 id="spreadsheet-settings-title" data-i18n="Spreadsheet">Spreadsheet</h2><p data-i18n="Choose the source for Tools & Links. Saved for your Google account.">Choose the source for Tools &amp; Links. Saved for your Google account.</p></div>
               <fieldset id="spreadsheet-settings-fields">
                 <legend class="visually-hidden" data-i18n="Spreadsheet settings">Spreadsheet settings</legend>
-                <label class="settings-field"><span data-i18n="Spreadsheet ID or URL">Spreadsheet ID or URL</span><input id="setting-spreadsheet" name="SPREADSHEET_ID" value="<?= portal.spreadsheetId ?>" autocomplete="off" spellcheck="false" aria-describedby="spreadsheet-help"></label>
-                <label class="settings-field"><span data-i18n="Sheet name (optional)">Sheet name (optional)</span><input id="setting-sheet-name" name="SHEET_NAME" value="<?= portal.sheetName ?>" maxlength="100" autocomplete="off" aria-describedby="spreadsheet-help"></label>
+                <label class="settings-field"><span data-i18n="Spreadsheet ID or URL">Spreadsheet ID or URL</span><input id="setting-spreadsheet" class="input w-full" name="SPREADSHEET_ID" value="<?= portal.spreadsheetId ?>" autocomplete="off" spellcheck="false" aria-describedby="spreadsheet-help"></label>
+                <label class="settings-field"><span data-i18n="Sheet name (optional)">Sheet name (optional)</span><input id="setting-sheet-name" class="input w-full" name="SHEET_NAME" value="<?= portal.sheetName ?>" maxlength="100" autocomplete="off" aria-describedby="spreadsheet-help"></label>
                 <p id="spreadsheet-help" class="settings-help" data-i18n="Leave the sheet name blank to use the first sheet. The tab selected in a pasted URL is ignored. Saving does not change spreadsheet permissions.">Leave the sheet name blank to use the first sheet. The tab selected in a pasted URL is ignored. Saving does not change spreadsheet permissions.</p>
-                <div class="settings-form-actions"><button type="submit" class="settings-save" data-i18n="Save changes">Save changes</button><button type="button" id="create-spreadsheet" class="settings-reset" aria-describedby="create-spreadsheet-help" data-i18n="Create new spreadsheet">Create new spreadsheet</button><button type="button" id="reload-spreadsheet" class="settings-reset" hidden data-i18n="Reload portal">Reload portal</button></div>
+                <div class="settings-form-actions"><button type="submit" class="settings-save btn btn-primary" data-i18n="Save changes">Save changes</button><button type="button" id="create-spreadsheet" class="settings-reset btn" aria-describedby="create-spreadsheet-help" data-i18n="Create new spreadsheet">Create new spreadsheet</button><button type="button" id="reload-spreadsheet" class="settings-reset btn" hidden data-i18n="Reload portal">Reload portal</button></div>
               </fieldset>
               <p id="create-spreadsheet-help" class="settings-help" data-i18n="Create a new spreadsheet with a ready-to-use table when no spreadsheet ID is saved or entered. Existing spreadsheets are never initialized.">Create a new spreadsheet with a ready-to-use table when no spreadsheet ID is saved or entered. Existing spreadsheets are never initialized.</p>
               <a id="open-spreadsheet-link" class="link footer-link" data-url="<?= portal.spreadsheetUrl ?>" target="_blank" rel="noopener noreferrer" hidden><span data-i18n="Open spreadsheet">Open spreadsheet</span> <!-- external-link-icon --><span class="visually-hidden" data-i18n="(opens in a new tab)">(opens in a new tab)</span></a>
@@ -154,7 +154,7 @@
           </section>
             <div class="cache-settings">
               <label class="settings-field" for="catalog-cache-seconds"><span data-i18n="Catalog cache duration">Catalog cache duration</span>
-                <select id="catalog-cache-seconds" data-saved-value="<?= portal.cacheSeconds ?>" aria-describedby="cache-help cache-settings-status">
+                <select id="catalog-cache-seconds" class="select" data-saved-value="<?= portal.cacheSeconds ?>" aria-describedby="cache-help cache-settings-status">
                   <option value="0" data-i18n="Disabled">Disabled</option><option value="300" data-i18n="5 minutes">5 minutes</option><option value="3600" data-i18n="1 hour">1 hour</option><option value="21600" data-i18n="6 hours (default)">6 hours (default)</option>
                 </select>
               </label>
@@ -163,19 +163,19 @@
             </div>
             <fieldset id="url-scheme-settings" class="cache-settings url-scheme-settings" data-saved-value="<?= portal.unblockedUrlSchemes ?>" aria-describedby="url-scheme-help url-scheme-settings-status">
               <legend data-i18n="Blocked URL schemes">Blocked URL schemes</legend>
-              <div class="url-scheme-choices"><label class="url-scheme-choice"><input type="checkbox" value="data"><code>data:</code></label><label class="url-scheme-choice"><input type="checkbox" value="file"><code>file:</code></label><label class="url-scheme-choice"><input type="checkbox" value="blob"><code>blob:</code></label><label class="url-scheme-choice"><input type="checkbox" value="about"><code>about:</code></label><label class="url-scheme-choice"><input type="checkbox" value="filesystem"><code>filesystem:</code></label></div>
+              <div class="url-scheme-choices"><label class="url-scheme-choice"><input type="checkbox" class="checkbox checkbox-sm" value="data"><code>data:</code></label><label class="url-scheme-choice"><input type="checkbox" class="checkbox checkbox-sm" value="file"><code>file:</code></label><label class="url-scheme-choice"><input type="checkbox" class="checkbox checkbox-sm" value="blob"><code>blob:</code></label><label class="url-scheme-choice"><input type="checkbox" class="checkbox checkbox-sm" value="about"><code>about:</code></label><label class="url-scheme-choice"><input type="checkbox" class="checkbox checkbox-sm" value="filesystem"><code>filesystem:</code></label></div>
               <p id="url-scheme-help" data-i18n="Links with a checked scheme are shown but cannot be opened. javascript: and vbscript: are always blocked. Changes are saved automatically.">Links with a checked scheme are shown but cannot be opened. javascript: and vbscript: are always blocked. Changes are saved automatically.</p>
               <p id="url-scheme-settings-status" role="status" aria-live="polite"></p>
             </fieldset>
             <section class="display-settings favicon-finder" aria-labelledby="favicon-finder-title">
               <div class="settings-heading"><h2 id="favicon-finder-title" data-i18n="Favicon finder">Favicon finder</h2><p data-i18n="When a tool shows the 🌐 fallback, find the icon URL to put in its icon column.">When a tool shows the 🌐 fallback, find the icon URL to put in its icon column.</p></div>
-              <p><a id="favicon-finder-link" class="bookmarklet-link" draggable="true"><span aria-hidden="true">🔍</span> <span data-i18n="Find favicon">Find favicon</span></a></p>
+              <p><a id="favicon-finder-link" class="bookmarklet-link btn btn-outline" draggable="true"><span aria-hidden="true">🔍</span> <span data-i18n="Find favicon">Find favicon</span></a></p>
               <p class="settings-help" data-i18n="Drag the link above to your bookmarks bar. Then open the page whose icon you need and click the bookmark to show its icon URL.">Drag the link above to your bookmarks bar. Then open the page whose icon you need and click the bookmark to show its icon URL.</p>
               <details class="settings-help">
                 <summary data-i18n="If dragging does not work">If dragging does not work</summary>
                 <p data-i18n="Create a bookmark manually and paste this code as its URL.">Create a bookmark manually and paste this code as its URL.</p>
-                <textarea id="favicon-finder-code" class="bookmarklet-code" rows="3" readonly spellcheck="false" aria-label="Bookmarklet code" data-i18n-aria-label="Bookmarklet code"></textarea>
-                <div class="settings-form-actions"><button type="button" id="favicon-finder-copy" class="settings-reset" data-i18n="Copy code">Copy code</button></div>
+                <textarea id="favicon-finder-code" class="bookmarklet-code textarea textarea-sm w-full" rows="3" readonly spellcheck="false" aria-label="Bookmarklet code" data-i18n-aria-label="Bookmarklet code"></textarea>
+                <div class="settings-form-actions"><button type="button" id="favicon-finder-copy" class="settings-reset btn" data-i18n="Copy code">Copy code</button></div>
               </details>
               <p id="favicon-finder-status" class="settings-form-status" role="status" aria-live="polite"></p>
             </section>
@@ -183,7 +183,7 @@
         <div id="settings-actions-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-actions" tabindex="0" hidden>
           <div class="cache-settings">
             <label class="settings-field" for="actions-cache-seconds"><span data-i18n="Action Items cache duration">Action Items cache duration</span>
-              <select id="actions-cache-seconds" data-saved-value="<?= portal.actionsCacheSeconds ?>" aria-describedby="actions-cache-help actions-cache-settings-status">
+              <select id="actions-cache-seconds" class="select" data-saved-value="<?= portal.actionsCacheSeconds ?>" aria-describedby="actions-cache-help actions-cache-settings-status">
                 <option value="0" data-i18n="Disabled">Disabled</option><option value="60" data-i18n="1 minute">1 minute</option><option value="300" data-i18n="5 minutes (default)">5 minutes (default)</option><option value="900" data-i18n="15 minutes">15 minutes</option><option value="1800" data-i18n="30 minutes">30 minutes</option><option value="3600" data-i18n="1 hour">1 hour</option><option value="21600" data-i18n="6 hours">6 hours</option>
               </select>
             </label>
@@ -211,11 +211,11 @@
             <form id="github-settings-form" class="portal-settings-form" hidden>
               <fieldset id="github-settings-fields">
                 <legend class="visually-hidden" data-i18n="GitHub connection">GitHub connection</legend>
-                <label class="settings-field"><span data-i18n="Fine-grained personal access token">Fine-grained personal access token</span><input type="password" id="github-token" maxlength="255" autocomplete="new-password" spellcheck="false" placeholder="github_pat_…" aria-describedby="github-token-help github-pat-permissions"></label>
+                <label class="settings-field"><span data-i18n="Fine-grained personal access token">Fine-grained personal access token</span><input type="password" id="github-token" class="input w-full" maxlength="255" autocomplete="new-password" spellcheck="false" placeholder="github_pat_…" aria-describedby="github-token-help github-pat-permissions"></label>
                 <p id="github-token-help" class="settings-help" data-i18n="When editing, leave the token empty to keep the saved token. Never enter a real token in local preview.">When editing, leave the token empty to keep the saved token. Never enter a real token in local preview.</p>
-                <label class="settings-field"><span data-i18n="Organization or owner (optional)">Organization or owner (optional)</span><input id="github-owner" maxlength="39" autocomplete="off" placeholder="my-organization"></label>
+                <label class="settings-field"><span data-i18n="Organization or owner (optional)">Organization or owner (optional)</span><input id="github-owner" class="input w-full" maxlength="39" autocomplete="off" placeholder="my-organization"></label>
                 <p class="settings-help" data-i18n="Connections are shown as owner@GitHub-user. A blank owner appears as * and searches all accessible repositories, including public repositories owned by others.">Connections are shown as owner@GitHub-user. A blank owner appears as * and searches all accessible repositories, including public repositories owned by others.</p>
-                <div class="settings-form-actions"><button type="submit" class="settings-save" data-i18n="Save connection">Save connection</button><button type="button" id="cancel-github" class="settings-reset" data-i18n="Cancel">Cancel</button></div>
+                <div class="settings-form-actions"><button type="submit" class="settings-save btn btn-primary" data-i18n="Save connection">Save connection</button><button type="button" id="cancel-github" class="settings-reset btn" data-i18n="Cancel">Cancel</button></div>
               </fieldset>
             </form>
             <p id="github-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
