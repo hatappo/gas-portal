@@ -12,7 +12,7 @@
     PORTAL_DESCRIPTION: /** @type {HTMLTextAreaElement} */ (document.getElementById('setting-description')),
   };
   const keys = /** @type {(keyof PortalSettings)[]} */ (Object.keys(inputs));
-  let generation = 0;
+  const saveForm = PortalSave.createSaver({ status, t, setBusy: (busy) => { fields.disabled = busy; } });
 
   /** Keep the icon to one character while typing. maxlength counts UTF-16 units, so it cannot
    * do this for emoji or combining kana marks. Keep the character just typed, so typing next to
@@ -65,39 +65,17 @@
 
   function save() {
     if (fields.disabled) return;
-    const current = ++generation;
-    fields.disabled = true;
-    status.textContent = t("Saving…");
-    status.setAttribute('aria-busy', 'true');
-    const finish = () => { fields.disabled = false; status.setAttribute('aria-busy', 'false'); };
-    const timeout = window.setTimeout(() => {
-      if (current !== generation) return;
-      generation++;
-      finish();
-      status.textContent = t("Could not confirm the save. Reload the page to check.");
-    }, 15000);
-    const failure = () => {
-      window.clearTimeout(timeout);
-      if (current !== generation) return;
-      finish();
-      status.textContent = t("Could not save. Your input has been kept. Please try again.");
-    };
-    try {
-      const runner = google.script.run.withSuccessHandler((/** @type {PortalSettingsResponse} */ response) => {
-        if (current !== generation) return;
-        if (!response?.ok) {
-          failure();
-          if (response && typeof response.error === 'string') status.textContent = PortalI18n.translate(response.error, document.documentElement.lang);
-          return;
-        }
-        if (!response.settings || !keys.every((key) => typeof response.settings[key] === 'string')) { failure(); return; }
-        window.clearTimeout(timeout);
+    saveForm({
+      send: (runner) => runner.savePortalSettings(readForm(), document.documentElement.lang),
+      confirm: (/** @type {PortalSettingsResponse} */ response) => {
+        if (!response?.ok) return PortalSave.serverError(response);
+        if (!response.settings || !keys.every((key) => typeof response.settings[key] === 'string')) return false;
         apply(response.settings);
-        finish();
-        status.textContent = t("Saved");
-      }).withFailureHandler(failure);
-      runner.savePortalSettings(readForm(), document.documentElement.lang);
-    } catch { failure(); }
+        return t("Saved");
+      },
+      // Keep the typed values so they can be saved again.
+      failureMessage: "Could not save. Your input has been kept. Please try again.",
+    });
   }
 
   // Initial values come from production HTML or the local mock.

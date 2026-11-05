@@ -21,40 +21,21 @@
     }));
     let saved = String(PortalCacheDurations.normalize(kind, select.dataset.savedValue || undefined));
     select.value = saved;
-    let generation = 0;
+    const saveChoice = PortalSave.createSaver({ status, t, setBusy: (busy) => { select.disabled = busy; } });
     select.addEventListener('change', () => {
       const value = select.value;
       if (select.disabled || value === saved) return;
-      const current = ++generation;
-      select.disabled = true;
-      status.textContent = t('Saving…');
-      status.setAttribute('aria-busy', 'true');
-      const finish = () => { select.disabled = false; status.setAttribute('aria-busy', 'false'); };
-      const timeout = window.setTimeout(() => {
-        if (current !== generation) return;
-        generation++;
-        select.value = saved;
-        finish();
-        status.textContent = t('Could not confirm the save. Reload the page to check.');
-      }, 15000);
-      const failure = () => {
-        window.clearTimeout(timeout);
-        if (current !== generation) return;
-        select.value = saved;
-        finish();
-        status.textContent = t('Could not save cache settings. Please try again.');
-      };
-      try {
-        google.script.run.withSuccessHandler((/** @type {{ok: boolean, seconds?: number}} */ response) => {
-          if (current !== generation) return;
-          if (!response?.ok || response.seconds !== Number(value)) { failure(); return; }
-          window.clearTimeout(timeout);
+      saveChoice({
+        send: (runner) => runner[save](Number(value)),
+        confirm: (/** @type {{ok: boolean, seconds?: number}} */ response) => {
+          if (!response?.ok || response.seconds !== Number(value)) return false;
           saved = value;
           select.dataset.savedValue = value;
-          finish();
-          status.textContent = t('Saved');
-        }).withFailureHandler(failure)[save](Number(value));
-      } catch { failure(); }
+          return t('Saved');
+        },
+        restore: () => { select.value = saved; },
+        failureMessage: 'Could not save cache settings. Please try again.',
+      });
     });
   }
 })();

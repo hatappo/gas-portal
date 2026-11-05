@@ -24,42 +24,23 @@
   let saved = PortalUrlSchemes.normalizeUnblocked(fieldset.dataset.savedValue);
   const show = () => boxes.forEach((box) => { box.checked = !saved.includes(box.value); });
   show();
-  let generation = 0;
+  const save = PortalSave.createSaver({ status, t, setBusy: (busy) => { fieldset.disabled = busy; } });
   fieldset.addEventListener('change', () => {
     if (fieldset.disabled) return;
     const next = PortalUrlSchemes.normalizeUnblocked(boxes.filter((box) => !box.checked).map((box) => box.value));
     if (next.join(',') === saved.join(',')) return;
-    const current = ++generation;
-    fieldset.disabled = true;
-    status.textContent = t('Saving…');
-    status.setAttribute('aria-busy', 'true');
-    const finish = () => { fieldset.disabled = false; status.setAttribute('aria-busy', 'false'); };
-    const timeout = window.setTimeout(() => {
-      if (current !== generation) return;
-      generation++;
-      show();
-      finish();
-      status.textContent = t('Could not confirm the save. Reload the page to check.');
-    }, 15000);
-    const failure = () => {
-      window.clearTimeout(timeout);
-      if (current !== generation) return;
-      show();
-      finish();
-      status.textContent = t('Could not save URL scheme settings. Please try again.');
-    };
-    try {
-      google.script.run.withSuccessHandler((/** @type {{ok: boolean, schemes?: string[]}} */ response) => {
-        if (current !== generation) return;
-        if (!response?.ok || response.schemes?.join(',') !== next.join(',')) { failure(); return; }
-        window.clearTimeout(timeout);
+    save({
+      send: (runner) => runner.saveUnblockedUrlSchemes(next),
+      confirm: (/** @type {{ok: boolean, schemes?: string[]}} */ response) => {
+        if (!response?.ok || response.schemes?.join(',') !== next.join(',')) return false;
         saved = next;
         fieldset.dataset.savedValue = next.join(',');
-        finish();
-        status.textContent = t('Saved');
         // The tool list reads the saved value and re-renders without fetching the catalog.
         document.dispatchEvent(new CustomEvent('portal:urlschemeschange'));
-      }).withFailureHandler(failure).saveUnblockedUrlSchemes(next);
-    } catch { failure(); }
+        return t('Saved');
+      },
+      restore: show,
+      failureMessage: 'Could not save URL scheme settings. Please try again.',
+    });
   });
 })();

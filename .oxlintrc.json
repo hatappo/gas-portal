@@ -46,7 +46,7 @@
     {
       "files": ["src/browser/*.js"],
       "env": { "browser": true },
-      "globals": { "google": "readonly" }
+      "globals": { "google": "readonly", "PortalSave": "readonly" }
     }
   ]
 }

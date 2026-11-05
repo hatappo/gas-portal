@@ -6,7 +6,9 @@
   let savedPreference = PortalI18n.preference(root.dataset.languagePreference);
   const browserLanguages = () => navigator.languages?.length ? navigator.languages : [navigator.language];
   const resolvedLanguage = () => PortalI18n.resolve(savedPreference, browserLanguages());
-  let generation = 0;
+  const save = PortalSave.createSaver({
+    status, t: (key) => PortalI18n.t(key, root.lang), setBusy: (busy) => { select.disabled = busy; },
+  });
 
   /** @param {string} language */
   function apply(language) {
@@ -36,36 +38,17 @@
   select.addEventListener('change', () => {
     const language = select.value;
     if (!['auto', 'ja', 'en'].includes(language) || language === savedPreference || select.disabled) return;
-    const current = ++generation;
-    select.disabled = true;
-    status.textContent = PortalI18n.t('Saving…', root.lang);
-    status.setAttribute('aria-busy', 'true');
-    const finish = () => { select.disabled = false; status.setAttribute('aria-busy', 'false'); };
-    const timeout = window.setTimeout(() => {
-      if (current !== generation) return;
-      generation++;
-      select.value = savedPreference;
-      finish();
-      status.textContent = PortalI18n.t('Could not confirm the save. Reload the page to check.', root.lang);
-    }, 15000);
-    const failure = () => {
-      window.clearTimeout(timeout);
-      if (current !== generation) return;
-      select.value = savedPreference;
-      finish();
-      status.textContent = PortalI18n.t('Could not save the language. Please try again.', root.lang);
-    };
-    try {
-      google.script.run.withSuccessHandler((/** @type {{ok: boolean, language?: string}} */ response) => {
-        if (current !== generation) return;
-        if (!response?.ok || response.language !== language) { failure(); return; }
-        window.clearTimeout(timeout);
+    save({
+      send: (runner) => runner.saveLanguage(language),
+      confirm: (/** @type {{ok: boolean, language?: string}} */ response) => {
+        if (!response?.ok || response.language !== language) return false;
         savedPreference = PortalI18n.preference(language);
         root.dataset.languagePreference = savedPreference;
         apply(resolvedLanguage());
-        finish();
-        status.textContent = PortalI18n.t('Saved', root.lang);
-      }).withFailureHandler(failure).saveLanguage(language);
-    } catch { failure(); }
+        return PortalI18n.t('Saved', root.lang);
+      },
+      restore: () => { select.value = savedPreference; },
+      failureMessage: 'Could not save the language. Please try again.',
+    });
   });
 })();

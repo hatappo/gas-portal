@@ -41,7 +41,6 @@
   const choices = Array.from(document.querySelectorAll('input[name="portal-theme"]'), (node) => /** @type {HTMLInputElement} */ (node));
   // The server omits data-theme for auto, so DaisyUI follows the device color scheme without script.
   let savedTheme = PortalThemes.isTheme(root.dataset.theme) ? /** @type {string} */ (root.dataset.theme) : 'auto';
-  let generation = 0;
 
   /** @param {string} theme */
   function apply(theme) {
@@ -50,46 +49,23 @@
     choices.forEach((choice) => { choice.checked = choice.value === theme; });
   }
 
-  /** @param {boolean} value */
-  function saving(value) {
-    choices.forEach((choice) => { choice.disabled = value; });
-    status.setAttribute('aria-busy', String(value));
-  }
+  const save = PortalSave.createSaver({ status, t, setBusy: (busy) => choices.forEach((choice) => { choice.disabled = busy; }) });
 
   apply(savedTheme);
   choices.forEach((choice) => choice.addEventListener('change', () => {
     const theme = choice.value;
     if (!choice.checked || theme === savedTheme) return;
-    const current = ++generation;
     apply(theme);
-    saving(true);
-    status.textContent = t("Saving…");
-    const timeout = window.setTimeout(() => {
-      if (current !== generation) return;
-      generation++;
-      // Show the last confirmed theme, as the other settings do, so selecting it again works.
-      apply(savedTheme);
-      saving(false);
-      status.textContent = t("Could not confirm the save. Reload the page to check.");
-    }, 15000);
-    const failure = () => {
-      window.clearTimeout(timeout);
-      if (current !== generation) return;
-      apply(savedTheme);
-      saving(false);
-      status.textContent = t("Could not save. Please select a theme again.");
-    };
-    try {
-      google.script.run.withSuccessHandler((/** @type {ThemeResponse} */ response) => {
-        if (current !== generation) return;
-        if (!response?.ok || response.theme !== theme) { failure(); return; }
-        window.clearTimeout(timeout);
+    save({
+      send: (runner) => runner.saveTheme(theme),
+      confirm: (/** @type {ThemeResponse} */ response) => {
+        if (!response?.ok || response.theme !== theme) return false;
         savedTheme = theme;
-        saving(false);
-        status.textContent = t("Saved");
-      }).withFailureHandler(failure).saveTheme(theme);
-    } catch {
-      failure();
-    }
+        return t("Saved");
+      },
+      // Show the last confirmed theme, as the other settings do, so selecting it again works.
+      restore: () => apply(savedTheme),
+      failureMessage: "Could not save. Please select a theme again.",
+    });
   }));
 })();
