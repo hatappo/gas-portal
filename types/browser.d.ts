@@ -62,6 +62,14 @@ declare var PortalSave: {
   createSaver(control: { status: HTMLElement; t: (key: string) => string; setBusy: (busy: boolean) => void }): <T>(request: SaveRequest<T>) => void;
   serverError(response: unknown): false | { error: string };
 };
+declare var PortalMotion: {
+  appear(target: HTMLElement): Animation | undefined;
+  onReduce(callback: () => void): void;
+};
+declare var PortalToolView: {
+  card(tool: CatalogTool): HTMLLIElement;
+  tableRow(tool: CatalogTool): HTMLTableRowElement;
+};
 interface GasLocation { hash: string }
 interface GasHistory {
   push(state: null, params: null, hash: string): void;
