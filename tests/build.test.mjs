@@ -6,6 +6,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { browser, catalog, server } from './helpers.mjs';
+import { sharedSources } from '../scripts/gas-sources.mjs';
 import ts from 'typescript';
 
 test("Build stays offline, removes stale data, and preserves output after syntax errors", (t) => {
@@ -13,7 +14,7 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   t.after(() => rmSync(root, { recursive: true, force: true }));
   cpSync('src', path.join(root, 'src'), { recursive: true });
   mkdirSync(path.join(root, 'scripts'));
-  for (const file of ['build.mjs', 'gas-syntax.mjs', 'portal-html.mjs']) cpSync(`scripts/${file}`, path.join(root, 'scripts', file));
+  for (const file of ['build.mjs', 'gas-sources.mjs', 'gas-syntax.mjs', 'portal-html.mjs']) cpSync(`scripts/${file}`, path.join(root, 'scripts', file));
   mkdirSync(path.join(root, 'lib'));
   cpSync('lib/repository-url.mjs', path.join(root, 'lib/repository-url.mjs'));
   symlinkSync(path.resolve('node_modules'), path.join(root, 'node_modules'), 'dir');
@@ -124,4 +125,10 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   writeFileSync(path.join(root, 'src/server/SheetCatalog.js'), 'function broken(');
   assert.notEqual(build().status, 0);
   assert.equal(readFileSync(output, 'utf8'), before);
+});
+
+test('The browser bundle imports the same shared files, in the same order, as the server build', () => {
+  const imports = [...readFileSync('src/browser/main.js', 'utf8').matchAll(/^import '\.\.\/shared\/([\w-]+\.js)';$/gm)].map((match) => `src/shared/${match[1]}`);
+  assert.deepEqual(imports, sharedSources);
+  assert.deepEqual(readdirSync('src/shared').map((file) => `src/shared/${file}`).sort(), [...sharedSources].sort());
 });

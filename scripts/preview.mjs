@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import { createGitHubPreview } from './github-preview.mjs';
 import { withPreviewProject, withPreviewContent } from './preview-project.mjs';
+import { sharedSources } from './gas-sources.mjs';
 import { withPortalAssets } from './portal-html.mjs';
 // Re-exported so a consumer previewing a linked checkout resolves Tailwind from this package.
 export { default as tailwindcss } from '@tailwindcss/vite';
@@ -29,11 +30,8 @@ export function renderPreview(html, root, options = {}) {
   const url = pathToFileURL(path.join(root, 'src/server/'));
   const context = vm.createContext({ console });
   const i18n = readFileSync(path.join(root, 'src/shared/i18n.js'), 'utf8');
-  vm.runInContext(i18n, context);
   const urlSchemes = readFileSync(path.join(root, 'src/shared/url-schemes.js'), 'utf8');
-  vm.runInContext(urlSchemes, context);
-  vm.runInContext(readFileSync(path.join(root, 'src/shared/themes.js'), 'utf8'), context);
-  vm.runInContext(readFileSync(path.join(root, 'src/shared/catalog-rules.js'), 'utf8'), context);
+  for (const file of sharedSources) vm.runInContext(readFileSync(path.join(root, file), 'utf8'), context);
   for (const name of ['Catalog', 'Code']) {
     vm.runInContext(readFileSync(new URL(`${name}.js`, url), 'utf8'), context);
   }
