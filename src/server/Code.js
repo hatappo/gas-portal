@@ -190,18 +190,18 @@ function validatePortalSettings_(input, language = 'en') {
   const defaults = getPortalPropertyDefaults_(language);
   /** @type {Record<string, number>} */
   const limits = { PORTAL_NAME: 80, PORTAL_ICON: 1, PORTAL_HEADLINE: 160, PORTAL_DESCRIPTION: 500 };
-  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error(PortalI18n.t("Invalid display settings."));
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error("Invalid display settings.");
   const values = /** @type {Record<string, unknown>} */ (input);
   if (Object.keys(values).length !== Object.keys(defaults).length || Object.keys(values).some((key) => !Object.prototype.hasOwnProperty.call(defaults, key))) {
-    throw new Error(PortalI18n.t("Only the four display settings can be changed."));
+    throw new Error("Only the four display settings can be changed.");
   }
   /** @type {Record<string, string>} */
   const settings = {};
   for (const [key, fallback] of Object.entries(defaults)) {
     const value = values[key];
-    if (typeof value !== 'string') throw new Error(PortalI18n.t("Enter display settings as text."));
+    if (typeof value !== 'string') throw new Error("Enter display settings as text.");
     const trimmed = key === 'PORTAL_ICON' ? normalizePortalIcon_(value.trim()) : value.trim();
-    if (Array.from(trimmed).length > limits[key]) throw new Error(PortalI18n.t('{key} must contain at most {limit} characters.', 'ja', { key, limit: limits[key] }));
+    if (Array.from(trimmed).length > limits[key]) throw new Error(PortalI18n.t('{key} must contain at most {limit} characters.', 'en', { key, limit: limits[key] }));
     settings[key] = key === 'PORTAL_HEADLINE' || key === 'PORTAL_DESCRIPTION' ? trimmed : trimmed || fallback;
   }
   return settings;
@@ -211,13 +211,13 @@ function validatePortalSettings_(input, language = 'en') {
 function savePortalSettings(input, browserLanguage) {
   let settings;
   try { settings = validatePortalSettings_(input, getPortalLanguage_(browserLanguage)); }
-  catch (error) { return { ok: false, error: error instanceof Error ? error.message : PortalI18n.t("Check your input.") }; }
+  catch (error) { return { ok: false, error: error instanceof Error ? error.message : "Check your input." }; }
   try {
     withPortalPropertiesLock_(() => PropertiesService.getUserProperties().setProperties(settings, false));
     return { ok: true, settings };
   } catch {
     console.error('PORTAL_SETTINGS_SAVE_FAILED');
-    return { ok: false, error: PortalI18n.t("Could not save. Please try again.") };
+    return { ok: false, error: "Could not save. Please try again." };
   }
 }
 
@@ -234,15 +234,15 @@ function normalizeSpreadsheetId_(input) {
 
 /** Validate only the two source fields, without broadening the display-settings RPC. @param {unknown} input */
 function validateSpreadsheetSettings_(input) {
-  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error(PortalI18n.t("Check your spreadsheet settings."));
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error("Check your spreadsheet settings.");
   const values = /** @type {Record<string, unknown>} */ (input);
   if (Object.keys(values).length !== 2 || typeof values.SPREADSHEET_ID !== 'string' || typeof values.SHEET_NAME !== 'string') {
-    throw new Error(PortalI18n.t("Check your spreadsheet settings."));
+    throw new Error("Check your spreadsheet settings.");
   }
   const id = normalizeSpreadsheetId_(values.SPREADSHEET_ID);
-  if (values.SPREADSHEET_ID.trim() && !id) throw new Error(PortalI18n.t("Enter a spreadsheet ID or a Google Sheets URL beginning with https://docs.google.com/spreadsheets/."));
+  if (values.SPREADSHEET_ID.trim() && !id) throw new Error("Enter a spreadsheet ID or a Google Sheets URL beginning with https://docs.google.com/spreadsheets/.");
   const name = values.SHEET_NAME.trim();
-  if (id.length > 256 || name.length > 100) throw new Error(PortalI18n.t("Check your spreadsheet settings."));
+  if (id.length > 256 || name.length > 100) throw new Error("Check your spreadsheet settings.");
   return { SPREADSHEET_ID: id, SHEET_NAME: name };
 }
 
@@ -250,13 +250,13 @@ function validateSpreadsheetSettings_(input) {
 function saveSpreadsheetSettings(input) {
   let settings;
   try { settings = validateSpreadsheetSettings_(input); }
-  catch (error) { return { ok: false, error: error instanceof Error ? error.message : PortalI18n.t("Check your input.") }; }
+  catch (error) { return { ok: false, error: error instanceof Error ? error.message : "Check your input." }; }
   try {
     withPortalPropertiesLock_(() => PropertiesService.getUserProperties().setProperties(settings, false));
     return { ok: true, settings };
   } catch {
     console.error('SPREADSHEET_SETTINGS_SAVE_FAILED');
-    return { ok: false, error: PortalI18n.t("Could not save. Please try again.") };
+    return { ok: false, error: "Could not save. Please try again." };
   }
 }
 
@@ -278,14 +278,14 @@ function getCatalog(forceRefresh = false) {
   } catch (error) {
     /** @type {Record<string, string>} */
     const messages = {
-      SPREADSHEET_NOT_CONFIGURED: PortalI18n.t("Set a spreadsheet ID or Google Sheets URL in Settings."),
-      SHEETS_SERVICE_DISABLED: PortalI18n.t("Enable the Google Sheets API in GAS Services."),
-      SHEET_NOT_FOUND: PortalI18n.t("The specified sheet does not exist. Check that SHEET_NAME matches its name."),
-      INVALID_SHEET_HEADERS: PortalI18n.t("The first row must contain id, name, and url columns. Also check for duplicate column names."),
+      SPREADSHEET_NOT_CONFIGURED: "Set a spreadsheet ID or Google Sheets URL in Settings.",
+      SHEETS_SERVICE_DISABLED: "Enable the Google Sheets API in GAS Services.",
+      SHEET_NOT_FOUND: "The specified sheet does not exist. Check that SHEET_NAME matches its name.",
+      INVALID_SHEET_HEADERS: "The first row must contain id, name, and url columns. Also check for duplicate column names.",
     };
     const code = error instanceof Error && Object.prototype.hasOwnProperty.call(messages, error.message) ? error.message : 'READ_FAILED';
     console.error('CATALOG_FAILED', code);
-    return { ok: false, error: messages[code] || PortalI18n.t("Could not load the list. Check spreadsheet sharing, authorization, and Sheets API settings, then reload the page.") };
+    return { ok: false, error: messages[code] || "Could not load the list. Check spreadsheet sharing, authorization, and Sheets API settings, then reload the page." };
   }
 }
 
@@ -375,13 +375,13 @@ function createPortalSpreadsheet(browserLanguage) {
     return withPortalPropertiesLock_(() => {
       const store = PropertiesService.getUserProperties();
       if (store.getProperty('SPREADSHEET_ID')?.trim()) {
-        return { ok: false, notCreated: true, error: PortalI18n.t('A spreadsheet ID is already configured. No spreadsheet was created.', language) };
+        return { ok: false, notCreated: true, error: 'A spreadsheet ID is already configured. No spreadsheet was created.' };
       }
       stage = 'AUTHORIZATION';
       const authorization = ScriptApp.getAuthorizationInfo(ScriptApp.AuthMode.FULL);
       if (authorization.getAuthorizationStatus() === ScriptApp.AuthorizationStatus.REQUIRED) {
         console.error('SPREADSHEET_CREATION_BLOCKED', 'AUTHORIZATION_REQUIRED');
-        return { ok: false, notCreated: true, error: PortalI18n.t('Additional authorization is required. Run initializeProperties in the GAS editor as the deploying account, grant the requested permissions, then reload the portal.', language) };
+        return { ok: false, notCreated: true, error: 'Additional authorization is required. Run initializeProperties in the GAS editor as the deploying account, grant the requested permissions, then reload the portal.' };
       }
       stage = 'PREPARE_REQUEST';
       const columns = portalSpreadsheetColumns_(language);
@@ -439,13 +439,13 @@ function createPortalSpreadsheet(browserLanguage) {
     // Before the create request nothing can exist, so the browser can let the user retry right away.
     if (!spreadsheetId && ['PRECHECK', 'AUTHORIZATION', 'PREPARE_REQUEST'].includes(stage)) {
       const disabled = error instanceof Error && error.message === 'SHEETS_SERVICE_DISABLED';
-      return { ok: false, notCreated: true, error: PortalI18n.t(disabled ? 'Enable the Google Sheets API in GAS Services.' : 'Could not create the spreadsheet. Please try again.', language) };
+      return { ok: false, notCreated: true, error: disabled ? 'Enable the Google Sheets API in GAS Services.' : 'Could not create the spreadsheet. Please try again.' };
     }
     const message = !spreadsheetId
       ? 'Could not confirm creation. Check Google Drive and reload before trying again.'
       : connected
         ? 'Spreadsheet created and connected, but table setup failed. Open the created spreadsheet to check it.'
         : 'Spreadsheet created, but its ID could not be saved. Save the ID shown in this form before reloading.';
-    return { ok: false, error: PortalI18n.t(message, language), ...(spreadsheetId ? { spreadsheetId, connected } : {}) };
+    return { ok: false, error: message, ...(spreadsheetId ? { spreadsheetId, connected } : {}) };
   }
 }

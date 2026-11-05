@@ -31,8 +31,8 @@ test("Reload spreadsheet data when cache service is unavailable", () => {
 test("Report missing services, sheets, and headers safely", () => {
   for (const [options, expected] of [
     [{ Sheets: undefined }, /Google Sheets API/],
-    [{ sheetProperties: [] }, /シートがありません/],
-    [{ values: [] }, /1 行目/],
+    [{ sheetProperties: [] }, /specified sheet does not exist/],
+    [{ values: [] }, /^The first row must contain id, name, and url columns\./],
   ]) {
     const { context } = server(options);
     const result = context.getCatalog();
@@ -53,9 +53,9 @@ test("Read related links from blank-id rows and pick up edits on the next uncach
 
 test("Reject missing properties and invalid IDs before calling the API", () => {
   for (const [properties, expected] of [
-    [{}, /設定画面/],
-    [{ SPREADSHEET_ID: 'https://docs.google.com.evil.test/spreadsheets/d/test/edit' }, /設定画面/],
-    [{ SPREADSHEET_ID: 'bad/id' }, /設定画面/],
+    [{}, /in Settings\.$/],
+    [{ SPREADSHEET_ID: 'https://docs.google.com.evil.test/spreadsheets/d/test/edit' }, /in Settings\.$/],
+    [{ SPREADSHEET_ID: 'bad/id' }, /in Settings\.$/],
   ]) {
     const { context, calls } = server({ userProperties: properties });
     assert.match(context.getCatalog().error, expected);
@@ -68,7 +68,7 @@ test("Do not expose API error details or file IDs", () => {
   const result = plain(context.getCatalog());
   assert.equal(result.ok, false);
   assert.doesNotMatch(JSON.stringify([result, logs]), /spreadsheet-id|private-data|secret/);
-  assert.match(result.error, /共有設定・認可/);
+  assert.match(result.error, /sharing, authorization/);
 });
 
 test("Use private deployer execution with read-only Sheets access, per-file creation, and external API requests", () => {

@@ -36,7 +36,7 @@ function parseCatalog_(entries) {
   let parent;
   entries.forEach((entry, index) => {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
-      issues.push({ row: index + 1, message: PortalI18n.t("Each entry must be an object.") });
+      issues.push({ row: index + 1, message: "Each entry must be an object." });
       return;
     }
     const id = text_(entry.id);
@@ -44,22 +44,22 @@ function parseCatalog_(entries) {
     const url = text_(entry.url);
     let message = '';
     if (!id && parent === undefined) {
-      message = PortalI18n.t("A row with a blank id needs a tool row above it.");
+      message = "A row with a blank id needs a tool row above it.";
     } else if (!id && parent === null) {
-      message = PortalI18n.t("The parent row has errors.");
+      message = "The parent row has errors.";
     } else if (!name || !url) {
-      message = PortalI18n.t(id ? "id, name, and url must be non-empty strings." : "name and url must be non-empty strings.");
+      message = id ? "id, name, and url must be non-empty strings." : "name and url must be non-empty strings.";
     } else if (id && (counts.get(id) || 0) > 1) {
-      message = PortalI18n.t("Duplicate id.");
+      message = "Duplicate id.";
     } else if (!isValidLinkUrl_(entry.url)) {
-      message = PortalI18n.t("Enter a valid URL in url.");
+      message = "Enter a valid URL in url.";
     } else if (entry.description !== undefined && typeof entry.description !== 'string') {
-      message = PortalI18n.t("description must be a string.");
+      message = "description must be a string.";
     } else if (entry.tags !== undefined && (!Array.isArray(entry.tags) ||
         entry.tags.some((/** @type {unknown} */ tag) => typeof tag !== 'string'))) {
-      message = PortalI18n.t("tags must be an array of strings.");
+      message = "tags must be an array of strings.";
     } else if (entry.icon !== undefined && !isValidIcon_(entry.icon)) {
-      message = PortalI18n.t("icon must be an image URL starting with https:// or an emoji.");
+      message = "icon must be an image URL starting with https:// or an emoji.";
     }
     if (message) {
       issues.push({ row: index + 1, message });
