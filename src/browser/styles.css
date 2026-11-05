@@ -1,154 +1,34 @@
-:root, [data-theme="tsuyukusa"] {
-  color-scheme: light;
-  --theme-color: #71a4d9;
-  --ink: #263844;
-  --muted: #4d606e;
-  --accent: #2b5d89;
-  --line: #d7e3ed;
-  --paper: #f6f9fc;
-  --surface-soft: #eaf2fa;
-  --surface: #ffffff;
-  --hover: #e0edf9;
-  --on-theme: #16334d;
-  --external-ink: #4c5067;
-  --external-bg: #eeedf3;
-  --warning-ink: #70501b;
-  --warning-bg: #faf2df;
-  --warning-line: #b88730;
+@import "tailwindcss" source(none);
+/* Scan only markup and browser code, also when a consumer project runs the preview.
+   Translations and server code are excluded: their plain words would match component names. */
+@source "../Index.html";
+@source "./*.js";
+@plugin "daisyui" {
+  /* Keep in sync with src/shared/themes.js. */
+  themes: nord --default, night --prefersdark, light, lofi, fantasy, emerald, cmyk, acid, lemonade, cyberpunk, wireframe, dark, dim, dracula, forest, halloween, synthwave, black, aqua, luxury, sunset;
+  logs: false;
 }
 
-[data-theme="sakura"] {
-  color-scheme: light;
-  --theme-color: #d894a7;
-  --ink: #493039;
-  --muted: #74535d;
-  --accent: #963f5c;
-  --line: #ead6dc;
-  --paper: #fcf7f8;
-  --surface-soft: #f7e9ee;
-  --surface: #fffdfd;
-  --hover: #f2dce5;
-  --on-theme: #4e2030;
-  --external-ink: #755269;
-  --external-bg: #f0e6ed;
-  --warning-ink: #795020;
-  --warning-bg: #fff3df;
-  --warning-line: #b88730;
+/* Bridge the portal's earlier tokens to the active DaisyUI theme.
+   Components move to DaisyUI classes over time; remove a token once nothing uses it. */
+:root, [data-theme] {
+  --theme-color: var(--color-primary);
+  --on-theme: var(--color-primary-content);
+  --ink: var(--color-base-content);
+  --muted: color-mix(in oklab, var(--color-base-content) 75%, var(--color-base-100));
+  --accent: var(--color-base-content);
+  --line: var(--color-base-300);
+  --paper: var(--color-base-200);
+  --surface: var(--color-base-100);
+  --surface-soft: var(--color-base-200);
+  --hover: var(--color-base-300);
+  --external-ink: var(--color-neutral-content);
+  --external-bg: var(--color-neutral);
+  --warning-ink: var(--color-warning-content);
+  --warning-bg: var(--color-warning);
+  --warning-line: var(--color-warning);
 }
 
-[data-theme="wakatake"] {
-  color-scheme: light;
-  --theme-color: #77b895;
-  --ink: #243e32;
-  --muted: #4c695a;
-  --accent: #27664a;
-  --line: #d4e5db;
-  --paper: #f5faf7;
-  --surface-soft: #e6f2ea;
-  --surface: #fdfffd;
-  --hover: #d7ebdf;
-  --on-theme: #193c2a;
-  --external-ink: #536650;
-  --external-bg: #e9eee2;
-  --warning-ink: #70501b;
-  --warning-bg: #faf2df;
-  --warning-line: #b88730;
-}
-
-[data-theme="yamabuki"] {
-  color-scheme: light;
-  --theme-color: #e8b44c;
-  --ink: #463924;
-  --muted: #716045;
-  --accent: #805617;
-  --line: #e8dfcd;
-  --paper: #fcfaf3;
-  --surface-soft: #f6efde;
-  --surface: #fffefa;
-  --hover: #eee2c6;
-  --on-theme: #49330c;
-  --external-ink: #6c5d50;
-  --external-bg: #f0e9e1;
-  --warning-ink: #76501b;
-  --warning-bg: #fff0d0;
-  --warning-line: #ac791f;
-}
-
-[data-theme="tetsukon"] {
-  color-scheme: dark;
-  --theme-color: #7bb6cd;
-  --ink: #e3eff4;
-  --muted: #a9c0cd;
-  --accent: #98cce1;
-  --line: #334b5d;
-  --paper: #111f2b;
-  --surface-soft: #203646;
-  --surface: #192c3b;
-  --hover: #2a4254;
-  --on-theme: #112d3c;
-  --external-ink: #c0c8e6;
-  --external-bg: #303b53;
-  --warning-ink: #f4d196;
-  --warning-bg: #3c3327;
-  --warning-line: #cda863;
-}
-
-[data-theme="sumi"] {
-  color-scheme: dark;
-  --theme-color: #b5b4ae;
-  --ink: #eeede8;
-  --muted: #babbb4;
-  --accent: #d7d0b6;
-  --line: #42443f;
-  --paper: #1c1e1c;
-  --surface-soft: #2b2e2a;
-  --surface: #242724;
-  --hover: #343832;
-  --on-theme: #242720;
-  --external-ink: #c7c3cd;
-  --external-bg: #343239;
-  --warning-ink: #efd29e;
-  --warning-bg: #3a3226;
-  --warning-line: #c5a36b;
-}
-
-[data-theme="kuri"] {
-  color-scheme: dark;
-  --theme-color: #c09a85;
-  --ink: #f4e9e2;
-  --muted: #ccb7aa;
-  --accent: #d9b29a;
-  --line: #5c443a;
-  --paper: #281d1a;
-  --surface-soft: #402f27;
-  --surface: #332622;
-  --hover: #4b372d;
-  --on-theme: #34221a;
-  --external-ink: #d6c6b0;
-  --external-bg: #43392e;
-  --warning-ink: #efd1a1;
-  --warning-bg: #41312b;
-  --warning-line: #c59a6b;
-}
-
-[data-theme="fukamidori"] {
-  color-scheme: dark;
-  --theme-color: #8cb9a1;
-  --ink: #e3f0e8;
-  --muted: #adc8b9;
-  --accent: #a5d3b8;
-  --line: #355548;
-  --paper: #14271f;
-  --surface-soft: #253c30;
-  --surface: #1d3228;
-  --hover: #304d3d;
-  --on-theme: #153326;
-  --external-ink: #c4cdb5;
-  --external-bg: #354332;
-  --warning-ink: #eed6a0;
-  --warning-bg: #393624;
-  --warning-line: #c1a664;
-}
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; color: var(--ink); background: var(--paper); font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif; font-size: 14px; line-height: 1.7; }
@@ -352,65 +232,8 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 #language-status:empty { display: none; }
 
 /* Accent colors from https://www.colordic.org/w; companion shades preserve text contrast. */
-[data-theme="ginnezu"] {
-  color-scheme: light;
-  --theme-color: #afafb0;
-  --ink: #29292b;
-  --muted: #5b5b5e;
-  --accent: #414144;
-  --line: #dddddf;
-  --paper: #f8f8f8;
-  --surface-soft: #efeff0;
-  --surface: #ffffff;
-  --hover: #e4e4e6;
-  --on-theme: #242426;
-  --external-ink: #555558;
-  --external-bg: #e9e9eb;
-  --warning-ink: #414144;
-  --warning-bg: #ededee;
-  --warning-line: #939396;
-}
 
-[data-theme="daidai"] {
-  color-scheme: dark;
-  --theme-color: #ee7800;
-  --ink: #f8ede3;
-  --muted: #d0b9a5;
-  --accent: #ffb36a;
-  --line: #57402e;
-  --paper: #1d1916;
-  --surface-soft: #35271d;
-  --surface: #28211c;
-  --hover: #453021;
-  --on-theme: #241507;
-  --external-ink: #dfc5ac;
-  --external-bg: #3d3128;
-  --warning-ink: #f3ce9c;
-  --warning-bg: #3c2c1b;
-  --warning-line: #cf9555;
-}
 
-/* Resolve the automatic palette before the browser bundle runs. */
-@media (prefers-color-scheme: dark) {
-  :root[data-theme="auto"] {
-  color-scheme: dark;
-  --theme-color: #7bb6cd;
-  --ink: #e3eff4;
-  --muted: #a9c0cd;
-  --accent: #98cce1;
-  --line: #334b5d;
-  --paper: #111f2b;
-  --surface-soft: #203646;
-  --surface: #192c3b;
-  --hover: #2a4254;
-  --on-theme: #112d3c;
-  --external-ink: #c0c8e6;
-  --external-bg: #303b53;
-  --warning-ink: #f4d196;
-  --warning-bg: #3c3327;
-  --warning-line: #cda863;
-  }
-}
 .theme-auto { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding: 16px; }
 .theme-auto-copy { flex: 1; min-width: 0; display: grid; gap: 6px; }
 .theme-auto-copy strong { font-size: 14px; }

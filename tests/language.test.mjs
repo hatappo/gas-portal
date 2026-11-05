@@ -12,7 +12,7 @@ function choose(app, language) {
 }
 
 test('Persist only supported languages in User Properties without changing other settings', () => {
-  const userProperties = { PORTAL_THEME: 'kuri', PORTAL_NAME: 'Custom', PORTAL_HEADLINE: '独自の見出し' };
+  const userProperties = { PORTAL_THEME: 'forest', PORTAL_NAME: 'Custom', PORTAL_HEADLINE: '独自の見出し' };
   const properties = { SPREADSHEET_ID: 'sheet', SHEET_NAME: 'Tools' };
   const app = server({ userProperties, properties });
   assert.equal(app.context.getPortalLanguage_(), 'en');

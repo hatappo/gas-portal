@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="<?= portal.language ?>" data-language-preference="<?= portal.languagePreference ?>" data-theme="<?= theme ?>">
+<html lang="<?= portal.language ?>" data-language-preference="<?= portal.languagePreference ?>" <?!= themeAttribute ?>>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -119,74 +119,13 @@
             <div class="theme-save-status" role="status" aria-live="polite" id="theme-status"></div>
             <label class="theme-choice theme-auto">
               <input class="visually-hidden" type="radio" name="portal-theme" value="auto" aria-label="Automatic theme" data-i18n-aria-label="Automatic theme">
-              <span class="theme-auto-swatches" aria-hidden="true"><i data-theme="tsuyukusa"></i><i data-theme="tetsukon"></i></span>
-              <span class="theme-auto-copy"><strong data-i18n="Automatic theme">Automatic theme</strong><span data-i18n="Follow your device: Tsuyukusa in light mode, Tetsukon in dark mode.">Follow your device: Tsuyukusa in light mode, Tetsukon in dark mode.</span></span>
+              <span class="theme-auto-swatches" aria-hidden="true"><i data-theme="nord"></i><i data-theme="night"></i></span>
+              <span class="theme-auto-copy"><strong data-i18n="Automatic theme">Automatic theme</strong><span data-i18n="Follow your device: Nord in light mode, Night in dark mode.">Follow your device: Nord in light mode, Night in dark mode.</span></span>
               <span class="theme-check" aria-hidden="true">✓</span>
             </label>
-            <fieldset class="theme-group"><legend>Light</legend><div class="theme-grid">
-              <label class="theme-choice">
-                <input class="visually-hidden" type="radio" name="portal-theme" value="tsuyukusa" aria-label="Tsuyukusa (Light)" data-i18n-aria-label="Tsuyukusa (Light)">
-                <span class="theme-preview" data-theme="tsuyukusa" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-                <span class="theme-label"><span><span data-i18n="Tsuyukusa · 露草色">Tsuyukusa · 露草色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
-                <span class="theme-reading">TSUYUKUSA</span><span class="theme-caption"><span data-i18n="Clear blue · Default">Clear blue · Default</span></span>
-              </label>
-              <label class="theme-choice">
-                <input class="visually-hidden" type="radio" name="portal-theme" value="sakura" aria-label="Sakura (Light)" data-i18n-aria-label="Sakura (Light)">
-                <span class="theme-preview" data-theme="sakura" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-                <span class="theme-label"><span><span data-i18n="Sakura · 桜色">Sakura · 桜色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
-                <span class="theme-reading">SAKURA</span><span class="theme-caption"><span data-i18n="Soft pink">Soft pink</span></span>
-              </label>
-              <label class="theme-choice">
-                <input class="visually-hidden" type="radio" name="portal-theme" value="wakatake" aria-label="Wakatake (Light)" data-i18n-aria-label="Wakatake (Light)">
-                <span class="theme-preview" data-theme="wakatake" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-                <span class="theme-label"><span><span data-i18n="Wakatake · 若竹色">Wakatake · 若竹色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
-                <span class="theme-reading">WAKATAKE</span><span class="theme-caption"><span data-i18n="Fresh green">Fresh green</span></span>
-              </label>
-              <label class="theme-choice">
-                <input class="visually-hidden" type="radio" name="portal-theme" value="yamabuki" aria-label="Yamabuki (Light)" data-i18n-aria-label="Yamabuki (Light)">
-                <span class="theme-preview" data-theme="yamabuki" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-                <span class="theme-label"><span><span data-i18n="Yamabuki · 山吹色">Yamabuki · 山吹色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
-                <span class="theme-reading">YAMABUKI</span><span class="theme-caption"><span data-i18n="Warm gold">Warm gold</span></span>
-              </label>
-              <label class="theme-choice">
-                <input class="visually-hidden" type="radio" name="portal-theme" value="ginnezu" aria-label="Ginnezu (Light)" data-i18n-aria-label="Ginnezu (Light)">
-                <span class="theme-preview" data-theme="ginnezu" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-                <span class="theme-label"><span data-i18n="Ginnezu · 銀鼠">Ginnezu · 銀鼠</span><span class="theme-check" aria-hidden="true">✓</span></span>
-                <span class="theme-reading">GINNEZU</span><span class="theme-caption" data-i18n="Quiet silver and white">Quiet silver and white</span>
-              </label>
-            </div></fieldset>
-            <fieldset class="theme-group"><legend>Dark</legend><div class="theme-grid">
-              <label class="theme-choice">
-                <input class="visually-hidden" type="radio" name="portal-theme" value="tetsukon" aria-label="Tetsukon (Dark)" data-i18n-aria-label="Tetsukon (Dark)">
-                <span class="theme-preview" data-theme="tetsukon" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-                <span class="theme-label"><span><span data-i18n="Tetsukon · 鉄紺">Tetsukon · 鉄紺</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
-                <span class="theme-reading">TETSUKON</span><span class="theme-caption"><span data-i18n="Quiet deep blue">Quiet deep blue</span></span>
-              </label>
-              <label class="theme-choice">
-                <input class="visually-hidden" type="radio" name="portal-theme" value="sumi" aria-label="Sumi (Dark)" data-i18n-aria-label="Sumi (Dark)">
-                <span class="theme-preview" data-theme="sumi" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-                <span class="theme-label"><span><span data-i18n="Sumi · 墨色">Sumi · 墨色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
-                <span class="theme-reading">SUMI</span><span class="theme-caption"><span data-i18n="Calm neutrals">Calm neutrals</span></span>
-              </label>
-              <label class="theme-choice">
-                <input class="visually-hidden" type="radio" name="portal-theme" value="kuri" aria-label="Kuri (Dark)" data-i18n-aria-label="Kuri (Dark)">
-                <span class="theme-preview" data-theme="kuri" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-                <span class="theme-label"><span><span data-i18n="Kuri · 栗色">Kuri · 栗色</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
-                <span class="theme-reading">KURI</span><span class="theme-caption"><span data-i18n="Muted reddish brown">Muted reddish brown</span></span>
-              </label>
-              <label class="theme-choice">
-                <input class="visually-hidden" type="radio" name="portal-theme" value="fukamidori" aria-label="Fukamidori (Dark)" data-i18n-aria-label="Fukamidori (Dark)">
-                <span class="theme-preview" data-theme="fukamidori" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-                <span class="theme-label"><span><span data-i18n="Fukamidori · 深緑">Fukamidori · 深緑</span></span><span class="theme-check" aria-hidden="true">✓</span></span>
-                <span class="theme-reading">FUKAMIDORI</span><span class="theme-caption"><span data-i18n="Peaceful forest green">Peaceful forest green</span></span>
-              </label>
-              <label class="theme-choice">
-                <input class="visually-hidden" type="radio" name="portal-theme" value="daidai" aria-label="Daidai (Dark)" data-i18n-aria-label="Daidai (Dark)">
-                <span class="theme-preview" data-theme="daidai" aria-hidden="true"><span class="mini-header"><i></i><b></b></span><span class="mini-title"></span><span class="mini-layout"><i></i><i></i></span><span class="mini-swatches"><i></i><i></i><i></i></span></span>
-                <span class="theme-label"><span data-i18n="Daidai · 橙色">Daidai · 橙色</span><span class="theme-check" aria-hidden="true">✓</span></span>
-                <span class="theme-reading">DAIDAI</span><span class="theme-caption" data-i18n="Warm orange after dark">Warm orange after dark</span>
-              </label>
-            </div></fieldset>
+            <!-- Theme choices are generated from src/shared/themes.js. -->
+            <fieldset class="theme-group" data-scheme="light"><legend data-i18n="Light">Light</legend><div class="theme-grid"></div></fieldset>
+            <fieldset class="theme-group" data-scheme="dark"><legend data-i18n="Dark">Dark</legend><div class="theme-grid"></div></fieldset>
           </section>
           <section class="language-settings" aria-labelledby="language-settings-title">
             <div class="settings-heading"><h2 id="language-settings-title" data-i18n="Language">Language</h2></div>

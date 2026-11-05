@@ -9,7 +9,7 @@ const values = (overrides = {}) => ({ PORTAL_NAME: 'Fumi Portal', PORTAL_ICON: '
 
 test("Initialize display defaults independently of Script Properties and preserve existing empty values", () => {
   const properties = { PORTAL_NAME: 'Old Portal', PORTAL_HEADLINE: 'Old headline', SPREADSHEET_ID: 'private-id' };
-  const userProperties = { PORTAL_HEADLINE: '', PORTAL_THEME: 'kuri', OTHER: 'keep' };
+  const userProperties = { PORTAL_HEADLINE: '', PORTAL_THEME: 'dracula', OTHER: 'keep' };
   const { context } = server({ properties, userProperties });
   context.getPortalUserProperties_();
   assert.equal(userProperties.PORTAL_NAME, 'My Portal');
@@ -18,13 +18,13 @@ test("Initialize display defaults independently of Script Properties and preserv
   properties.PORTAL_NAME = 'Changed legacy';
   context.getPortalUserProperties_();
   assert.equal(userProperties.PORTAL_NAME, 'My Portal');
-  assert.equal(userProperties.PORTAL_THEME, 'kuri');
+  assert.equal(userProperties.PORTAL_THEME, 'dracula');
   assert.equal(userProperties.OTHER, 'keep');
 });
 
 test("Save and reset only four display fields without reading Script Properties", () => {
   const properties = { PORTAL_NAME: 'Old Portal', SPREADSHEET_ID: 'sheet', SHEET_NAME: 'Tools' };
-  const userProperties = { PORTAL_THEME: 'sakura', OTHER: 'keep' };
+  const userProperties = { PORTAL_THEME: 'emerald', OTHER: 'keep' };
   const { context } = server({ properties, userProperties });
   assert.deepEqual(plain(context.savePortalSettings(values())), { ok: true, settings: values() });
   assert.equal(context.getPortalContent_(userProperties).name, 'Fumi Portal');
@@ -33,7 +33,7 @@ test("Save and reset only four display fields without reading Script Properties"
   context.getPortalUserProperties_();
   context.initializeProperties();
   assert.equal(userProperties.PORTAL_NAME, 'My Portal');
-  assert.equal(userProperties.PORTAL_THEME, 'sakura');
+  assert.equal(userProperties.PORTAL_THEME, 'emerald');
   assert.equal(userProperties.OTHER, 'keep');
   assert.deepEqual(properties, { PORTAL_NAME: 'Old Portal', SPREADSHEET_ID: 'sheet', SHEET_NAME: 'Tools' });
 });
@@ -46,7 +46,7 @@ test("Default blank settings, preserve text, and reject extra keys, invalid type
   assert.equal(result.settings.PORTAL_ICON, '😀');
   assert.equal(result.settings.PORTAL_HEADLINE, '<b>test</b>');
   const before = { ...userProperties };
-  for (const input of [null, [], {}, values({ SPREADSHEET_ID: 'other' }), values({ PORTAL_THEME: 'sumi' }), values({ PORTAL_NAME: 1 }),
+  for (const input of [null, [], {}, values({ SPREADSHEET_ID: 'other' }), values({ PORTAL_THEME: 'dim' }), values({ PORTAL_NAME: 1 }),
     values({ PORTAL_ICON: 'AB' }), values({ PORTAL_NAME: 'x'.repeat(81) }), values({ PORTAL_HEADLINE: 'x'.repeat(161) }), values({ PORTAL_DESCRIPTION: 'x'.repeat(501) })]) {
     assert.equal(context.savePortalSettings(input).ok, false);
     assert.deepEqual(userProperties, before);
@@ -85,7 +85,7 @@ test("Apply saved names and display content safely as text", (t) => {
 
 test("Reset only form values until the user explicitly saves", (t) => {
   const { dom, document, settingsRequests } = browser((window) => {
-    window.document.documentElement.dataset.theme = 'kuri';
+    window.document.documentElement.dataset.theme = 'dracula';
     for (const [key, value] of Object.entries(values())) window.document.querySelector(`[name="${key}"]`).value = value;
   });
   t.after(() => dom.window.close());
@@ -98,7 +98,7 @@ test("Reset only form values until the user explicitly saves", (t) => {
   assert.equal(document.querySelector('#page-title').textContent, '今日の仕事');
   assert.equal(document.querySelector('.brand-mark').textContent, 'F');
   assert.equal(document.querySelector('.intro-copy').textContent, 'リンクとタスク');
-  assert.equal(document.documentElement.dataset.theme, 'kuri');
+  assert.equal(document.documentElement.dataset.theme, 'dracula');
   assert.match(document.querySelector('#portal-settings-status').textContent, /変更を保存/);
   document.querySelector('#portal-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
   assert.deepEqual(plain(settingsRequests[0].settings), defaults);
@@ -109,7 +109,7 @@ test("Reset only form values until the user explicitly saves", (t) => {
   document.querySelector('#portal-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
   settingsRequests[1].success({ ok: true, settings: defaults });
   assert.equal(document.title, 'My Portal');
-  assert.equal(document.documentElement.dataset.theme, 'kuri');
+  assert.equal(document.documentElement.dataset.theme, 'dracula');
 });
 
 test("Ignore late settings responses after timeout and request a reload", (t) => {

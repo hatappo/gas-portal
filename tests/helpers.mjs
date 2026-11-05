@@ -49,6 +49,7 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
   });
   vm.runInContext(readFileSync('src/shared/i18n.js', 'utf8'), context);
   vm.runInContext(readFileSync('src/shared/url-schemes.js', 'utf8'), context);
+  vm.runInContext(readFileSync('src/shared/themes.js', 'utf8'), context);
   for (const name of ['Catalog', 'SheetCatalog', 'Code', 'GitHub']) {
     vm.runInContext(readFileSync(`src/server/${name}.js`, 'utf8'), context);
   }
@@ -92,6 +93,7 @@ export function browser(setupWindow = () => {}, client = ['language', 'client', 
   setupWindow(dom.window);
   dom.window.eval(readFileSync('src/shared/i18n.js', 'utf8'));
   dom.window.eval(readFileSync('src/shared/url-schemes.js', 'utf8'));
+  dom.window.eval(readFileSync('src/shared/themes.js', 'utf8'));
   dom.window.eval(client);
   return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests, cacheSettingsRequests, sourceSettingsRequests, creationRequests, githubRequests, urlSchemeRequests };
 }

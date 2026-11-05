@@ -5,6 +5,8 @@ import vm from 'node:vm';
 import { createGitHubPreview } from './github-preview.mjs';
 import { withPreviewProject, withPreviewContent } from './preview-project.mjs';
 import { withPortalAssets } from './portal-html.mjs';
+// Re-exported so a consumer previewing a linked checkout resolves Tailwind from this package.
+export { default as tailwindcss } from '@tailwindcss/vite';
 
 // This file and its mock data are not uploaded to GAS.
 const demo = {
@@ -32,6 +34,7 @@ export function renderPreview(html, root, options = {}) {
   vm.runInContext(i18n, context);
   const urlSchemes = readFileSync(path.join(root, 'src/shared/url-schemes.js'), 'utf8');
   vm.runInContext(urlSchemes, context);
+  vm.runInContext(readFileSync(path.join(root, 'src/shared/themes.js'), 'utf8'), context);
   for (const name of ['Catalog', 'Code']) {
     vm.runInContext(readFileSync(new URL(`${name}.js`, url), 'utf8'), context);
   }
@@ -47,6 +50,7 @@ export function renderPreview(html, root, options = {}) {
     .replace('<script type="module" src="/browser/main.js"></script>', () => `<script>
       ${i18n}
       ${urlSchemes}
+      ${readFileSync(path.join(root, 'src/shared/themes.js'), 'utf8')}
       let previewPreference = 'auto';
       try { previewPreference = PortalI18n.preference(localStorage.getItem('portal-preview-language')); } catch { /* Storage may be unavailable. */ }
       const browserLanguages = typeof navigator === 'undefined' ? [] : navigator.languages?.length ? navigator.languages : [navigator.language];
@@ -110,9 +114,8 @@ export function renderPreview(html, root, options = {}) {
       const scenario = new URLSearchParams(location.search).get('state');
       // Use browser storage locally; production uses GAS User Properties.
       try {
-        const storedTheme = localStorage.getItem('portal-preview-theme');
-        const theme = storedTheme === 'shikon' ? 'kuri' : storedTheme;
-        if (Array.from(document.querySelectorAll('input[name="portal-theme"]')).some(input => input.value === theme)) document.documentElement.dataset.theme = theme;
+        const theme = localStorage.getItem('portal-preview-theme');
+        if (theme !== 'auto' && PortalThemes.isTheme(theme)) document.documentElement.dataset.theme = theme;
       } catch { /* Use defaults when the browser denies storage access. */ }
       function readPreviewCatalog(forceRefresh = false) {
         if (scenario === 'error') return {ok:false, error:PortalI18n.t('Select Fetch latest to try again. If the problem persists, check the GAS settings.')};

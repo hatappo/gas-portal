@@ -12,3 +12,12 @@ declare var PortalUrlSchemes: {
   schemeOf(url: string): string;
   isBlocked(url: string, unblocked: readonly string[]): boolean;
 };
+declare var PortalThemes: {
+  light: readonly string[];
+  dark: readonly string[];
+  auto: { light: string; dark: string };
+  all: readonly string[];
+  isTheme(theme: unknown): boolean;
+  resolve(theme: string, prefersDark: boolean): string;
+  label(theme: string): string;
+};

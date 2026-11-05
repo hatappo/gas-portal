@@ -39,7 +39,7 @@ function setup(options = {}) {
 }
 
 test('Create only the nine supported columns with typed table, header notes, and no sheet-name property', () => {
-  const app = setup({ userProperties: { PORTAL_NAME: 'My Work', PORTAL_THEME: 'sumi' } });
+  const app = setup({ userProperties: { PORTAL_NAME: 'My Work', PORTAL_THEME: 'dim' } });
   assert.deepEqual(plain(app.context.createPortalSpreadsheet('en')), { ok: true, spreadsheetId: 'created-sheet' });
   assert.equal(app.requests.length, 2);
   const spreadsheet = app.requests[0][1];
@@ -72,7 +72,7 @@ test('Create only the nine supported columns with typed table, header notes, and
   assert.equal(app.requests[1][2], 'created-sheet');
   assert.equal(app.userProperties.SPREADSHEET_ID, 'created-sheet');
   assert.equal(Object.hasOwn(app.userProperties, 'SHEET_NAME'), false);
-  assert.equal(app.userProperties.PORTAL_THEME, 'sumi');
+  assert.equal(app.userProperties.PORTAL_THEME, 'dim');
   assert.equal(app.isLocked(), false);
 });
 
