@@ -357,11 +357,6 @@
       image.addEventListener('load', () => {
         // Placeholder pixels are not icons; try the next source.
         if (image.naturalWidth > 0 && (image.naturalWidth < 8 || image.naturalHeight < 8)) { next(); return; }
-        // Show small icons at their own size instead of enlarging them.
-        if (image.naturalWidth > 0 && image.naturalWidth < size) {
-          image.width = image.naturalWidth;
-          image.height = Math.min(image.naturalHeight, size);
-        }
         frame.classList.add('is-loaded');
       });
       image.addEventListener('error', next);

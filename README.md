@@ -146,7 +146,7 @@ Tool cards, list rows, and related links (at 14 × 14) show decorative favicons.
 
 No path, query, credentials, or referrer is sent to either source. `http://` links skip the first source, because an http image would be mixed content on the https portal page. Other schemes, such as `vscode://`, request no icon. Blocked links show no icon.
 
-A 🌐 emoji reserves the image space and stays visible until an icon loads, or when every source fails. Icons smaller than the display size are shown at their own size rather than enlarged. Images smaller than 8 × 8 are treated as placeholders and the next source is tried. Emoji appearance follows the operating system.
+A 🌐 emoji reserves the image space and stays visible until an icon loads, or when every source fails. Icons smaller than the display size, such as 16px favicons, are scaled up so that all icons line up, at the cost of some blur. Images smaller than 8 × 8 are treated as placeholders and the next source is tried. Emoji appearance follows the operating system.
 
 IP addresses, single-label hosts, and common local/private suffixes (`localhost`, `.local`, `.internal`, `.lan`, `.home`, `.home.arpa`, `.test`, `.invalid`, `.onion`) never use Google's service; they only try their own `/favicon.ico`. This is a hostname check, not a DNS lookup: a private service under an ordinary public domain cannot be detected this way, and its hostname will be sent to Google. The internal/external scope describes the tool, not whether its hostname is public.
 

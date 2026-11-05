@@ -546,7 +546,7 @@ test('Favicons skip mixed-content requests and non-web schemes', (t) => {
   assert.ok(frames.every((frame) => frame.querySelector('.tool-favicon-fallback').textContent === '🌐'));
 });
 
-test('Show small icons at their own size and skip placeholder pixels', (t) => {
+test('Scale small icons to the display size and skip placeholder pixels', (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   requests[0].success(catalog);
@@ -561,7 +561,7 @@ test('Show small icons at their own size and skip placeholder pixels', (t) => {
     };
     const small = load(0, 16);
     assert.equal(small.parentElement.classList.contains('is-loaded'), true);
-    assert.deepEqual([small.width, small.height], [16, 16], 'Do not enlarge 16px icons');
+    assert.deepEqual([small.width, small.height], [20, 20], 'Enlarge 16px icons to match the others');
     const placeholder = load(1, 1);
     assert.equal(placeholder.parentElement.classList.contains('is-loaded'), false);
     assert.match(placeholder.src, /^https:\/\/t2\.gstatic\.com\/faviconV2/, 'A 1px image is not an icon');
