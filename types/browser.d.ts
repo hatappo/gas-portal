@@ -49,6 +49,19 @@ interface GasRunner {
   saveTheme(theme: string): void;
   savePortalSettings(settings: PortalSettings, browserLanguage?: string): void;
 }
+interface SaveRequest<T> {
+  send: (runner: GasRunner) => void;
+  confirm: (response: T) => string | false | { error: string };
+  failureMessage: string;
+  restore?: () => void;
+  busyMessage?: string;
+  timeoutMessage?: string;
+  timeoutMs?: number;
+}
+declare var PortalSave: {
+  createSaver(control: { status: HTMLElement; t: (key: string) => string; setBusy: (busy: boolean) => void }): <T>(request: SaveRequest<T>) => void;
+  serverError(response: unknown): false | { error: string };
+};
 interface GasLocation { hash: string }
 interface GasHistory {
   push(state: null, params: null, hash: string): void;

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { browser } from './helpers.mjs';
 
-const client = ['language', 'client', 'action-items'].map((name) => readFileSync(`src/browser/${name}.js`, 'utf8')).join('\n');
+const client = ['save-control', 'language', 'client', 'action-items'].map((name) => readFileSync(`src/browser/${name}.js`, 'utf8')).join('\n');
 const item = { service: 'github', serviceLabel: 'GitHub', id: 'acme/portal#1', title: 'Review changes', url: 'https://github.com/acme/portal/pull/1', context: 'acme/portal #1', updatedAt: '2026-11-04T12:00:00Z', reasons: ['Direct review'] };
 const result = (items = [item], fetchedAt = 1700000000000) => ({ items, notices: [], fetchedAt });
 function fixture(t, setup = () => {}) {

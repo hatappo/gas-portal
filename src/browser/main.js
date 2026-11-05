@@ -4,6 +4,7 @@ import '../shared/url-schemes.js';
 import '../shared/themes.js';
 import '../shared/catalog-rules.js';
 import '../shared/cache-durations.js';
+import './save-control.js';
 import './language.js';
 import './client.js';
 import './theme.js';
