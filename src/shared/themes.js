@@ -14,15 +14,10 @@ globalThis.PortalThemes = (() => {
     return typeof theme === 'string' && (theme === 'auto' || light.includes(theme) || dark.includes(theme));
   }
 
-  /** @param {string} theme @param {boolean} prefersDark */
-  function resolve(theme, prefersDark) {
-    return theme === 'auto' || !isTheme(theme) ? (prefersDark ? auto.dark : auto.light) : theme;
-  }
-
   /** @param {string} theme */
   function label(theme) {
     return theme.charAt(0).toUpperCase() + theme.slice(1);
   }
 
-  return { light, dark, auto, all: [...light, ...dark], isTheme, resolve, label };
+  return { light, dark, auto, all: [...light, ...dark], isTheme, label };
 })();

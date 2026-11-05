@@ -28,5 +28,5 @@ globalThis.PortalUrlSchemes = (() => {
     return !scheme || fixed.includes(scheme) || (optional.includes(scheme) && !unblocked.includes(scheme));
   }
 
-  return { fixed, optional, normalizeUnblocked, schemeOf, isBlocked };
+  return { optional, normalizeUnblocked, schemeOf, isBlocked };
 })();
