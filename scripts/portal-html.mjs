@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { readRepositoryUrl } from './repository-url.mjs';
+import { readRepositoryUrl } from '../lib/repository-url.mjs';
 
 /** Share links and licensed SVG assets between development and production, without an external CDN. */
 export function withPortalAssets(html, root) {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { githubUrl } from '../scripts/repository-url.mjs';
+import { githubUrl } from '../lib/repository-url.mjs';
 
 test("Convert GitHub HTTPS and SSH remotes into browsing URLs", () => {
   for (const remote of ['git@github.com:example/portal.git', 'https://github.com/example/portal.git', 'ssh://git@github.com/example/portal', 'https://github.com/example/portal/']) {
