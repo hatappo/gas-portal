@@ -38,7 +38,11 @@ export function parseOptions(argv, themes = portalThemes().all) {
       options.widths = list.map(Number);
       if (options.widths.some((width) => !Number.isInteger(width) || width < 320 || width > 2560)) throw new Error('Widths must be integers from 320 to 2560.');
     } else if (flag === '--out') {
-      options.out = path.resolve(value);
+      // The output directory is deleted before each run, so keep it inside screenshots/.
+      const out = path.resolve(value);
+      const base = path.join(root, 'screenshots');
+      if (out !== base && !out.startsWith(base + path.sep)) throw new Error(`--out must be inside ${base}, because it is deleted before each run.`);
+      options.out = out;
     } else {
       throw new Error(`Unknown option: ${flag}`);
     }

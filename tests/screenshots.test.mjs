@@ -14,11 +14,11 @@ test('Default to every theme, view, and both widths', () => {
 });
 
 test('Narrow themes, views, widths, and output directory from flags', () => {
-  const options = parseOptions(['--themes', 'night, nord', '--views', 'tools,appearance', '--widths', '390', '--out', 'tmp/shots'], themes);
+  const options = parseOptions(['--themes', 'night, nord', '--views', 'tools,appearance', '--widths', '390', '--out', 'screenshots/night'], themes);
   assert.deepEqual(options.themes, ['night', 'nord']);
   assert.deepEqual(options.views, ['tools', 'appearance']);
   assert.deepEqual(options.widths, [390]);
-  assert.equal(options.out, path.resolve('tmp/shots'));
+  assert.equal(options.out, path.resolve('screenshots/night'));
 });
 
 test('Reject unknown themes, views, widths, flags, and missing values', () => {
@@ -30,6 +30,9 @@ test('Reject unknown themes, views, widths, flags, and missing values', () => {
     [['--theme', 'nord'], /Unknown option: --theme/],
     [['--themes'], /Missing value for --themes/],
     [['--themes', '--views'], /Missing value for --themes/],
+    [['--out', '.'], /--out must be inside/],
+    [['--out', 'screenshots-other'], /--out must be inside/],
+    [['--out', '/tmp'], /--out must be inside/],
   ]) {
     assert.throws(() => parseOptions(argv, themes), message, argv.join(' '));
   }
