@@ -121,7 +121,10 @@
       }
     };
     const failed = () => ({ items: [], notices: [{ message: 'Could not retrieve data from this connection. Try again.' }] });
-    timer = window.setTimeout(() => { for (const key of [...pending]) finish(key, failed()); }, 60000);
+    timer = window.setTimeout(() => {
+      // oxlint-disable-next-line unicorn/no-useless-spread -- finish() deletes from pending, so iterate a snapshot.
+      for (const key of [...pending]) finish(key, failed());
+    }, 60000);
     for (const [key, source] of sources) {
       try { source.load(force, (result) => finish(key, result)); }
       catch { finish(key, failed()); }
