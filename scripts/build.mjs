@@ -4,21 +4,11 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { build } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
-import { Linter } from 'eslint';
+import { checkGasSyntax } from './gas-syntax.mjs';
 import { withPortalAssets } from './portal-html.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const dist = path.join(root, 'dist');
-// Use a conservative syntax baseline for GAS, independently of the local Node version.
-// This checks grammar only; GAS service availability still requires runtime validation.
-const gasSyntax = new Linter();
-function checkGasSyntax(code, filename) {
-  const errors = gasSyntax.verify(code, { languageOptions: { ecmaVersion: 2020, sourceType: 'script' } }, { allowInlineConfig: false }).filter((message) => message.fatal);
-  if (errors.length) {
-    const error = errors[0];
-    throw new Error(`${filename}:${error.line}:${error.column}: GAS syntax check (ES2020): ${error.message}`);
-  }
-}
 // Check syntax before replacing output. Building does not access the spreadsheet.
 const i18n = readFileSync(path.join(root, 'src/shared/i18n.js'), 'utf8');
 checkGasSyntax(i18n, 'i18n.js');

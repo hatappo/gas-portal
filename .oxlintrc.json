@@ -1,0 +1,51 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "unicorn", "oxc"],
+  "categories": { "correctness": "error" },
+  "ignorePatterns": ["dist/**", "assets/**", "node_modules/**"],
+  "env": { "builtin": true, "es2024": true, "node": true },
+  "globals": {
+    "PortalI18n": "readonly",
+    "PortalUrlSchemes": "readonly",
+    "PortalThemes": "readonly",
+    "PortalCatalogRules": "readonly"
+  },
+  "rules": {
+    "no-undef": "error",
+    "no-unused-vars": "error"
+  },
+  "overrides": [
+    {
+      "files": ["src/server/*.js"],
+      "globals": {
+        "HtmlService": "readonly",
+        "UrlFetchApp": "readonly",
+        "ScriptApp": "readonly",
+        "LockService": "readonly",
+        "Sheets": "readonly",
+        "CacheService": "readonly",
+        "Utilities": "readonly",
+        "PropertiesService": "readonly"
+      },
+      "rules": {
+        "no-unused-vars": ["error", { "varsIgnorePattern": "^(getGitHubConnections|saveGitHubConnection|disconnectGitHub|getGitHubActionItems|doGet|getCatalog|saveCatalogCacheTtl|saveActionsCacheTtl|normalizeCatalogCacheTtl_|readCachedSheetCatalog_|saveTheme|saveLanguage|include_|parseCatalog_|readSheetCatalog_|initializeScriptProperties|initializeProperties|savePortalSettings|saveSpreadsheetSettings|createPortalSpreadsheet|saveUnblockedUrlSchemes)$" }]
+      }
+    },
+    { "files": ["src/server/Code.js"], "globals": { "readCachedSheetCatalog_": "readonly" } },
+    { "files": ["src/server/GitHub.js"], "globals": { "normalizeActionsCacheTtl_": "readonly" } },
+    {
+      "files": ["src/server/SheetCatalog.js"],
+      "globals": {
+        "parseCatalog_": "readonly",
+        "normalizeCatalogCacheTtl_": "readonly",
+        "getPortalUserProperties_": "readonly",
+        "normalizeSpreadsheetId_": "readonly"
+      }
+    },
+    {
+      "files": ["src/browser/*.js"],
+      "env": { "browser": true },
+      "globals": { "google": "readonly" }
+    }
+  ]
+}

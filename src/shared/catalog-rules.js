@@ -32,7 +32,7 @@ globalThis.PortalCatalogRules = (() => {
   function isValidLinkUrl(value) {
     if (typeof value !== 'string') return false;
     // Reject line breaks and control characters before trimming.
-    // eslint-disable-next-line no-control-regex -- Explicitly reject control characters in URLs.
+    // oxlint-disable-next-line no-control-regex -- Explicitly reject control characters in URLs.
     if (/[\u0000-\u001f\u007f\\<>"`]/.test(value)) return false;
     const url = value.trim();
     if (url.length > 2048 || /\s/.test(url) || /%(?![\da-f]{2})/i.test(url)) return false;
@@ -75,7 +75,7 @@ globalThis.PortalCatalogRules = (() => {
     const icon = value.trim();
     if (!icon) return true;
     if (/^[a-z][a-z\d+.-]*:/i.test(icon)) return isIconUrl(icon) && isValidLinkUrl(icon);
-    // eslint-disable-next-line no-control-regex -- Reject control characters in icon text.
+    // oxlint-disable-next-line no-control-regex -- Reject control characters in icon text.
     return !/[\s\u0000-\u001f\u007f]/.test(icon) && Array.from(icon).length <= MAX_ICON_CHARACTERS;
   }
 
