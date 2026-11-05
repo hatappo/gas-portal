@@ -279,3 +279,39 @@ test('Creation cursor distinguishes an unavailable source action from an active 
   creationRequests[0].success({ ok: true, spreadsheetId: 'created-sheet' });
   assert.equal(cursor(), 'not-allowed');
 });
+
+test('Mark failures before the create request as not created, and keep later failures uncertain', () => {
+  for (const [options, expected] of [
+    [{ userProperties: { SPREADSHEET_ID: 'existing' } }, /already configured|既に/],
+    [{ unauthorized: true }, /initializeProperties/],
+  ]) {
+    const result = plain(setup(options).context.createPortalSpreadsheet('en'));
+    assert.equal(result.notCreated, true);
+    assert.equal(Object.hasOwn(result, 'spreadsheetId'), false);
+    assert.match(result.error, expected);
+  }
+  const disabled = setup();
+  disabled.context.Sheets = undefined;
+  const result = plain(disabled.context.createPortalSpreadsheet('en'));
+  assert.deepEqual(result, { ok: false, notCreated: true, error: 'Enable the Google Sheets API in GAS Services.' });
+  const failed = plain(setup({ failCreate: true }).context.createPortalSpreadsheet('en'));
+  assert.equal(failed.notCreated, undefined, 'A failed create request may still have created a file');
+  assert.match(failed.error, /Could not confirm creation/);
+});
+
+test('Keep the form usable after a definite creation failure', (t) => {
+  const { dom, document, creationRequests } = browser();
+  t.after(() => dom.window.close());
+  const create = document.getElementById('create-spreadsheet');
+  const id = document.getElementById('setting-spreadsheet');
+  const save = document.querySelector('#spreadsheet-settings-form [type=submit]');
+  create.click();
+  creationRequests[0].success({ ok: false, notCreated: true, error: 'Enable the Google Sheets API in GAS Services.' });
+  assert.equal(id.readOnly, false);
+  assert.equal(save.disabled, false);
+  assert.equal(create.disabled, false, 'Retrying is allowed');
+  assert.equal(document.getElementById('reload-spreadsheet').hidden, true);
+  assert.match(document.getElementById('spreadsheet-settings-status').textContent, /Sheets API/);
+  create.click();
+  assert.equal(creationRequests.length, 2);
+});

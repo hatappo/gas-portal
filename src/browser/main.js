@@ -2,6 +2,7 @@ import './styles.css';
 import '../shared/i18n.js';
 import '../shared/url-schemes.js';
 import '../shared/themes.js';
+import '../shared/catalog-rules.js';
 import './language.js';
 import './client.js';
 import './theme.js';

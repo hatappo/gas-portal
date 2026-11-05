@@ -97,53 +97,12 @@ function text_(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-/**
- * Check URL syntax only. Whether a scheme may be opened is decided in the browser
- * from the user's settings (see PortalUrlSchemes), so blocked links can still be shown.
- * Web URLs keep strict host validation; other schemes such as vscode:// vary in structure.
- * @param {unknown} value
- * @returns {boolean}
- */
+/** Rules shared with the browser, so both sides agree on which rows are valid. @param {unknown} value */
 function isValidLinkUrl_(value) {
-  if (typeof value !== 'string') return false;
-  // Reject line breaks and control characters before trimming.
-  // eslint-disable-next-line no-control-regex -- Explicitly reject control characters in URLs.
-  if (/[\u0000-\u001f\u007f\\<>"`]/.test(value)) return false;
-  const url = value.trim();
-  if (url.length > 2048 || /\s/.test(url) || /%(?![\da-f]{2})/i.test(url)) return false;
-  const scheme = /^([a-z][a-z\d+.-]*):/i.exec(url);
-  if (!scheme) return false;
-  if (/^https?$/i.test(scheme[1])) return isSafeWebUrl_(url);
-  return url.length > scheme[0].length;
+  return PortalCatalogRules.isValidLinkUrl(value);
 }
 
-/**
- * An icon overrides the automatic favicon: an https image URL, or a short text such as an emoji.
- * Emoji sequences (flags, skin tones, ZWJ families) span several code points, so allow up to eight.
- * @param {unknown} value
- * @returns {boolean}
- */
+/** @param {unknown} value */
 function isValidIcon_(value) {
-  if (typeof value !== 'string') return false;
-  const icon = value.trim();
-  if (!icon) return true;
-  if (/^[a-z][a-z\d+.-]*:/i.test(icon)) return /^https:/i.test(icon) && isValidLinkUrl_(icon);
-  // eslint-disable-next-line no-control-regex -- Reject control characters in icon text.
-  return !/[\s\u0000-\u001f\u007f]/.test(icon) && Array.from(icon).length <= 8;
-}
-
-/**
- * GAS V8 lacks WHATWG URL, so validate a restricted set of URL formats.
- * Allow ASCII hosts (Punycode for international domains), optional ports, paths, and queries.
- * Credentials are rejected because the host pattern excludes "@".
- * @param {string} url A trimmed URL without control characters or whitespace.
- * @returns {boolean}
- */
-function isSafeWebUrl_(url) {
-  const match = /^https?:\/\/([a-z\d.-]+)(?::(\d{1,5}))?(?:[/?#][^\s]*)?$/i.exec(url);
-  if (!match) return false;
-  const host = match[1];
-  if (host.length > 253 || host.split('.').some((label) =>
-    label.length > 63 || !/^[a-z\d](?:[a-z\d-]*[a-z\d])?$/i.test(label))) return false;
-  return !match[2] || (Number(match[2]) >= 1 && Number(match[2]) <= 65535);
+  return PortalCatalogRules.isValidIcon(value);
 }

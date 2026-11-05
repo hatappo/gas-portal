@@ -25,7 +25,7 @@ interface SpreadsheetSettings { SPREADSHEET_ID: string; SHEET_NAME: string }
 type SpreadsheetSettingsResponse = { ok: true; settings: SpreadsheetSettings } | { ok: false; error?: string };
 type SpreadsheetCreationResponse =
   | { ok: true; spreadsheetId: string }
-  | { ok: false; error: string; spreadsheetId?: string; connected?: boolean };
+  | { ok: false; error: string; spreadsheetId?: string; connected?: boolean; notCreated?: boolean };
 interface GitHubConnectionInfo { id: string; label: string; login: string; owner: string }
 interface GitHubConnectionInput { id: string; token: string; owner: string }
 interface GitHubActionItem { id: string; title: string; url: string; repository: string; number: number; updatedAt: string; kind: string; reasons: string[] }

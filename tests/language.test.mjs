@@ -65,6 +65,17 @@ test('Release the language lock and do not expose storage errors', () => {
   assert.doesNotMatch(JSON.stringify(app.logs), /private-token/);
 });
 
+test('Translate every settings status message when switching languages', (t) => {
+  const app = browser();
+  t.after(() => app.dom.window.close());
+  const ids = ['theme-status', 'portal-settings-status', 'cache-settings-status', 'actions-cache-settings-status',
+    'spreadsheet-settings-status', 'url-scheme-settings-status', 'github-settings-status', 'favicon-finder-status'];
+  ids.forEach((id) => { app.document.getElementById(id).textContent = '保存しました'; });
+  choose(app, 'en');
+  app.languageRequests[0].success({ ok: true, language: 'en' });
+  assert.deepEqual(ids.map((id) => app.document.getElementById(id).textContent), ids.map(() => 'Saved'));
+});
+
 test('Switch labels, accessibility text, warnings, and default content without losing filters or drafts', (t) => {
   const app = browser();
   t.after(() => app.dom.window.close());

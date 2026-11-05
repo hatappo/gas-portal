@@ -308,7 +308,7 @@
   }
 
   /** @param {string} icon */
-  const isIconUrl = (icon) => /^https:/i.test(icon);
+  const isIconUrl = (icon) => PortalCatalogRules.isIconUrl(icon);
 
   /** A decorative icon with an emoji fallback that stays visible until an icon loads.
    * A spreadsheet icon overrides detection: text replaces the fallback, and an image URL is tried first.
@@ -438,7 +438,9 @@
     list.replaceChildren();
     issues.forEach((issue) => {
       const item = document.createElement('li');
-      item.textContent = t('Row {row}: {message}', { row: issue.row, message: PortalI18n.translate(issue.message, document.documentElement.lang) });
+      const message = PortalI18n.translate(issue.message, document.documentElement.lang);
+      // Row 0 marks entries the browser skipped; they have no spreadsheet row number.
+      item.textContent = issue.row > 0 ? t('Row {row}: {message}', { row: issue.row, message }) : message;
       list.append(item);
     });
   }
@@ -511,27 +513,32 @@
     showStatus(t("Could not load the tool list"), (message ? PortalI18n.translate(message, document.documentElement.lang) : '') || t("Select Fetch latest to try again. If the problem persists, check the GAS settings."));
   }
 
-  /** @param {CatalogTool} tool */
-  function safeTool(tool) {
-    if (!tool || ['id', 'name', 'url', 'description'].some((key) =>
-      typeof tool[/** @type {keyof CatalogTool} */ (key)] !== 'string')) return false;
-    if (!Array.isArray(tool.tags) ||
-        !tool.tags.every((tag) => typeof tag === 'string')) return false;
-    if (!safeIcon(tool.icon)) return false;
-    if (tool.children !== undefined && (!Array.isArray(tool.children) || !tool.children.every((child) => child &&
-        ['name', 'url', 'description'].every((key) => typeof child[/** @type {keyof CatalogChild} */ (key)] === 'string') &&
-        child.name.trim() && safeUrl(child.url) && safeIcon(child.icon)))) return false;
-    return safeUrl(tool.url);
+  /**
+   * Validate one tool from the response. The server applies the same shared rules, so this only
+   * matters for data it should have rejected; even then only the offending part is dropped:
+   * an invalid related link or icon is removed, and an invalid tool is skipped, never the whole list.
+   * @param {CatalogTool} tool
+   * @returns {CatalogTool | null}
+   */
+  function sanitizeTool(tool) {
+    if (!tool || typeof tool !== 'object' || ['id', 'name', 'url', 'description'].some((key) =>
+      typeof tool[/** @type {keyof CatalogTool} */ (key)] !== 'string') || !safeUrl(tool.url)) return null;
+    if (!Array.isArray(tool.tags) || !tool.tags.every((tag) => typeof tag === 'string')) return null;
+    const children = (Array.isArray(tool.children) ? tool.children : []).filter((child) => child &&
+      ['name', 'url', 'description'].every((key) => typeof child[/** @type {keyof CatalogChild} */ (key)] === 'string') &&
+      child.name.trim() && safeUrl(child.url)).map((child) => safeIcon(child.icon) ? child : { ...child, icon: undefined });
+    return { ...tool, children, icon: safeIcon(tool.icon) ? tool.icon : undefined };
   }
 
   /** @param {unknown} icon */
   function safeIcon(icon) {
-    return icon === undefined || (typeof icon === 'string' && Boolean(icon.trim()) &&
-      (isIconUrl(icon) ? safeUrl(icon) : !/\s/.test(icon) && Array.from(icon).length <= 8));
+    return icon === undefined || (typeof icon === 'string' && Boolean(icon.trim()) && PortalCatalogRules.isValidIcon(icon) &&
+      (!isIconUrl(icon) || safeUrl(icon)));
   }
 
-  /** Check syntax only; blocked schemes are still rendered, without a link. @param {string} value */
+  /** Shared syntax rules plus the browser's own parser; blocked schemes are still rendered, without a link. @param {string} value */
   function safeUrl(value) {
+    if (!PortalCatalogRules.isValidLinkUrl(value)) return false;
     try {
       const url = new URL(value);
       // Credentials matter for web hosts; "@" is ordinary in schemes such as mailto:.
@@ -556,16 +563,22 @@
       showError(response.error);
       return;
     }
-    if (!response || !response.ok || !Array.isArray(response.tools) ||
-        !Array.isArray(response.issues) || !response.tools.every(safeTool)) {
+    if (!response || !response.ok || !Array.isArray(response.tools) || !Array.isArray(response.issues)) {
       showError();
       return;
     }
+    /** @type {CatalogWarning[]} */
+    const skipped = [];
+    const accepted = /** @type {CatalogTool[]} */ (response.tools.map((tool) => {
+      const safe = sanitizeTool(tool);
+      if (!safe) skipped.push({ row: 0, message: t('"{name}" could not be displayed in this browser.', { name: typeof tool?.name === 'string' ? tool.name : '?' }) });
+      return safe;
+    }).filter(Boolean));
     catalogReady = true;
     freshness = response.cache && typeof response.cache.hit === 'boolean' && Number.isFinite(response.cache.fetchedAt) && response.cache.fetchedAt > 0 ? response.cache : undefined;
     renderFreshness();
-    tools = response.tools;
-    issues = response.issues;
+    tools = accepted;
+    issues = [...response.issues, ...skipped];
     const availableTags = new Set(tools.flatMap((tool) => tool.tags));
     selectedTags = new Set([...selectedTags].filter((tag) => availableTags.has(tag)));
     setLoading(false);

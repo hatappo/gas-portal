@@ -65,6 +65,13 @@
           if (current !== generation) return;
           const createdId = response?.spreadsheetId;
           if (typeof createdId !== 'string' || !/^[\w-]+$/.test(createdId)) {
+            if (response && !response.ok && response.notCreated === true) {
+              // A definite failure before anything was created: keep the form usable for a retry.
+              window.clearTimeout(timeout);
+              finish();
+              status.textContent = PortalI18n.translate(String(response.error), document.documentElement.lang);
+              return;
+            }
             failure();
             if (response && !response.ok && typeof response.error === 'string') status.textContent = PortalI18n.translate(response.error, document.documentElement.lang);
             return;

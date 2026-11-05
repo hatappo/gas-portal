@@ -383,13 +383,13 @@ function createPortalSpreadsheet(browserLanguage) {
     return withPortalPropertiesLock_(() => {
       const store = PropertiesService.getUserProperties();
       if (store.getProperty('SPREADSHEET_ID')?.trim()) {
-        return { ok: false, error: PortalI18n.t('A spreadsheet ID is already configured. No spreadsheet was created.', language) };
+        return { ok: false, notCreated: true, error: PortalI18n.t('A spreadsheet ID is already configured. No spreadsheet was created.', language) };
       }
       stage = 'AUTHORIZATION';
       const authorization = ScriptApp.getAuthorizationInfo(ScriptApp.AuthMode.FULL);
       if (authorization.getAuthorizationStatus() === ScriptApp.AuthorizationStatus.REQUIRED) {
         console.error('SPREADSHEET_CREATION_BLOCKED', 'AUTHORIZATION_REQUIRED');
-        return { ok: false, error: PortalI18n.t('Additional authorization is required. Run initializeProperties in the GAS editor as the deploying account, grant the requested permissions, then reload the portal.', language) };
+        return { ok: false, notCreated: true, error: PortalI18n.t('Additional authorization is required. Run initializeProperties in the GAS editor as the deploying account, grant the requested permissions, then reload the portal.', language) };
       }
       stage = 'PREPARE_REQUEST';
       const columns = portalSpreadsheetColumns_(language);
@@ -444,6 +444,11 @@ function createPortalSpreadsheet(browserLanguage) {
     // Preserve the API reason in restricted execution logs, never in the browser response.
     // Do not log request bodies, properties, or authentication tokens.
     console.error('SPREADSHEET_CREATION_FAILED', stage, String(error));
+    // Before the create request nothing can exist, so the browser can let the user retry right away.
+    if (!spreadsheetId && ['PRECHECK', 'AUTHORIZATION', 'PREPARE_REQUEST'].includes(stage)) {
+      const disabled = error instanceof Error && error.message === 'SHEETS_SERVICE_DISABLED';
+      return { ok: false, notCreated: true, error: PortalI18n.t(disabled ? 'Enable the Google Sheets API in GAS Services.' : 'Could not create the spreadsheet. Please try again.', language) };
+    }
     const message = !spreadsheetId
       ? 'Could not confirm creation. Check Google Drive and reload before trying again.'
       : connected

@@ -4,7 +4,7 @@ import globals from 'globals';
 export default [
   { ignores: ['dist/**', 'assets/**', 'node_modules/**'] },
   js.configs.recommended,
-  { languageOptions: { globals: { ...globals.node, PortalI18n: 'readonly', PortalUrlSchemes: 'readonly', PortalThemes: 'readonly' } } },
+  { languageOptions: { globals: { ...globals.node, PortalI18n: 'readonly', PortalUrlSchemes: 'readonly', PortalThemes: 'readonly', PortalCatalogRules: 'readonly' } } },
   {
     files: ['src/server/*.js'],
     languageOptions: {
