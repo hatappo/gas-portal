@@ -145,9 +145,11 @@ test('Every theme is grouped by its own color scheme and keeps 4.5:1 contrast wh
       'neutral-content/neutral': [colors['neutral-content'], colors.neutral],
       'warning-content/warning': [colors['warning-content'], colors.warning],
       'error-content/error': [colors['error-content'], colors.error],
+      // Outline of unselected toggle buttons (non-text contrast, 3:1).
+      'toggle-border/base-100': [mix(colors['base-content'], colors['base-100'], 0.6), colors['base-100'], 3],
     };
-    for (const [pair, [text, surface]] of Object.entries(pairs)) {
-      const minimum = exceptions[name]?.[pair] ?? 4.5;
+    for (const [pair, [text, surface, required = 4.5]] of Object.entries(pairs)) {
+      const minimum = exceptions[name]?.[pair] ?? required;
       assert.ok(contrast(text, surface) >= minimum, `${name}: ${pair} = ${contrast(text, surface).toFixed(2)}`);
     }
   }

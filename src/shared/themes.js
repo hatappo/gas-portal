@@ -3,10 +3,11 @@
 globalThis.PortalThemes = (() => {
   // Each theme passes 4.5:1 for body text, muted text, and filled components when primary
   // is used only as a fill, never as text color. "dark" is the documented exception.
-  const light = ['nord', 'light', 'lofi', 'fantasy', 'emerald', 'cmyk', 'acid', 'lemonade', 'cyberpunk', 'wireframe'];
-  const dark = ['night', 'dark', 'dim', 'dracula', 'forest', 'halloween', 'synthwave', 'black', 'aqua', 'luxury', 'sunset'];
-  // "auto" follows the device: these two are used for light and dark mode.
-  const auto = { light: 'nord', dark: 'night' };
+  const light = ['lofi', 'light', 'nord', 'fantasy', 'emerald', 'cmyk', 'acid', 'lemonade', 'cyberpunk', 'wireframe'];
+  const dark = ['dracula', 'dark', 'dim', 'night', 'forest', 'halloween', 'synthwave', 'black', 'aqua', 'luxury', 'sunset'];
+  // "auto" follows the device. These two have the strongest text contrast among themes whose
+  // selected (primary) buttons also stand out from the page.
+  const auto = { light: 'lofi', dark: 'dracula' };
 
   /** @param {unknown} theme */
   function isTheme(theme) {

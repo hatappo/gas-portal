@@ -164,7 +164,7 @@ globalThis.PortalI18n = (() => {
   "Save changes": "変更を保存",
   "Restore defaults": "既定値に戻す",
   "Automatic theme": "自動",
-  "Follow your device: Nord in light mode, Night in dark mode.": "端末の設定に合わせて、ライトモードでは Nord、ダークモードでは Night に切り替えます。",
+  "Follow your device: Lofi in light mode, Dracula in dark mode.": "端末の設定に合わせて、ライトモードでは Lofi、ダークモードでは Dracula に切り替えます。",
   "Light": "ライト",
   "Dark": "ダーク",
   "Color theme": "カラーテーマ",

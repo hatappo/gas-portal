@@ -5,7 +5,7 @@
 @source "./*.js";
 @plugin "daisyui" {
   /* Keep in sync with src/shared/themes.js. */
-  themes: nord --default, night --prefersdark, light, lofi, fantasy, emerald, cmyk, acid, lemonade, cyberpunk, wireframe, dark, dim, dracula, forest, halloween, synthwave, black, aqua, luxury, sunset;
+  themes: lofi --default, dracula --prefersdark, light, nord, fantasy, emerald, cmyk, acid, lemonade, cyberpunk, wireframe, dark, dim, night, forest, halloween, synthwave, black, aqua, luxury, sunset;
   /* Only the parts the portal uses. Without this, plain words in markup such as "list" or "status"
      would pull in unrelated components. Add a name here before using a new component. */
   include: properties, rootcolor, rootscrollgutter, scrollbar, svg, alert, badge, button, card, checkbox, input, join, link, select, tab, table, textarea, radius;
@@ -62,6 +62,9 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 /* Pressed buttons (scope, view, tags) look like btn-primary. DaisyUI reads the same aria-pressed state. */
 .segmented-control .btn[aria-pressed="true"], .tag-button[aria-pressed="true"] { --btn-color: var(--color-primary); --btn-fg: var(--color-primary-content); --btn-border: var(--color-primary); }
 .segmented-control .btn { font-size: 12px; font-weight: 500; }
+/* Unselected toggle buttons differ from the page by background alone (about 1.1:1 in DaisyUI themes).
+   A base-content border at 60% keeps their outline at 3:1 or more in every theme; the theme test checks this. */
+.segmented-control .btn:not([aria-pressed="true"]), .tag-button:not([aria-pressed="true"]) { --btn-border: color-mix(in srgb, var(--color-base-content) 60%, var(--color-base-100)); }
 .view-switch svg { width: 18px; height: 18px; }
 #scope-internal svg, #scope-external svg { flex: none; width: 14px; height: 14px; }
 .tag-filter { display: flex; align-items: flex-start; gap: 12px; padding: 0 0 22px; }

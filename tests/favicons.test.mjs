@@ -51,14 +51,14 @@ test('Use safe favicon fallbacks and normalize ASCII letters without exposing ar
   const { context } = server();
   const base = 'https://hatappo.github.io/gas-portal/favicons/';
   assert.equal(context.getPortalFaviconUrl_('dracula', 'p'), base + 'dracula/P.png');
-  assert.equal(context.getPortalFaviconUrl_('auto', 'Z'), base + 'nord/Z.png', 'Auto uses the light default; doGet cannot see the device scheme');
+  assert.equal(context.getPortalFaviconUrl_('auto', 'Z'), base + 'lofi/Z.png', 'Auto uses the light default; doGet cannot see the device scheme');
   for (const icon of ['漢', '😀', '../secret', '', 'AB', '<', '゙', '・', 'ｱ']) {
     for (const theme of ['auto', ...readThemes().map(({ name }) => name)]) {
       assert.equal(context.getPortalFaviconUrl_(theme, icon), base + 'fallback.png');
     }
   }
-  assert.equal(context.getPortalFaviconUrl_('../invalid', 'P'), base + 'nord/P.png');
-  assert.equal(context.getPortalFaviconUrl_('tsuyukusa', 'P'), base + 'nord/P.png', 'Earlier palette names are no longer published');
+  assert.equal(context.getPortalFaviconUrl_('../invalid', 'P'), base + 'lofi/P.png');
+  assert.equal(context.getPortalFaviconUrl_('tsuyukusa', 'P'), base + 'lofi/P.png', 'Earlier palette names are no longer published');
 });
 
 test('Set the outer GAS page favicon from the executing user settings', () => {
