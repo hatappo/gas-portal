@@ -366,7 +366,7 @@ function portalSpreadsheetColumns_(language) {
     { name: 'name', type: 'TEXT', width: 220, note: t('Required. Display name shown in the portal.') },
     { name: 'url', type: 'TEXT', width: 320, note: t('Required. Primary URL, such as https:// or vscode://, entered as plain text rather than a file chip.') },
     { name: 'description', type: 'TEXT', width: 320, note: t('Optional. Plain-text description. HTML and Markdown are not interpreted.') },
-    { name: 'relatedLinks', type: 'TEXT', width: 380, note: t('Optional. One link per line in this cell: URL, a space, then a label. Labels may contain spaces. Example:\nhttps://example.com/guide User guide\nvscode://file/path/to/project Open in VS Code') },
+    { name: 'relatedLinks', type: 'TEXT', width: 720, note: t('Optional. One link per line in this cell: URL, a space, then a label. Labels may contain spaces. Example:\nhttps://example.com/guide User guide\nvscode://file/path/to/project Open in VS Code') },
   ];
 }
 

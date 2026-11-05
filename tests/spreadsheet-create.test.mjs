@@ -65,6 +65,9 @@ test('Create only the eight supported columns with typed table, header notes, an
   const formats = requests.filter((request) => request.repeatCell).map((request) => request.repeatCell);
   assert.equal(formats.length, 6);
   assert.ok(formats.every((format) => format.cell.userEnteredFormat.numberFormat.type === 'TEXT'));
+  const widths = sheet.data[0].columnMetadata.map((column) => column.pixelSize);
+  assert.equal(widths[7], 720, 'relatedLinks holds several full URLs per cell');
+  assert.ok(widths[7] >= Math.max(...widths.slice(0, 7)) * 2);
   assert.equal(app.requests[1][2], 'created-sheet');
   assert.equal(app.userProperties.SPREADSHEET_ID, 'created-sheet');
   assert.equal(Object.hasOwn(app.userProperties, 'SHEET_NAME'), false);
