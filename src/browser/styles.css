@@ -60,76 +60,67 @@ h1 { margin: 0; font-size: clamp(25px, 3.5vw, 36px); line-height: 1.6; font-weig
 .portal-tabs .tab { --tab-height: 48px; gap: 8px; font-size: 15px; font-weight: 600; }
 .portal-tabs .tab > svg { width: 18px; height: 18px; flex-shrink: 0; stroke-width: 1.75; }
 h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 600; margin: 0; }
-.count { flex-shrink: 0; min-width: calc(var(--count-digits, 1) * 2ch + 9ch); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--muted); font-family: "Avenir Next", Avenir, sans-serif; font-size: 12px; font-weight: 400; }
+/* Muted text: base-content at 75%, which the theme contrast test checks. */
+.count, .tool-description, .status p, .table-view td, .intro-copy, .settings-help { color: color-mix(in oklab, var(--color-base-content) 75%, transparent); }
+.count { flex-shrink: 0; min-width: calc(var(--count-digits, 1) * 2ch + 9ch); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-family: "Avenir Next", Avenir, sans-serif; font-size: 12px; font-weight: 400; }
 .directory-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 .search-controls { display: flex; flex: 1; min-width: 0; align-items: center; gap: 12px; }
-.search-box { display: flex; flex: 1; min-width: 0; align-items: center; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 0 14px; gap: 10px; }
-.search-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-color) 25%, transparent); }
-.search-box svg { width: 21px; height: 21px; color: var(--muted); flex-shrink: 0; }
-.search-box input { width: 100%; min-width: 0; height: 50px; padding: 12px 0; background: transparent; border: 0; color: var(--ink); font-size: 16px; }
-.search-box input:focus-visible { outline-offset: 0; }
-.search-box input::placeholder { color: color-mix(in srgb, var(--muted) 72%, var(--surface)); font-size: 13px; font-weight: 400; opacity: 1; }
+/* DaisyUI .input on the wrapper styles the icon and field together, including focus-within. */
+.search-box { flex: 1; width: auto; min-width: 0; }
+.search-box svg { width: 21px; height: 21px; opacity: .7; flex-shrink: 0; }
+.search-box input { font-size: 16px; }
+.search-box input::placeholder { font-size: 13px; }
 .filter-toolbar { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px; }
-.segmented-control { display: inline-flex; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-soft); }
-.segmented-control button { min-height: 44px; padding: 8px 16px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 12px; white-space: nowrap; }
-.segmented-control button:hover { background: var(--hover); }
-.segmented-control button[aria-pressed="true"] { color: var(--accent); background: var(--surface); box-shadow: 0 1px 3px #26384418; font-weight: 600; }
-.segmented-control.view-switch button { display: inline-flex; align-items: center; justify-content: center; width: 44px; padding: 0; }
+/* Pressed buttons (scope, view, tags) look like btn-primary. DaisyUI reads the same aria-pressed state. */
+.segmented-control .btn[aria-pressed="true"], .tag-button[aria-pressed="true"] { --btn-color: var(--color-primary); --btn-fg: var(--color-primary-content); --btn-border: var(--color-primary); }
+.segmented-control .btn { font-size: 12px; font-weight: 500; }
 .view-switch svg { width: 18px; height: 18px; }
-.tag-filter { display: flex; align-items: flex-start; gap: 12px; padding: 0 0 22px; }
-.tag-heading { flex-shrink: 0; display: flex; align-items: center; min-height: 44px; font-size: 12px; font-weight: 600; }
-.tags { display: flex; flex: 1; min-width: 0; flex-wrap: wrap; gap: 6px; }
-.tag-button { min-height: 44px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 24px; background: transparent; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
-.tag-button:hover { background: var(--hover); }
-.tag-button[aria-pressed="true"] { background: var(--theme-color); border-color: var(--theme-color); color: var(--on-theme); }
-.tools { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 0; margin: 0; }
-.tool-card { position: relative; display: flex; flex-direction: column; height: 100%; min-height: 205px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); transition: border-color .15s, transform .15s; }
-.tool-main { position: relative; display: flex; flex-direction: column; flex: 1; padding: 24px; color: inherit; text-decoration: none; border-radius: 10px; }
-.tool-main:hover h3 { color: var(--accent); }
-.related-links { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0 16px; }
-.tool-card > .related-links { margin: 0 24px; padding: 8px 0 12px; border-top: 1px solid var(--line); }
-.related-links li { min-width: 0; max-width: 100%; }
-.related-links a { display: inline-block; padding: 10px 0; min-height: 44px; color: var(--accent); font-size: 12px; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; overflow-wrap: anywhere; }
-.related-links a:hover { text-decoration-color: currentColor; }
-.tool-card:hover { border-color: var(--theme-color); transform: translateY(-2px); }
-.scope-badge { align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; color: var(--accent); background: var(--surface-soft); padding: 3px 9px; border: 1px solid transparent; border-radius: 4px; font-size: 11px; font-weight: 600; line-height: 1.6; white-space: nowrap; }
-.scope-badge svg { flex: none; width: 13px; height: 13px; }
-/* Outline the external badge too, so it reads differently from internal at a glance. */
-.scope-external { color: var(--external-ink); background: var(--external-bg); border-color: currentColor; }
-#scope-internal, #scope-external { display: inline-flex; align-items: center; gap: 6px; }
 #scope-internal svg, #scope-external svg { flex: none; width: 14px; height: 14px; }
+.tag-filter { display: flex; align-items: flex-start; gap: 12px; padding: 0 0 22px; }
+.tag-heading { flex-shrink: 0; display: flex; align-items: center; min-height: 32px; font-size: 12px; font-weight: 600; }
+.tags { display: flex; flex: 1; min-width: 0; flex-wrap: wrap; gap: 6px; }
+.tag-button { border-radius: 999px; font-weight: 400; overflow-wrap: anywhere; }
+.tools { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 0; margin: 0; }
+.tool-card { height: 100%; min-height: 205px; transition: border-color .15s, transform .15s; }
+.tool-card:hover { border-color: var(--color-primary); transform: translateY(-2px); }
+.tool-main { position: relative; display: flex; flex-direction: column; flex: 1; padding: 24px; color: inherit; text-decoration: none; border-radius: var(--radius-box); }
+.tool-main:hover h3 { text-decoration: underline; text-underline-offset: 4px; }
+.tool-card h3 { display: flex; align-items: flex-start; gap: 10px; font-size: 16px; font-weight: 600; margin: 20px 0 8px; overflow-wrap: anywhere; }
+.tool-description { font-size: 12px; line-height: 1.9; margin: 0; overflow-wrap: anywhere; }
+.scope-badge { align-self: flex-start; gap: 5px; font-weight: 600; white-space: nowrap; }
+.scope-badge svg { flex: none; width: 12px; height: 12px; }
 .tool-tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .tool-card .tool-tags { margin-top: auto; padding-top: 20px; }
-.tool-tag { color: var(--muted); background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; padding: 2px 8px; font-size: 10px; font-weight: 400; overflow-wrap: anywhere; max-width: 100%; }
-.table-view { max-width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
-.table-view table { width: 100%; min-width: 800px; border-collapse: collapse; table-layout: fixed; text-align: left; }
-.table-view thead { background: var(--surface-soft); }
-.table-view th, .table-view td { padding: 18px 20px; vertical-align: top; overflow-wrap: anywhere; }
-.table-view thead th { padding-top: 13px; padding-bottom: 13px; color: var(--muted); font-size: 11px; font-weight: 500; }
+.tool-tag { height: auto; max-width: 100%; font-weight: 400; overflow-wrap: anywhere; }
+.related-links { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0 16px; }
+.tool-card > .related-links { margin: 0 24px; padding: 8px 0 12px; border-top: 1px solid var(--color-base-300); }
+.related-links li { min-width: 0; max-width: 100%; }
+.related-links a { padding: 10px 0; min-height: 44px; font-size: 12px; overflow-wrap: anywhere; }
+.table-view { max-width: 100%; overflow-x: auto; border: var(--border) solid var(--color-base-300); border-radius: var(--radius-box); background: var(--color-base-100); }
+.table-view table { min-width: 800px; table-layout: fixed; }
+.table-view thead th { font-size: 11px; font-weight: 500; }
 .table-view thead th:nth-child(1) { width: 23%; }
 .table-view thead th:nth-child(2) { width: 29%; }
 .table-view thead th:nth-child(3) { width: 10%; }
 .table-view thead th:nth-child(4) { width: 18%; }
 .table-view thead th:nth-child(5) { width: 20%; }
-.table-view tbody tr + tr { border-top: 1px solid var(--line); }
-.table-view tbody tr:hover { background: var(--hover); }
+.table-view th, .table-view td { vertical-align: top; overflow-wrap: anywhere; }
+.table-view tbody tr:hover { background: var(--color-base-200); }
 .table-view tbody th { font-size: 13px; font-weight: 600; }
-.table-view td { font-size: 12px; color: var(--muted); }
-.table-view a { display: inline-block; color: var(--ink); text-decoration: none; padding: 10px 0; margin: -10px 0; min-height: 44px; }
-.table-view a:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 4px; }
-.table-view .related-links a { margin: 0; color: var(--accent); text-decoration: underline; text-decoration-color: var(--line); }
+.table-view td { font-size: 12px; }
+.table-view .tool-name-link { color: inherit; text-decoration: none; padding: 10px 0; margin: -10px 0; min-height: 44px; }
+.table-view .tool-name-link:hover { text-decoration: underline; text-underline-offset: 4px; }
 .table-view .related-links { margin-top: -10px; margin-bottom: -10px; }
-.tool-card h3 { display: flex; align-items: flex-start; gap: 10px; font-size: 16px; font-weight: 600; margin: 20px 0 8px; overflow-wrap: anywhere; }
-.tool-description { font-size: 12px; line-height: 1.9; color: var(--muted); margin: 0; overflow-wrap: anywhere; }
-.status { padding: 45px 20px; min-height: 240px; text-align: center; background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; }
+.status { padding: 45px 20px; min-height: 240px; text-align: center; background: var(--color-base-100); border: var(--border) dashed var(--color-base-300); border-radius: var(--radius-box); }
 .action-items { min-height: 240px; }
 .action-items-list { list-style: none; margin: 0; padding: 0; }
 .status h3 { font-size: 16px; margin: 12px 0 8px; }
-.status p { font-size: 13px; color: var(--muted); margin: 0; }
-.reset-button { min-height: 44px; border: 1px solid var(--line); border-radius: 6px; padding: 9px 16px; background: var(--surface); color: var(--accent); margin-top: 16px; }
-.warnings { border-left: 3px solid var(--warning-line); background: var(--warning-bg); color: var(--warning-ink); padding: 12px 16px; margin-bottom: 20px; font-size: 12px; overflow-wrap: anywhere; }
+.status p { font-size: 13px; margin: 0; }
+.reset-button { margin-top: 16px; }
+/* DaisyUI .alert is a grid; let the summary and list flow as a block. */
+.warnings { display: block; margin-bottom: 20px; font-size: 12px; overflow-wrap: anywhere; }
 .warnings summary { cursor: pointer; padding: 5px 0; }
-.warnings ul { padding-left: 22px; margin-bottom: 0; }
+.warnings ul { padding-left: 22px; margin-bottom: 0; list-style: disc; }
 .visually-hidden, .skip-link:not(:focus) { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .skip-link:focus { display: block; padding: 12px; background: var(--color-base-100); }
 @media (max-width: 900px) { .tools { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -152,8 +143,7 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
   .tool-card > .related-links { margin-right: 22px; margin-left: 22px; }
   .tool-card h3 { margin-top: 15px; }
   .filter-toolbar { gap: 8px; }
-  .segmented-control button { padding: 8px 10px; }
-  .tag-button { padding: 8px 12px; }
+  .segmented-control .btn:not(.btn-square) { padding-inline: 10px; }
   .table-view th, .table-view td { padding-left: 14px; padding-right: 14px; }
 }
 @media (prefers-reduced-motion: reduce) { .tool-card { transition: none; } .tool-card:hover { transform: none; } }
@@ -242,9 +232,9 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .theme-auto-swatches i:first-child { border-radius: 16px 0 0 16px; }
 .theme-auto-swatches i:last-child { border-radius: 0 16px 16px 0; }
 
-.refresh-catalog { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 6px; min-width: 44px; min-height: 44px; margin-inline-start: auto; padding: 8px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; white-space: nowrap; cursor: pointer; }
-.refresh-catalog:is(:hover, :focus-visible):not(:disabled) { background: var(--surface-soft); color: var(--accent); }
-.refresh-catalog:disabled { cursor: wait; opacity: .55; }
+/* btn-ghost supplies hover and focus; the spinner signals loading, so keep the icon fully visible. */
+.refresh-catalog { flex-shrink: 0; gap: 6px; min-width: 44px; margin-inline-start: auto; padding-inline: 10px; font-size: 12px; font-weight: 400; white-space: nowrap; }
+.refresh-catalog:disabled { cursor: wait; }
 .refresh-catalog svg { width: 18px; height: 18px; }
 .catalog-freshness { color: inherit; font-size: 11px; }
 @media (max-width: 1100px) { .directory-toolbar { flex-wrap: wrap; } .search-controls { flex-basis: 100%; } .filter-toolbar { width: 100%; justify-content: flex-start; } }

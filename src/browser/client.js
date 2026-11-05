@@ -198,7 +198,7 @@
     const addButton = (label, value) => {
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = 'tag-button';
+      button.className = 'tag-button btn btn-sm';
       button.textContent = label;
       button.setAttribute('aria-pressed', String(value === null ? selectedTags.size === 0 : selectedTags.has(value)));
       button.addEventListener('click', () => {
@@ -226,7 +226,8 @@
   /** @param {CatalogTool} tool */
   function scopeBadge(tool) {
     const badge = document.createElement('span');
-    badge.className = 'scope-badge scope-' + tool.scope;
+    // Internal stays quiet; external is a filled neutral badge so it stands out in every theme.
+    badge.className = 'scope-badge scope-' + tool.scope + ' badge badge-sm ' + (tool.scope === 'external' ? 'badge-neutral' : 'badge-ghost');
     // Icons differ in shape, so the scopes stay distinguishable without relying on color.
     const icon = /** @type {HTMLTemplateElement | null} */ (document.getElementById('scope-icon-' + tool.scope))?.content.querySelector('svg');
     if (icon) badge.append(icon.cloneNode(true));
@@ -243,7 +244,7 @@
     labels.hidden = tool.tags.length === 0;
     tool.tags.forEach((tag) => {
       const label = document.createElement('span');
-      label.className = 'tool-tag';
+      label.className = 'tool-tag badge badge-sm badge-outline';
       label.textContent = tag;
       labels.append(label);
     });
@@ -265,7 +266,7 @@
     const notice = document.createElement('span');
     notice.className = 'blocked-url';
     const label = document.createElement('span');
-    label.className = 'blocked-url-label';
+    label.className = 'blocked-url-label badge badge-xs badge-outline';
     label.textContent = t("Blocked scheme");
     const text = document.createElement('span');
     text.className = 'blocked-url-text';
@@ -384,6 +385,7 @@
       const link = toolLink(related);
       const label = document.createElement('span');
       label.className = 'related-label';
+      if (!link.classList.contains('is-blocked')) link.classList.add('link');
       label.textContent = related.label;
       if (link.classList.contains('is-blocked')) {
         link.prepend(label);
@@ -401,7 +403,7 @@
   function card(tool) {
     const item = document.createElement('li');
     const container = document.createElement('article');
-    container.className = 'tool-card';
+    container.className = 'tool-card card card-border bg-base-100';
     const link = toolLink(tool);
     link.classList.add('tool-main');
     const blocked = link.classList.contains('is-blocked');

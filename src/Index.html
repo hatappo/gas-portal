@@ -28,24 +28,24 @@
       <section class="directory" role="tabpanel" aria-labelledby="tab-tools" aria-busy="true" id="directory" tabindex="0">
         <div class="directory-toolbar">
           <div class="search-controls">
-            <div class="search-box">
+            <div class="search-box input input-lg">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
               <label class="visually-hidden" for="search"><span data-i18n="Search tools by name, description, or tags">Search tools by name, description, or tags</span></label>
               <input type="search" id="search" placeholder="Search by name, description, or tags" data-i18n-placeholder="Search by name, description, or tags" autocomplete="off" disabled>
             </div>
           </div>
           <div class="filter-toolbar">
-            <div id="scopes" class="segmented-control" role="group" aria-label="Tool scope" data-i18n-aria-label="Tool scope">
-              <button id="scope-all" type="button" aria-pressed="true" disabled><span data-i18n="All">All</span></button>
-              <button id="scope-internal" type="button" aria-pressed="false" disabled><!-- building-2-icon --><span data-i18n="Internal">Internal</span></button>
-              <button id="scope-external" type="button" aria-pressed="false" disabled><!-- globe-icon --><span data-i18n="External">External</span></button>
+            <div id="scopes" class="segmented-control join" role="group" aria-label="Tool scope" data-i18n-aria-label="Tool scope">
+              <button id="scope-all" class="btn join-item" type="button" aria-pressed="true" disabled><span data-i18n="All">All</span></button>
+              <button id="scope-internal" class="btn join-item" type="button" aria-pressed="false" disabled><!-- building-2-icon --><span data-i18n="Internal">Internal</span></button>
+              <button id="scope-external" class="btn join-item" type="button" aria-pressed="false" disabled><!-- globe-icon --><span data-i18n="External">External</span></button>
             </div>
-            <div class="segmented-control view-switch" role="group" aria-label="View mode" data-i18n-aria-label="View mode">
-              <button id="view-cards" type="button" aria-label="Cards" title="Cards" aria-pressed="true" disabled><!-- layout-grid-icon --></button>
-              <button id="view-list" type="button" aria-label="List" title="List" aria-pressed="false" disabled><!-- list-icon --></button>
+            <div class="segmented-control view-switch join" role="group" aria-label="View mode" data-i18n-aria-label="View mode">
+              <button id="view-cards" class="btn btn-square join-item" type="button" aria-label="Cards" title="Cards" aria-pressed="true" disabled><!-- layout-grid-icon --></button>
+              <button id="view-list" class="btn btn-square join-item" type="button" aria-label="List" title="List" aria-pressed="false" disabled><!-- list-icon --></button>
             </div>
             <span id="count" class="count" role="status" aria-live="polite" aria-atomic="true"></span>
-            <button type="button" id="refresh-catalog" class="refresh-catalog" aria-label="Fetch latest" data-i18n-aria-label="Fetch latest" aria-describedby="catalog-freshness" title="Fetch latest" data-i18n-title="Fetch latest" aria-busy="true" disabled>
+            <button type="button" id="refresh-catalog" class="refresh-catalog btn btn-ghost" aria-label="Fetch latest" data-i18n-aria-label="Fetch latest" aria-describedby="catalog-freshness" title="Fetch latest" data-i18n-title="Fetch latest" aria-busy="true" disabled>
               <!-- refresh-cw-icon -->
               <span id="catalog-freshness" class="catalog-freshness" role="status" aria-live="polite" hidden></span>
             </button>
@@ -55,13 +55,13 @@
           <div class="tag-heading">Tags</div>
           <div id="tags" class="tags" role="group" aria-label="Filter by tags" data-i18n-aria-label="Filter by tags"></div>
         </div>
-        <aside id="warnings" class="warnings" aria-label="Data issues" data-i18n-aria-label="Data issues" hidden>
+        <aside id="warnings" class="warnings alert alert-warning" aria-label="Data issues" data-i18n-aria-label="Data issues" hidden>
           <details><summary id="warning-summary"></summary><ul id="warning-list"></ul></details>
         </aside>
         <div id="results">
           <ul id="tools" class="tools" aria-label="Tools" data-i18n-aria-label="Tools"></ul>
           <div id="table-view" class="table-view" role="region" aria-label="Tools table (scroll horizontally on narrow screens)" data-i18n-aria-label="Tools table (scroll horizontally on narrow screens)" tabindex="0" hidden>
-            <table>
+            <table class="table">
               <caption class="visually-hidden"><span data-i18n="Tools">Tools</span></caption>
               <thead><tr><th scope="col"><span data-i18n="Tool">Tool</span></th><th scope="col"><span data-i18n="Description">Description</span></th><th scope="col"><span data-i18n="Scope">Scope</span></th><th scope="col">Tags</th><th scope="col"><span data-i18n="Related links">Related links</span></th></tr></thead>
               <tbody id="tool-rows"></tbody>
@@ -70,7 +70,7 @@
           <div id="status" class="status" role="status" aria-live="polite" hidden>
             <h3 id="status-title"></h3>
             <p id="status-description"></p>
-            <button id="reset" class="reset-button" type="button" hidden><span data-i18n="Clear filters">Clear filters</span></button>
+            <button id="reset" class="reset-button btn btn-sm" type="button" hidden><span data-i18n="Clear filters">Clear filters</span></button>
           </div>
         </div>
         <noscript><p><span data-i18n="Enable JavaScript to display the tool list.">Enable JavaScript to display the tool list.</span></p></noscript>
