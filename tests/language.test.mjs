@@ -1,10 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { JSDOM } from 'jsdom';
-import { browser, server, catalog, plain } from './helpers.mjs';
-import { renderPreview } from '../scripts/preview.mjs';
+import { browser, server, catalog, plain, previewPage, runPreviewMock } from './helpers.mjs';
 
 function choose(app, language) {
   app.document.getElementById('portal-language').value = language;
@@ -151,16 +148,8 @@ test('Localize known server errors and parameterized messages without interpreti
 
 test('Preview language persists locally, restores on reload, and reports storage failures', (t) => {
   const storage = { 'portal-preview-language': 'en' };
-  const html = renderPreview(readFileSync('src/Index.html', 'utf8'), process.cwd());
-  const dom = new JSDOM(html);
-  t.after(() => dom.window.close());
-  const mock = dom.window.document.querySelector('script:not([src]):not([type="application/json"])').textContent;
-  const runMock = () => {
-    const context = vm.createContext({ document: dom.window.document, URLSearchParams, location: { search: '' }, setTimeout(fn) { fn(); },
-      localStorage: { getItem: key => storage[key], setItem(key, value) { storage[key] = value; } } });
-    vm.runInContext(mock, context);
-    return context;
-  };
+  const dom = previewPage(t);
+  const runMock = () => runPreviewMock(dom, { localStorage: { getItem: (key) => storage[key], setItem(key, value) { storage[key] = value; } } }).context;
   let context = runMock();
   assert.equal(dom.window.document.documentElement.lang, 'en');
   let result;

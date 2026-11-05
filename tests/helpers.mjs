@@ -3,6 +3,7 @@ import vm from 'node:vm';
 import { createHash, randomUUID } from 'node:crypto';
 import { JSDOM } from 'jsdom';
 import { withPreviewContent } from '../scripts/preview-project.mjs';
+import { renderPreview } from '../scripts/preview.mjs';
 import { sharedSources } from '../scripts/gas-sources.mjs';
 
 // The browser modules, in the order src/browser/main.js imports them.
@@ -103,3 +104,28 @@ export const catalog = {
   ],
   issues: [],
 };
+
+/** A rendered local preview page, closed when the test ends. */
+export function previewPage(t) {
+  const dom = new JSDOM(renderPreview(readFileSync('src/Index.html', 'utf8'), process.cwd()));
+  t.after(() => dom.window.close());
+  return dom;
+}
+
+/** Run the preview's mock script on a page, with an in-memory localStorage by default.
+ * `call` runs one mock RPC with immediate timers and returns its reply.
+ */
+export function runPreviewMock(dom, { storage = {}, search = '', setTimeout = (fn) => { fn(); }, localStorage = {
+  getItem: (key) => storage[key], setItem: (key, value) => { storage[key] = value; }, removeItem: (key) => { delete storage[key]; },
+} } = {}) {
+  const document = dom.window.document;
+  const context = vm.createContext({ document, URLSearchParams, location: { search }, setTimeout, localStorage });
+  vm.runInContext(document.querySelector('script:not([src]):not([type="application/json"])').textContent, context);
+  const run = vm.runInContext('google.script.run', context);
+  const call = (method, ...args) => {
+    let result;
+    run.withSuccessHandler((value) => { result = value; })[method](...args);
+    return result;
+  };
+  return { document, context, run, call };
+}

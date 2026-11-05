@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { JSDOM } from 'jsdom';
 import { renderPreview } from '../scripts/preview.mjs';
+import { previewPage, runPreviewMock } from './helpers.mjs';
 
 const source = readFileSync('src/Index.html', 'utf8');
 
@@ -26,15 +27,11 @@ test("Resolve GAS templates and include the mock and Vite module entry", (t) => 
 });
 
 test("Simulate success, empty, invalid, configuration, and transport states offline", (t) => {
-  const dom = new JSDOM(renderPreview(source, process.cwd()));
-  t.after(() => dom.window.close());
-  const mock = dom.window.document.querySelector('script:not([src]):not([type="application/json"])').textContent;
+  const dom = previewPage(t);
   for (const scenario of ['', 'empty', 'invalid', 'config', 'error']) {
     let result;
     let failed = false;
-    const context = vm.createContext({ URLSearchParams, location: { search: `?state=${scenario}` }, setTimeout(fn) { fn(); } });
-    vm.runInContext(mock, context);
-    const run = vm.runInContext('google.script.run', context);
+    const { run } = runPreviewMock(dom, { search: `?state=${scenario}` });
     run.withSuccessHandler((value) => { result = value; }).withFailureHandler(() => { failed = true; }).getCatalog();
     if (scenario === 'error') assert.equal(failed, true);
     else if (scenario === 'config') assert.equal(result.ok, false);
@@ -44,18 +41,14 @@ test("Simulate success, empty, invalid, configuration, and transport states offl
 });
 
 test("Restore and save themes without mixing concurrent response handlers", (t) => {
-  const dom = new JSDOM(renderPreview(source, process.cwd()));
-  t.after(() => dom.window.close());
+  const dom = previewPage(t);
   let stored = 'dracula';
   const pending = [];
-  const context = vm.createContext({
-    document: dom.window.document, URLSearchParams, location: { search: '' },
+  const { run } = runPreviewMock(dom, {
     localStorage: { getItem: () => stored, setItem(key, value) { assert.equal(key, 'portal-preview-theme'); stored = value; } },
     setTimeout(fn) { pending.push(fn); },
   });
-  vm.runInContext(dom.window.document.querySelector('script:not([src]):not([type="application/json"])').textContent, context);
   assert.equal(dom.window.document.documentElement.dataset.theme, 'dracula');
-  const run = vm.runInContext('google.script.run', context);
   let catalog;
   let theme;
   run.withSuccessHandler((value) => { catalog = value; }).getCatalog();
@@ -69,16 +62,10 @@ test("Restore and save themes without mixing concurrent response handlers", (t) 
 test("Save, restore, and reset display settings while preserving the theme", (t) => {
   const settings = { PORTAL_NAME: 'Local Portal', PORTAL_ICON: 'l', PORTAL_HEADLINE: 'Local headline', PORTAL_DESCRIPTION: 'Local description' };
   const storage = { 'portal-preview-settings': JSON.stringify(settings), 'portal-preview-theme': 'dracula' };
-  const dom = new JSDOM(renderPreview(source, process.cwd()));
-  t.after(() => dom.window.close());
-  const context = vm.createContext({
-    document: dom.window.document, URLSearchParams, location: { search: '' }, setTimeout(fn) { fn(); },
-    localStorage: { getItem: (key) => storage[key], setItem: (key, value) => { storage[key] = value; } },
-  });
-  vm.runInContext(dom.window.document.querySelector('script:not([src]):not([type="application/json"])').textContent, context);
+  const dom = previewPage(t);
+  const { context, run } = runPreviewMock(dom, { storage });
   assert.equal(dom.window.document.querySelector('#setting-name').value, 'Local Portal');
   assert.equal(dom.window.document.querySelector('#setting-icon').value, 'L');
-  const run = vm.runInContext('google.script.run', context);
   let result;
   run.withSuccessHandler((value) => { result = value; }).savePortalSettings({ ...settings, PORTAL_NAME: 'Updated' });
   assert.equal(result.settings.PORTAL_NAME, 'Updated');
@@ -93,16 +80,7 @@ test("Save, restore, and reset display settings while preserving the theme", (t)
 
 test('Preview cache settings persist, cached loads restore, and forced refresh always bypasses them', (t) => {
   const storage = {};
-  const create = () => {
-    const dom = new JSDOM(renderPreview(source, process.cwd()));
-    t.after(() => dom.window.close());
-    const context = vm.createContext({
-      document: dom.window.document, URLSearchParams, location: { search: '' }, setTimeout(fn) { fn(); },
-      localStorage: { getItem: (key) => storage[key], setItem: (key, value) => { storage[key] = value; }, removeItem: (key) => { delete storage[key]; } },
-    });
-    vm.runInContext(dom.window.document.querySelector('script:not([src]):not([type="application/json"])').textContent, context);
-    return { document: dom.window.document, run: vm.runInContext('google.script.run', context) };
-  };
+  const create = () => runPreviewMock(previewPage(t), { storage });
   const initial = create();
   assert.equal(initial.document.querySelector('#catalog-cache-seconds').dataset.savedValue, '21600');
   let result;
@@ -127,19 +105,8 @@ test('Preview cache settings persist, cached loads restore, and forced refresh a
 test('The preview mock checks input with the server code and replies like the server', (t) => {
   const storage = {};
   const create = (search = '') => {
-    const dom = new JSDOM(renderPreview(source, process.cwd()));
-    t.after(() => dom.window.close());
-    const context = vm.createContext({
-      document: dom.window.document, URLSearchParams, location: { search }, setTimeout(fn) { fn(); },
-      localStorage: { getItem: (key) => storage[key], setItem: (key, value) => { storage[key] = value; }, removeItem: (key) => { delete storage[key]; } },
-    });
-    vm.runInContext(dom.window.document.querySelector('script:not([src]):not([type="application/json"])').textContent, context);
-    const run = vm.runInContext('google.script.run', context);
-    return (method, ...args) => {
-      let result;
-      run.withSuccessHandler((value) => { result = value; })[method](...args);
-      return JSON.parse(JSON.stringify(result));
-    };
+    const { call } = runPreviewMock(previewPage(t), { storage, search });
+    return (method, ...args) => JSON.parse(JSON.stringify(call(method, ...args)));
   };
   const call = create();
   assert.deepEqual(call('saveTheme', 'no-such-theme'), { ok: false });
