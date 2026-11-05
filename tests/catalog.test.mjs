@@ -46,20 +46,18 @@ test("Do not tag lookalike hosts, alternate ports, or embedded URLs", () => {
   assert.equal(invalid.issues.length, 1);
 });
 
-test("Accept Japanese and English scopes and default to internal", () => {
-  for (const [scope, expected] of [[undefined, 'internal'], ['', 'internal'], ['社内', 'internal'],
-    ['社外', 'external'], ['internal', 'internal'], ['external', 'external']]) {
-    assert.equal(parse([entry({ scope })]).tools[0].scope, expected);
-  }
-  for (const scope of ['unknown', 0, null]) {
-    assert.match(parse([entry({ scope })]).issues[0].message, /scope/);
+test("Ignore a scope field, which is no longer part of the catalog", () => {
+  for (const scope of ['internal', 'external', '社外', 'unknown', 0, null]) {
+    const result = parse([entry({ scope })]);
+    assert.deepEqual(result.issues, [], String(scope));
+    assert.equal(Object.hasOwn(result.tools[0], 'scope'), false);
   }
 });
 
-test("Default optional fields to empty descriptions, no tags, and internal scope", () => {
+test("Default optional fields to empty descriptions and no tags", () => {
   assert.deepEqual(parse([{ id: 'a', name: 'A', url: 'https://example.com' }]).tools[0], {
     id: 'a', name: 'A', url: 'https://example.com', description: '',
-    tags: [], relatedLinks: [], scope: 'internal', category: 'その他',
+    tags: [], relatedLinks: [], category: 'その他',
   });
 });
 

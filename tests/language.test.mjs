@@ -91,7 +91,8 @@ test('Switch labels, accessibility text, warnings, and default content without l
   assert.equal(doc.getElementById('tab-settings').getAttribute('aria-selected'), 'true');
   assert.equal(doc.getElementById('setting-headline').value, 'Unsaved custom headline');
   assert.equal(doc.getElementById('page-title').textContent, 'One place to start your workday.');
-  assert.match(doc.getElementById('tool-rows').textContent, /Guide.*Internal/);
+  assert.match(doc.querySelector('#table-view thead').textContent, /Tool.*Description.*Tags.*Related links/);
+  assert.match(doc.getElementById('tool-rows').textContent, /Guide/);
   assert.match(doc.getElementById('warning-list').textContent, /Row 4: Enter a valid URL/);
   assert.match(doc.getElementById('warning-summary').textContent, /Entries not displayed: 1/);
   assert.equal(app.requests.length, 1);
@@ -103,7 +104,7 @@ test('Switch labels, accessibility text, warnings, and default content without l
   assert.equal(doc.getElementById('refresh-actions').title, '最新データを取得');
   assert.equal(doc.getElementById('refresh-actions').getAttribute('aria-label'), '最新データを取得');
   assert.equal(doc.getElementById('setting-headline').value, 'Unsaved custom headline');
-  assert.match(doc.getElementById('tool-rows').textContent, /Guide.*社内/);
+  assert.match(doc.querySelector('#table-view thead').textContent, /ツール.*説明.*Tags.*関連リンク/);
 });
 
 test('Keep the saved language after failure and ignore late responses after timeout', (t) => {

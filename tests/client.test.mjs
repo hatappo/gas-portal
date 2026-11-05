@@ -25,14 +25,14 @@ test("Search and filter automatic GAS tags in both views", (t) => {
   assert.match(document.querySelector('#tool-rows').textContent, /GAS/);
 });
 
-test("Preserve scope, tags, and search when switching views", (t) => {
+test("Preserve tags and search when switching views", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   requests[0].success({ ...catalog, tools: [
-    { ...catalog.tools[0], scope: 'internal', tags: ['申請', '経理'] },
-    { ...catalog.tools[1], scope: 'external', tags: ['申請', '経理'] },
+    { ...catalog.tools[0], tags: ['申請', '経理'] },
+    { ...catalog.tools[1], tags: ['申請', '経理'] },
   ] });
-  document.querySelector('#scope-external').click();
+  assert.equal(document.querySelector('#scopes'), null, 'The internal/external filter is gone');
   [...document.querySelectorAll('#tags button')].find((button) => button.textContent === '経理').click();
   document.querySelector('#search').value = 'guide';
   document.querySelector('#search').dispatchEvent(new dom.window.Event('input'));
@@ -40,7 +40,9 @@ test("Preserve scope, tags, and search when switching views", (t) => {
   assert.equal(document.querySelector('#tools').hidden, true);
   assert.equal(document.querySelector('#table-view').hidden, false);
   assert.equal(document.querySelectorAll('#tool-rows tr').length, 1);
-  assert.match(document.querySelector('#tool-rows').textContent, /Guide.*社外.*申請.*経理/);
+  assert.match(document.querySelector('#tool-rows').textContent, /Guide.*申請.*経理/);
+  assert.equal(document.querySelectorAll('#table-view thead th').length, 4, 'Tool, description, tags, related links');
+  assert.equal(document.querySelectorAll('#tool-rows tr > *').length, 4);
   const link = document.querySelector('#tool-rows a');
   assert.equal(link.href, catalog.tools[1].url);
   assert.equal(link.target, '_blank');
@@ -56,8 +58,8 @@ test("Combine tags with AND logic and support deselection and clearing all filte
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   requests[0].success({ ...catalog, tools: [
-    { ...catalog.tools[0], scope: 'internal', tags: ['申請', '経理'] },
-    { ...catalog.tools[1], scope: 'external', tags: ['申請'] },
+    { ...catalog.tools[0], tags: ['申請', '経理'] },
+    { ...catalog.tools[1], tags: ['申請'] },
   ] });
   const tag = (text) => [...document.querySelectorAll('#tags button')].find((button) => button.textContent === text);
   tag('申請').click();
@@ -66,12 +68,15 @@ test("Combine tags with AND logic and support deselection and clearing all filte
   assert.equal(document.querySelectorAll('#tools a').length, 1);
   tag('経理').click();
   assert.equal(document.querySelectorAll('#tools a').length, 2);
-  document.querySelector('#scope-external').click();
   tag('経理').click();
+  document.querySelector('#search').value = 'Guide';
+  document.querySelector('#search').dispatchEvent(new dom.window.Event('input'));
   assert.equal(document.querySelectorAll('#tools a').length, 0);
   document.querySelector('#reset').click();
   assert.equal(document.querySelectorAll('#tools a').length, 2);
-  assert.equal(document.querySelector('#scope-all').getAttribute('aria-pressed'), 'true');
+  assert.equal(document.querySelector('#search').value, '');
+  const pressed = [...document.querySelectorAll('#tags button[aria-pressed="true"]')];
+  assert.deepEqual(pressed, [document.querySelector('#tags button')], 'Only "All" stays pressed after clearing');
 });
 
 test("Search tags without showing labels for tools that have no tags", (t) => {
@@ -414,14 +419,17 @@ test('Show stable filtered and total counts after the filter controls in both la
   assert.equal(count.closest('#directory').id, 'directory');
   assert.equal(count.textContent, '');
   requests[0].success({ ...catalog, tools: [
-    { ...catalog.tools[0], name: 'Alpha', scope: 'internal', tags: ['Work'] },
-    { ...catalog.tools[1], name: 'Beta', scope: 'external', tags: ['Work'] },
+    { ...catalog.tools[0], name: 'Alpha', tags: ['Work'] },
+    { ...catalog.tools[1], name: 'Beta', tags: ['Work'] },
   ] });
   assert.equal(count.textContent, '2 / 2 件');
   assert.equal(count.style.getPropertyValue('--count-digits'), '1');
-  document.getElementById('scope-internal').click();
+  const searchBox = document.getElementById('search');
+  searchBox.value = 'Alpha';
+  searchBox.dispatchEvent(new dom.window.Event('input'));
   assert.equal(count.textContent, '1 / 2 件');
-  document.getElementById('scope-all').click();
+  searchBox.value = '';
+  searchBox.dispatchEvent(new dom.window.Event('input'));
   [...document.querySelectorAll('#tags button')].find((button) => button.textContent === 'Work').click();
   assert.equal(count.textContent, '2 / 2 件', 'An active filter is shown even when all items match');
   const search = document.getElementById('search');
@@ -568,29 +576,14 @@ test('Scale small icons to the display size and skip placeholder pixels', (t) =>
   }
 });
 
-test('Scope badges add distinct shape icons and keep their text labels', (t) => {
+test('Cards and rows show no internal/external badge', (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
-  document.getElementById('scope-icon-internal').innerHTML = '<svg class="building-2-icon" aria-hidden="true"></svg>';
-  document.getElementById('scope-icon-external').innerHTML = '<svg class="globe-icon" aria-hidden="true"></svg>';
-  requests[0].success({ ...catalog, tools: [catalog.tools[0], { ...catalog.tools[1], scope: 'external' }] });
-  const badges = [...document.querySelectorAll('#tools .scope-badge')];
-  assert.deepEqual(badges.map((badge) => badge.textContent), ['社内', '社外']);
-  assert.deepEqual(badges.map((badge) => badge.querySelector('svg')?.getAttribute('class')), ['building-2-icon', 'globe-icon']);
-  assert.ok(badges.every((badge) => badge.querySelector('svg').getAttribute('aria-hidden') === 'true'));
-  assert.equal(document.getElementById('scope-icon-internal').content.querySelectorAll('svg').length, 1, 'Templates stay reusable');
+  requests[0].success({ ...catalog, tools: [{ ...catalog.tools[0], scope: 'external' }] });
+  assert.equal(document.querySelectorAll('.scope-badge, [id^="scope-"]').length, 0);
+  assert.doesNotMatch(document.querySelector('#tools').textContent, /社内|社外/);
   document.querySelector('#view-list').click();
-  assert.equal(document.querySelectorAll('#tool-rows .scope-badge svg').length, 2);
-});
-
-test('Scope badges still render text when icon templates are unavailable', (t) => {
-  const { dom, document, requests } = browser();
-  t.after(() => dom.window.close());
-  document.getElementById('scope-icon-internal').remove();
-  requests[0].success(catalog);
-  const badge = document.querySelector('#tools .scope-badge');
-  assert.equal(badge.textContent, '社内');
-  assert.equal(badge.querySelector('svg'), null);
+  assert.equal(document.querySelectorAll('.scope-badge').length, 0);
 });
 
 test('Spreadsheet icons override detection: text replaces the fallback, and an image URL is tried first', (t) => {

@@ -6,13 +6,13 @@ const parse = (rows) => plain(server().context.parseSheetCatalog_(rows));
 
 test("Parse headers, tag separators, and multiple related links", () => {
   const result = parse([
-    ['name', 'url', 'id', 'tags', 'scope', 'relatedLinks', 'メモ'],
+    ['name', 'url', 'id', 'tags', 'scope', 'relatedLinks', 'メモ'],  // scope is no longer read
     ['ツール', 'https://script.google.com/macros/s/test/exec', 'a', '業務,資料、業務\n経理', '社外',
       'https://example.com/manual 使い方\nhttps://example.com/source ソース', 'private'],
   ]);
   assert.deepEqual(result.issues, []);
   assert.deepEqual(result.tools[0].tags, ['業務', '資料', '経理', 'GAS']);
-  assert.equal(result.tools[0].scope, 'external');
+  assert.equal(Object.hasOwn(result.tools[0], 'scope'), false, 'A leftover scope column is ignored like any unknown column');
   assert.deepEqual(result.tools[0].relatedLinks, [
     { label: '使い方', url: 'https://example.com/manual' }, { label: 'ソース', url: 'https://example.com/source' },
   ]);
@@ -35,7 +35,6 @@ test("Handle missing optional columns, trailing cells, and header-only sheets", 
   const tool = parse([headers, [1, '数値 ID', 'https://example.com']]).tools[0];
   assert.equal(tool.id, '1');
   assert.equal(tool.description, '');
-  assert.equal(tool.scope, 'internal');
   assert.deepEqual(tool.tags, []);
   assert.deepEqual(tool.relatedLinks, []);
 });

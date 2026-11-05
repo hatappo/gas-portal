@@ -6,7 +6,6 @@ interface CatalogTool {
   category: string;
   tags: string[];
   relatedLinks?: { label: string; url: string }[];
-  scope: 'internal' | 'external';
   icon?: string;
 }
 interface CatalogWarning { row: number; message: string }
