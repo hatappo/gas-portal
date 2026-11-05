@@ -139,9 +139,18 @@ Commit the release's source and workflow changes before tagging. Existing releas
 
 ## Tool favicons
 
-Tool cards, list rows, and related links load decorative favicons from Google's `s2/favicons` service. Only the destination hostname is sent, with no path, query, credentials, or referrer. Images load lazily, independently of the catalog, and use the browser's normal HTTP cache. The same hostname uses the same image URL across views; refreshing the catalog does not invalidate image caching. No image cache or additional OAuth scope is needed in GAS.
+Tool cards, list rows, and related links (at 14 × 14) show decorative favicons. Each `https://` link tries two sources in order:
 
-A 🌐 emoji reserves the image space and remains visible if the service fails or returns an image smaller than the 20 × 20 display size. This prevents enlarging Google’s low-resolution generic globe, but also replaces genuine site icons smaller than 20px; image dimensions do not identify whether an icon is generic. Emoji appearance follows the operating system. IP addresses, single-label hosts, and common local/private suffixes (`localhost`, `.local`, `.internal`, `.lan`, `.home`, `.home.arpa`, `.test`, `.invalid`, `.onion`) never request a favicon. This is a hostname check, not a DNS lookup: a private service under an ordinary public domain cannot be detected this way, and its hostname will be sent to Google. The internal/external scope describes the tool, not whether its hostname is public. Related links show a smaller 14 × 14 icon from the same service under the same rules: hostname only, the same local/private exclusions, and the 🌐 fallback for missing or undersized images. Blocked related links show no icon. Google's service may return a generic icon, and its availability and cache policy can change.
+1. **The site itself**: `https://<host>/favicon.ico` on the link's own origin. The browser loads it with your normal session, so intranet and signed-in sites that Google cannot reach also get icons. The request goes only to the site the link already points to.
+2. **Google's favicon service** (`t2.gstatic.com/faviconV2`), for public hostnames only. Only the scheme and hostname are sent. The `fallback_opts` parameter makes it answer 404 instead of a generic globe when it has no icon.
+
+No path, query, credentials, or referrer is sent to either source. `http://` links skip the first source, because an http image would be mixed content on the https portal page. Other schemes, such as `vscode://`, request no icon. Blocked links show no icon.
+
+A 🌐 emoji reserves the image space and stays visible until an icon loads, or when every source fails. Icons smaller than the display size, such as 16px favicons, are scaled up so that all icons line up, at the cost of some blur. Images smaller than 8 × 8 are treated as placeholders and the next source is tried. Emoji appearance follows the operating system.
+
+IP addresses, single-label hosts, and common local/private suffixes (`localhost`, `.local`, `.internal`, `.lan`, `.home`, `.home.arpa`, `.test`, `.invalid`, `.onion`) never use Google's service; they only try their own `/favicon.ico`. This is a hostname check, not a DNS lookup: a private service under an ordinary public domain cannot be detected this way, and its hostname will be sent to Google. The internal/external scope describes the tool, not whether its hostname is public.
+
+Images load lazily, independently of the catalog, and use the browser's normal HTTP cache. No image cache or additional OAuth scope is needed in GAS. Sites that keep their icon somewhere other than `/favicon.ico` rely on Google's service. Google's endpoint is undocumented, and its availability and behavior can change.
 
 ## Favicon hosting
 

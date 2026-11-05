@@ -294,19 +294,32 @@
     return link;
   }
 
-  /** @param {string} value */
-  function faviconUrl(value) {
+  /** Candidate icon URLs, tried in order. Only the origin or hostname is sent, never the path or query.
+   * 1. The site's own /favicon.ico. The browser can reach intranet and signed-in sites that Google cannot,
+   *    and the request goes only to the site the link already points at.
+   * 2. Google's favicon service, for public hostnames only. With fallback_opts it answers 404 instead of a
+   *    generic globe when it has no icon, so the emoji fallback appears and small real icons are kept.
+   * @param {string} value @returns {string[]}
+   */
+  function faviconSources(value) {
     try {
       const url = new URL(value);
+      if (url.protocol !== 'https:' && url.protocol !== 'http:') return [];
       const hostname = url.hostname.replace(/\.$/, '');
+      /** @type {string[]} */
+      const sources = [];
+      // An http image would be mixed content on the https portal page.
+      if (url.protocol === 'https:') sources.push(url.origin + '/favicon.ico');
       // Keep local addresses and reserved private DNS suffixes off the external service.
-      if (!['https:', 'http:'].includes(url.protocol) || !hostname.includes('.') ||
-          hostname.includes(':') || /^[\d.]+$/.test(hostname) ||
-          /(?:^|\.)(?:localhost|local|internal|lan|home|test|invalid|onion)$/.test(hostname) ||
-          hostname.endsWith('.home.arpa')) return '';
-      return 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(hostname) + '&sz=64';
+      const isPrivate = !hostname.includes('.') || hostname.includes(':') || /^[\d.]+$/.test(hostname) ||
+        /(?:^|\.)(?:localhost|local|internal|lan|home|test|invalid|onion)$/.test(hostname) || hostname.endsWith('.home.arpa');
+      if (!isPrivate) {
+        sources.push('https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&size=64&url=' +
+          encodeURIComponent(url.protocol + '//' + hostname));
+      }
+      return sources;
     } catch {
-      return '';
+      return [];
     }
   }
 
@@ -315,7 +328,7 @@
     return favicon(tool.url, 'tool-favicon', 20);
   }
 
-  /** A decorative icon with an emoji fallback. Images smaller than the display size are dropped.
+  /** A decorative icon with an emoji fallback that stays visible until an icon loads.
    * @param {string} url @param {string} className @param {number} size
    */
   function favicon(url, className, size) {
@@ -326,8 +339,8 @@
     fallback.className = className + '-fallback';
     fallback.textContent = '🌐';
     frame.append(fallback);
-    const source = faviconUrl(url);
-    if (source) {
+    const sources = faviconSources(url);
+    if (sources.length) {
       const image = document.createElement('img');
       image.width = size;
       image.height = size;
@@ -335,14 +348,19 @@
       image.loading = 'lazy';
       image.decoding = 'async';
       image.referrerPolicy = 'no-referrer';
+      let index = 0;
+      const next = () => {
+        index++;
+        if (index < sources.length) image.src = sources[index];
+        else image.remove();
+      };
       image.addEventListener('load', () => {
-        // Google's generic globe can load successfully as a 16px image.
-        // Avoid enlarging it or any other undersized favicon.
-        if (image.naturalWidth < image.width || image.naturalHeight < image.height) image.remove();
-        else frame.classList.add('is-loaded');
-      }, { once: true });
-      image.addEventListener('error', () => image.remove(), { once: true });
-      image.src = source;
+        // Placeholder pixels are not icons; try the next source.
+        if (image.naturalWidth > 0 && (image.naturalWidth < 8 || image.naturalHeight < 8)) { next(); return; }
+        frame.classList.add('is-loaded');
+      });
+      image.addEventListener('error', next);
+      image.src = sources[0];
       frame.append(image);
     }
     return frame;
