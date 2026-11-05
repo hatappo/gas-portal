@@ -5,3 +5,10 @@ declare var PortalI18n: {
   t(key: string, language?: string, values?: Record<string, string | number>): string;
   translate(text: string, language: string): string;
 };
+declare var PortalUrlSchemes: {
+  fixed: readonly string[];
+  optional: readonly string[];
+  normalizeUnblocked(value: unknown): string[];
+  schemeOf(url: string): string;
+  isBlocked(url: string, unblocked: readonly string[]): boolean;
+};

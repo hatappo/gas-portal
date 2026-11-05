@@ -22,7 +22,7 @@ test("Parse headers, tag separators, and multiple related links", () => {
 test("Skip blank rows, preserve sheet row numbers, and exclude all duplicate IDs", () => {
   const result = parse([
     ['id', 'name', 'url'], ['same', '一つ目', 'https://example.com'], [],
-    ['same', '二つ目', 'https://example.com'], ['bad', '不正', 'javascript:alert(1)'],
+    ['same', '二つ目', 'https://example.com'], ['bad', '不正', 'not-a-url'],
     ['b', 'B', 'https://example.com'], ['a', 'A', 'https://example.com'],
   ]);
   assert.deepEqual(result.issues.map((issue) => issue.row), [2, 4, 5]);
@@ -51,7 +51,7 @@ test("Report missing labels and unsafe related URLs as row issues", () => {
     ['id', 'name', 'url', 'relatedLinks'],
     ['a', 'A', 'https://example.com', '使い方'],
     ['b', 'B', 'https://example.com', 'https://example.com/manual   '],
-    ['c', 'C', 'https://example.com', 'javascript:alert(1) リンク'],
+    ['c', 'C', 'https://example.com', 'not-a-url リンク'],
   ]);
   assert.equal(result.tools.length, 0);
   assert.deepEqual(result.issues.map((issue) => issue.row), [2, 3, 4]);
@@ -94,7 +94,7 @@ test('Exclude hidden drafts and duplicate IDs before validation while retaining 
     ['same', 'Hidden entry', 'https://example.com/hidden', 'TRUE', 'hidden-only-tag', 'not a link'],
     ['same', 'Visible entry', 'https://example.com/visible', 'FALSE', 'visible-tag'],
     ['', 'Hidden unfinished draft', '', true],
-    ['bad', 'Invalid visible entry', 'javascript:alert(1)', ''],
+    ['bad', 'Invalid visible entry', 'not-a-url', ''],
   ]);
   assert.deepEqual(result.tools.map((tool) => tool.id), ['same']);
   assert.deepEqual(result.tools[0].tags, ['visible-tag']);

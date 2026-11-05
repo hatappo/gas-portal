@@ -80,6 +80,7 @@ function getPortalContent_(properties) {
     languagePreference,
     cacheSeconds: String(normalizeCatalogCacheTtl_(properties.CATALOG_CACHE_SECONDS)),
     actionsCacheSeconds: String(normalizeActionsCacheTtl_(properties.ACTIONS_CACHE_SECONDS)),
+    unblockedUrlSchemes: PortalUrlSchemes.normalizeUnblocked(properties.UNBLOCKED_URL_SCHEMES).join(','),
     defaultsJson: JSON.stringify(defaults),
     icon: Array.from(normalizePortalIcon_(properties.PORTAL_ICON?.trim() || defaults.PORTAL_ICON))[0],
     brandLead: split < 0 ? name : name.slice(0, split),
@@ -151,7 +152,7 @@ function initializeUserProperties_() {
   return initializePropertyStore_(PropertiesService.getUserProperties(), {
     ...getPortalPropertyDefaults_(),
     PORTAL_THEME: 'auto', PORTAL_LANGUAGE: 'auto', CATALOG_CACHE_SECONDS: '21600', ACTIONS_CACHE_SECONDS: '300',
-    SPREADSHEET_ID: '', SHEET_NAME: '',
+    SPREADSHEET_ID: '', SHEET_NAME: '', UNBLOCKED_URL_SCHEMES: '',
   });
 }
 
@@ -329,6 +330,23 @@ function saveActionsCacheTtl(seconds) {
   }
 }
 
+/** Save which default-blocked URL schemes may be opened. Script schemes are never accepted.
+ * @param {unknown} schemes
+ * @returns {{ok: true, schemes: string[]} | {ok: false}}
+ */
+function saveUnblockedUrlSchemes(schemes) {
+  if (!Array.isArray(schemes) || schemes.some((scheme) => typeof scheme !== 'string' || !PortalUrlSchemes.optional.includes(scheme)) ||
+      new Set(schemes).size !== schemes.length) return { ok: false };
+  const normalized = PortalUrlSchemes.normalizeUnblocked(schemes);
+  try {
+    withPortalPropertiesLock_(() => PropertiesService.getUserProperties().setProperty('UNBLOCKED_URL_SCHEMES', normalized.join(',')));
+    return { ok: true, schemes: normalized };
+  } catch {
+    console.error('URL_SCHEME_SETTINGS_SAVE_FAILED');
+    return { ok: false };
+  }
+}
+
 /** Escape JSON for a non-executable script element; never embed raw spreadsheet text.
  * @param {unknown} catalog @returns {string}
  */
@@ -346,9 +364,9 @@ function portalSpreadsheetColumns_(language) {
     { name: 'scope', type: 'DROPDOWN', width: 130, note: t('Optional. Choose internal or external. Blank means internal.') },
     { name: 'tags', type: 'TEXT', width: 200, note: t('Optional. Separate tags with commas or line breaks.') },
     { name: 'name', type: 'TEXT', width: 220, note: t('Required. Display name shown in the portal.') },
-    { name: 'url', type: 'TEXT', width: 320, note: t('Required. Primary HTTPS URL, entered as plain text rather than a file chip.') },
+    { name: 'url', type: 'TEXT', width: 320, note: t('Required. Primary URL, such as https:// or vscode://, entered as plain text rather than a file chip.') },
     { name: 'description', type: 'TEXT', width: 320, note: t('Optional. Plain-text description. HTML and Markdown are not interpreted.') },
-    { name: 'relatedLinks', type: 'TEXT', width: 380, note: t('Optional. One link per line in this cell: HTTPS URL, a space, then a label. Labels may contain spaces. Example:\nhttps://example.com/guide User guide\nhttps://example.com/source Source code') },
+    { name: 'relatedLinks', type: 'TEXT', width: 380, note: t('Optional. One link per line in this cell: URL, a space, then a label. Labels may contain spaces. Example:\nhttps://example.com/guide User guide\nvscode://file/path/to/project Open in VS Code') },
   ];
 }
 

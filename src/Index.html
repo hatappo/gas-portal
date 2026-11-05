@@ -222,6 +222,12 @@
               <p id="cache-help" data-i18n="Reuse the list to load faster. Fetch latest always reads the spreadsheet. Changes are saved automatically and apply to the next load.">Reuse the list to load faster. Fetch latest always reads the spreadsheet. Changes are saved automatically and apply to the next load.</p>
               <p id="cache-settings-status" role="status" aria-live="polite"></p>
             </div>
+            <fieldset id="url-scheme-settings" class="cache-settings url-scheme-settings" data-saved-value="<?= portal.unblockedUrlSchemes ?>" aria-describedby="url-scheme-help url-scheme-settings-status">
+              <legend data-i18n="Blocked URL schemes">Blocked URL schemes</legend>
+              <div class="url-scheme-choices"><label class="url-scheme-choice"><input type="checkbox" value="data"><code>data:</code></label><label class="url-scheme-choice"><input type="checkbox" value="file"><code>file:</code></label><label class="url-scheme-choice"><input type="checkbox" value="blob"><code>blob:</code></label><label class="url-scheme-choice"><input type="checkbox" value="about"><code>about:</code></label><label class="url-scheme-choice"><input type="checkbox" value="filesystem"><code>filesystem:</code></label></div>
+              <p id="url-scheme-help" data-i18n="Links with a checked scheme are shown but cannot be opened. javascript: and vbscript: are always blocked. Changes are saved automatically.">Links with a checked scheme are shown but cannot be opened. javascript: and vbscript: are always blocked. Changes are saved automatically.</p>
+              <p id="url-scheme-settings-status" role="status" aria-live="polite"></p>
+            </fieldset>
         </div>
         <div id="settings-actions-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-actions" tabindex="0" hidden>
           <div class="cache-settings">

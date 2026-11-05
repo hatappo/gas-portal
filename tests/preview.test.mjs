@@ -39,7 +39,7 @@ test("Simulate success, empty, invalid, configuration, and transport states offl
     if (scenario === 'error') assert.equal(failed, true);
     else if (scenario === 'config') assert.equal(result.ok, false);
     else if (scenario === 'invalid') assert.equal(result.issues.length, 1);
-    else assert.equal(result.tools.length, scenario === 'empty' ? 0 : 4);
+    else assert.equal(result.tools.length, scenario === 'empty' ? 0 : 6);
   }
 });
 
@@ -61,7 +61,7 @@ test("Restore and save themes without mixing concurrent response handlers", (t) 
   run.withSuccessHandler((value) => { catalog = value; }).getCatalog();
   run.withSuccessHandler((value) => { theme = value; }).saveTheme('sumi');
   pending.forEach((fn) => fn());
-  assert.equal(catalog.tools.length, 4);
+  assert.equal(catalog.tools.length, 6);
   assert.equal(theme.theme, 'sumi');
   assert.equal(stored, 'sumi');
 });

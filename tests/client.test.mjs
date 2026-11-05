@@ -188,10 +188,17 @@ test("Render names, descriptions, tags, and warnings as text in both views", (t)
   assert.ok(document.querySelector('#tool-rows').textContent.includes(payload));
 });
 
-test("Reject non-HTTPS links in the browser", (t) => {
+test("Reject malformed links and web credentials in the browser", (t) => {
+  for (const url of ['not a url', '/relative', 'https://user:pass@example.com']) {
+    const { dom, document, requests } = browser();
+    t.after(() => dom.window.close());
+    requests[0].success({ ...catalog, tools: [{ ...catalog.tools[0], url }] });
+    assert.equal(document.querySelectorAll('#tools a').length, 0, url);
+    assert.match(document.querySelector('#status-title').textContent, /取得できません/, url);
+  }
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
-  requests[0].success({ ...catalog, tools: [{ ...catalog.tools[0], url: 'javascript:alert(1)' }] });
+  requests[0].success({ ...catalog, tools: [{ ...catalog.tools[0], url: 'https://user:pass@example.com' }] });
   assert.equal(document.querySelectorAll('#tools a').length, 0);
   assert.match(document.querySelector('#status-title').textContent, /取得できません/);
 });
@@ -244,7 +251,7 @@ test("Render multiple related links as independent safe links in both views", (t
 
 test("Support legacy responses without related links and reject invalid links", (t) => {
   for (const relatedLinks of [null, {}, [null], [{ label: '', url: 'https://example.com' }],
-    [{ label: '使い方', url: 'javascript:alert(1)' }], [{ label: '使い方', url: 'https://user:pass@example.com' }]]) {
+    [{ label: '使い方', url: 'not a url' }], [{ label: '使い方', url: 'https://user:pass@example.com' }]]) {
     const { dom, document, requests } = browser();
     t.after(() => dom.window.close());
     requests[0].success({ ...catalog, tools: [{ ...catalog.tools[0], relatedLinks }] });
@@ -272,7 +279,7 @@ test("Report actual spreadsheet row numbers including blank rows", (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   const { context } = server({ values: [
-    ['id', 'name', 'url'], [], ['bad', '不正なツール', 'javascript:alert(1)'],
+    ['id', 'name', 'url'], [], ['bad', '不正なツール', 'not-a-url'],
   ] });
   requests[0].success(plain(context.getCatalog()));
   assert.match(document.querySelector('#warning-list').textContent, /3 行目/);

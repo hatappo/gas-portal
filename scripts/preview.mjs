@@ -17,6 +17,11 @@ const demo = {
     { id: 'demo-expense', name: 'Expense service', description: 'Upload receipts and submit expense claims.', scope: 'external', tags: ['Finance', 'Requests', 'Productivity'], url: 'https://example.com/#demo-expense' },
     { id: 'demo-guide', name: 'Workplace guide', description: 'Find work instructions and answers to common questions.', scope: 'internal', tags: ['Reference', 'Onboarding'], url: 'https://example.com/#demo-guide' },
     { id: 'demo-request', name: 'Request forms', description: 'Open the forms you need for everyday requests.', scope: 'internal', tags: ['Finance', 'Requests'], url: 'https://example.com/#demo-request' },
+    { id: 'demo-workspace', name: 'Portal workspace', description: 'Open a local project in VS Code.', scope: 'internal', tags: ['Development'], url: 'vscode://file/path/to/my-portal', relatedLinks: [
+      { label: 'Local server', url: 'http://localhost:4174/' },
+      { label: 'Inline note', url: 'data:text/plain,Hello' },
+    ] },
+    { id: 'demo-z-blocked', name: 'Inline page', description: 'A data: URL. Blocked unless unblocked in Settings.', scope: 'internal', tags: ['Development'], url: 'data:text/html,Hello' },
   ],
   issues: [],
 };
@@ -25,6 +30,8 @@ export function renderPreview(html, root, options = {}) {
   const context = vm.createContext({ console });
   const i18n = readFileSync(path.join(root, 'src/shared/i18n.js'), 'utf8');
   vm.runInContext(i18n, context);
+  const urlSchemes = readFileSync(path.join(root, 'src/shared/url-schemes.js'), 'utf8');
+  vm.runInContext(urlSchemes, context);
   for (const name of ['Catalog', 'Code']) {
     vm.runInContext(readFileSync(new URL(`${name}.js`, url), 'utf8'), context);
   }
@@ -39,6 +46,7 @@ export function renderPreview(html, root, options = {}) {
     .replace('<!-- preview-label -->', '<p class="preview-label"><span>LOCAL PREVIEW</span> · <span data-i18n="Mock data">Mock data</span></p>')
     .replace('<script type="module" src="/browser/main.js"></script>', () => `<script>
       ${i18n}
+      ${urlSchemes}
       let previewPreference = 'auto';
       try { previewPreference = PortalI18n.preference(localStorage.getItem('portal-preview-language')); } catch { /* Storage may be unavailable. */ }
       const browserLanguages = typeof navigator === 'undefined' ? [] : navigator.languages?.length ? navigator.languages : [navigator.language];
@@ -93,6 +101,9 @@ export function renderPreview(html, root, options = {}) {
       let previewActionsCacheSeconds = 300;
       try { previewActionsCacheSeconds = normalizeActionsCacheTtl_(localStorage.getItem('portal-preview-actions-cache-seconds')); } catch { /* Use defaults. */ }
       if (typeof document !== 'undefined') document.getElementById('actions-cache-seconds').dataset.savedValue = String(previewActionsCacheSeconds);
+      let previewUnblockedUrlSchemes = [];
+      try { previewUnblockedUrlSchemes = PortalUrlSchemes.normalizeUnblocked(localStorage.getItem('portal-preview-unblocked-url-schemes')); } catch { /* Use defaults. */ }
+      if (typeof document !== 'undefined') document.getElementById('url-scheme-settings').dataset.savedValue = previewUnblockedUrlSchemes.join(',');
       const demo = ${serialize(demo)};
       const catalog = ${serialize(catalog)};
       const scenario = new URLSearchParams(location.search).get('state');
@@ -105,7 +116,7 @@ export function renderPreview(html, root, options = {}) {
       function readPreviewCatalog(forceRefresh = false) {
         if (scenario === 'error') return {ok:false, error:PortalI18n.t('Select Fetch latest to try again. If the problem persists, check the GAS settings.')};
         if (scenario === 'empty') return {ok:true, tools:[], issues:[]};
-        if (scenario === 'invalid') return {ok:true, tools:[], issues:[{row:2, message:PortalI18n.t('Enter a valid HTTPS URL in url.')}]};
+        if (scenario === 'invalid') return {ok:true, tools:[], issues:[{row:2, message:PortalI18n.t('Enter a valid URL in url.')}]};
         if (scenario === 'config') return {ok:false, error:PortalI18n.t('The first row must contain id, name, and url columns. Also check for duplicate column names.')};
         let cached;
         try {
@@ -179,6 +190,14 @@ export function renderPreview(html, root, options = {}) {
             localStorage.setItem('portal-preview-actions-cache-seconds', String(seconds));
             previewActionsCacheSeconds = seconds;
             this.success({ok:true, seconds});
+          } catch { this.failure(); }
+        }, 200);},
+        saveUnblockedUrlSchemes(schemes) {setTimeout(() => {
+          if (!Array.isArray(schemes) || schemes.some((scheme) => !PortalUrlSchemes.optional.includes(scheme)) || new Set(schemes).size !== schemes.length) return this.success({ok:false});
+          try {
+            const normalized = PortalUrlSchemes.normalizeUnblocked(schemes);
+            localStorage.setItem('portal-preview-unblocked-url-schemes', normalized.join(','));
+            this.success({ok:true, schemes:normalized});
           } catch { this.failure(); }
         }, 200);},
         saveCatalogCacheTtl(seconds) {setTimeout(() => {

@@ -21,6 +21,8 @@ function checkGasSyntax(code, filename) {
 // Check syntax before replacing output. Building does not access the spreadsheet.
 const i18n = readFileSync(path.join(root, 'src/shared/i18n.js'), 'utf8');
 checkGasSyntax(i18n, 'i18n.js');
+const urlSchemes = readFileSync(path.join(root, 'src/shared/url-schemes.js'), 'utf8');
+checkGasSyntax(urlSchemes, 'url-schemes.js');
 const serverFiles = ['Code.js', 'Catalog.js', 'SheetCatalog.js'];
 const github = readFileSync(path.join(root, 'src/server/GitHub.js'), 'utf8');
 checkGasSyntax(github, 'GitHub.js');
@@ -61,7 +63,7 @@ for (const file of ['appsscript.json']) {
 }
 writeFileSync(path.join(dist, 'Index.html'), index);
 for (const file of serverFiles) {
-  writeFileSync(path.join(dist, file), (file === 'Code.js' ? i18n + '\n' + github + '\n' : '') + readFileSync(path.join(root, 'src/server', file), 'utf8'));
+  writeFileSync(path.join(dist, file), (file === 'Code.js' ? i18n + '\n' + urlSchemes + '\n' + github + '\n' : '') + readFileSync(path.join(root, 'src/server', file), 'utf8'));
 }
 writeFileSync(path.join(dist, 'Styles.html'), `<style>\n${css}\n</style>\n`);
 writeFileSync(path.join(dist, 'Client.html'), `<script>\n${client}\n</script>\n`);

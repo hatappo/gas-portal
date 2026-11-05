@@ -54,7 +54,7 @@ function readCachedSheetCatalog_(forceRefresh) {
   try {
     // Version the key whenever cached catalog semantics change. Include the source, sharing one entry across duration choices.
     const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, JSON.stringify([source.id, source.name]), Utilities.Charset.UTF_8);
-    key = 'catalog-v2:' + digest.map((byte) => (byte & 255).toString(16).padStart(2, '0')).join('');
+    key = 'catalog-v3:' + digest.map((byte) => (byte & 255).toString(16).padStart(2, '0')).join('');
     cache = CacheService.getUserCache();
   } catch { /* Cache availability must never prevent a live read. */ }
 
@@ -137,7 +137,7 @@ function parseSheetCatalog_(rows) {
   catalog.issues.forEach((issue) => {
     issue.row = sourceRows[issue.row - 1];
     if (issue.message.startsWith('relatedLinks')) {
-      issue.message = PortalI18n.t("Each relatedLinks line must contain an HTTPS URL, a space, and a label.");
+      issue.message = PortalI18n.t("Each relatedLinks line must contain a URL, a space, and a label.");
     }
   });
   return catalog;
