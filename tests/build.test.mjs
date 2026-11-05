@@ -27,7 +27,7 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   assert.match(html, /class="external-link-icon"/);
   assert.match(html, /Copyright \(c\) 2026 Lucide Icons and Contributors/);
   assert.match(html, /Copyright \(c\) 2013-present Cole Bemis/);
-  for (const icon of ['external-link', 'refresh-cw', 'layout-grid', 'list', 'tool-case', 'list-checks', 'settings']) {
+  for (const icon of ['external-link', 'refresh-cw', 'layout-grid', 'list', 'tool-case', 'list-checks', 'settings', 'building-2', 'globe']) {
     assert.match(html, new RegExp(`class="${icon}-icon"`));
     assert.doesNotMatch(html, new RegExp(`<!-- ${icon}-icon -->`));
   }

@@ -535,3 +535,28 @@ test('Use the globe emoji for undersized images in both views and retain adequat
     }
   }
 });
+
+test('Scope badges add distinct shape icons and keep their text labels', (t) => {
+  const { dom, document, requests } = browser();
+  t.after(() => dom.window.close());
+  document.getElementById('scope-icon-internal').innerHTML = '<svg class="building-2-icon" aria-hidden="true"></svg>';
+  document.getElementById('scope-icon-external').innerHTML = '<svg class="globe-icon" aria-hidden="true"></svg>';
+  requests[0].success({ ...catalog, tools: [catalog.tools[0], { ...catalog.tools[1], scope: 'external' }] });
+  const badges = [...document.querySelectorAll('#tools .scope-badge')];
+  assert.deepEqual(badges.map((badge) => badge.textContent), ['社内', '社外']);
+  assert.deepEqual(badges.map((badge) => badge.querySelector('svg')?.getAttribute('class')), ['building-2-icon', 'globe-icon']);
+  assert.ok(badges.every((badge) => badge.querySelector('svg').getAttribute('aria-hidden') === 'true'));
+  assert.equal(document.getElementById('scope-icon-internal').content.querySelectorAll('svg').length, 1, 'Templates stay reusable');
+  document.querySelector('#view-list').click();
+  assert.equal(document.querySelectorAll('#tool-rows .scope-badge svg').length, 2);
+});
+
+test('Scope badges still render text when icon templates are unavailable', (t) => {
+  const { dom, document, requests } = browser();
+  t.after(() => dom.window.close());
+  document.getElementById('scope-icon-internal').remove();
+  requests[0].success(catalog);
+  const badge = document.querySelector('#tools .scope-badge');
+  assert.equal(badge.textContent, '社内');
+  assert.equal(badge.querySelector('svg'), null);
+});

@@ -227,7 +227,12 @@
   function scopeBadge(tool) {
     const badge = document.createElement('span');
     badge.className = 'scope-badge scope-' + tool.scope;
-    badge.textContent = tool.scope === 'internal' ? t("Internal") : t("External");
+    // Icons differ in shape, so the scopes stay distinguishable without relying on color.
+    const icon = /** @type {HTMLTemplateElement | null} */ (document.getElementById('scope-icon-' + tool.scope))?.content.querySelector('svg');
+    if (icon) badge.append(icon.cloneNode(true));
+    const label = document.createElement('span');
+    label.textContent = tool.scope === 'internal' ? t("Internal") : t("External");
+    badge.append(label);
     return badge;
   }
 

@@ -213,8 +213,12 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .related-links a { display: inline-block; padding: 10px 0; min-height: 44px; color: var(--accent); font-size: 12px; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; overflow-wrap: anywhere; }
 .related-links a:hover { text-decoration-color: currentColor; }
 .tool-card:hover { border-color: var(--theme-color); transform: translateY(-2px); }
-.scope-badge { align-self: flex-start; display: inline-block; color: var(--accent); background: var(--surface-soft); padding: 3px 9px; border-radius: 4px; font-size: 10px; line-height: 1.6; white-space: nowrap; }
-.scope-external { color: var(--external-ink); background: var(--external-bg); }
+.scope-badge { align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; color: var(--accent); background: var(--surface-soft); padding: 3px 9px; border: 1px solid transparent; border-radius: 4px; font-size: 11px; font-weight: 600; line-height: 1.6; white-space: nowrap; }
+.scope-badge svg { flex: none; width: 13px; height: 13px; }
+/* Outline the external badge too, so it reads differently from internal at a glance. */
+.scope-external { color: var(--external-ink); background: var(--external-bg); border-color: currentColor; }
+#scope-internal, #scope-external { display: inline-flex; align-items: center; gap: 6px; }
+#scope-internal svg, #scope-external svg { flex: none; width: 14px; height: 14px; }
 .tool-tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .tool-card .tool-tags { margin-top: auto; padding-top: 20px; }
 .tool-tag { color: var(--muted); background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; padding: 2px 8px; font-size: 10px; font-weight: 400; overflow-wrap: anywhere; max-width: 100%; }
