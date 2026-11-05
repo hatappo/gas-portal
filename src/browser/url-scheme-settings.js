@@ -5,6 +5,19 @@
   const fieldset = /** @type {HTMLFieldSetElement | null} */ (document.getElementById('url-scheme-settings'));
   const status = document.getElementById('url-scheme-settings-status');
   if (!fieldset || !status) return;
+  // One checkbox per default-blocked scheme, from the shared list.
+  fieldset.querySelector('.url-scheme-choices')?.replaceChildren(...PortalUrlSchemes.optional.map((scheme) => {
+    const label = document.createElement('label');
+    label.className = 'url-scheme-choice';
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.className = 'checkbox checkbox-sm';
+    box.value = scheme;
+    const name = document.createElement('code');
+    name.textContent = scheme + ':';
+    label.append(box, name);
+    return label;
+  }));
   const boxes = /** @type {HTMLInputElement[]} */ (Array.from(fieldset.querySelectorAll('input[type="checkbox"]')));
   /** @param {string} key */
   const t = (key) => PortalI18n.t(key, document.documentElement.lang);
