@@ -219,7 +219,7 @@ test("Display search and theme choices in a source-free packaged preview", async
   t.after(() => dom.window.close());
   await new Promise((resolve) => setTimeout(resolve, 400));
   const doc = dom.window.document;
-  assert.equal(doc.querySelectorAll('#tools > li').length, 4);
+  assert.equal(doc.querySelectorAll('#tools > li').length, 6);
   doc.querySelector('#search').value = 'Expense';
   doc.querySelector('#search').dispatchEvent(new dom.window.Event('input'));
   assert.equal(doc.querySelectorAll('#tools > li').length, 1);

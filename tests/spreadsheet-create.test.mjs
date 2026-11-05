@@ -51,8 +51,8 @@ test('Create only the eight supported columns with typed table, header notes, an
   const names = ['id', 'hidden', 'scope', 'tags', 'name', 'url', 'description', 'relatedLinks'];
   assert.deepEqual(headers.map((cell) => cell.userEnteredValue.stringValue), names);
   assert.ok(headers.every((cell) => cell.note && cell.userEnteredFormat.textFormat.bold));
-  assert.match(headers[7].note, /HTTPS URL, a space, then a label/);
-  assert.match(headers[7].note, /\nhttps:\/\/example.com\/guide User guide\nhttps:\/\/example.com\/source Source code/);
+  assert.match(headers[7].note, /: URL, a space, then a label/);
+  assert.match(headers[7].note, /\nhttps:\/\/example.com\/guide User guide\nvscode:\/\/file\/path\/to\/project Open in VS Code/);
   const requests = app.requests[1][1].requests;
   const table = requests.find((request) => request.addTable).addTable.table;
   assert.equal(table.name, 'PortalLinks');
@@ -99,7 +99,7 @@ test('Preserve an existing sheet name and localize notes using the saved or brow
   const app = setup({ userProperties: { SHEET_NAME: 'Keep me', PORTAL_LANGUAGE: 'ja' } });
   assert.equal(app.context.createPortalSpreadsheet('en').ok, true);
   assert.equal(app.userProperties.SHEET_NAME, 'Keep me');
-  assert.match(app.requests[0][1].sheets[0].data[0].rowData[0].values[7].note, /HTTPS URL 半角スペース ラベル/);
+  assert.match(app.requests[0][1].sheets[0].data[0].rowData[0].values[7].note, /「URL 半角スペース ラベル」/);
 });
 
 test('Keep the created ID after table failure and report partial failure without creating again', () => {

@@ -1,10 +1,12 @@
 import './styles.css';
 import '../shared/i18n.js';
+import '../shared/url-schemes.js';
 import './language.js';
 import './client.js';
 import './theme.js';
 import './settings.js';
 import './cache-settings.js';
+import './url-scheme-settings.js';
 import './spreadsheet-settings.js';
 import './action-items.js';
 import './github.js';

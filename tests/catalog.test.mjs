@@ -95,14 +95,26 @@ test("Exclude every duplicate ID and report one-based positions", () => {
   assert.match(result.issues[0].message, /重複/);
 });
 
-test("Reject invalid URLs, unsafe schemes, and embedded credentials", () => {
-  for (const url of ['javascript:alert(1)', 'data:text/html,x', 'http://example.com', '//example.com',
-    'https://', 'https://user:pass@example.com', 'https://example.com\\@evil.com',
+test("Reject malformed URLs and embedded web credentials", () => {
+  for (const url of ['//example.com', 'example.com', 'vscode:', '1app://x', 'mailto: a@example.com',
+    'https://', 'https://user:pass@example.com', 'http://user@example.com', 'https://example.com\\@evil.com',
+    'http://-bad.com', 'vscode://file/<script>', 'x:' + 'a'.repeat(2047),
     'https://exa mple.com', 'https://example.com/\nattack', 'https://-bad.com',
     'https://example.com:99999', 'https://example.com/<script>', 'https://example.com/%zz']) {
     const result = parse([entry({ url })]);
     assert.equal(result.tools.length, 0, url);
     assert.equal(result.issues.length, 1, url);
+  }
+});
+
+test("Accept any well-formed scheme and leave blocking to the browser", () => {
+  for (const url of ['http://example.com', 'http://localhost:4174/', 'vscode://file/Users/me/project',
+    'vscode-insiders://file/c:/work', 'mailto:a@example.com', 'slack://open', 'javascript:alert(1)',
+    'data:text/html,x', 'x:' + 'a'.repeat(2046)]) {
+    const result = parse([entry({ url, relatedLinks: [{ label: 'Link', url }] })]);
+    assert.deepEqual(result.issues, [], url);
+    assert.equal(result.tools[0].url, url);
+    assert.equal(result.tools[0].relatedLinks[0].url, url);
   }
 });
 
@@ -138,7 +150,7 @@ test("Exclude entries with invalid related links", () => {
   for (const relatedLinks of [null, {}, 'https://example.com', [null], [[]], [123],
     [{}], [{ label: '', url: 'https://example.com' }], [{ label: 1, url: 'https://example.com' }],
     [{ label: '使い方', url: 1 }], [{ label: '使い方', url: ' ' }],
-    ...['javascript:alert(1)', 'http://example.com', 'https://user:pass@example.com',
+    ...['javascript alert', 'vscode:', 'http://user:pass@example.com', 'https://user:pass@example.com',
       'https://example.com/\nattack', 'https://-bad.com'].map((url) => [{ label: '使い方', url }])]) {
     const result = parse([entry({ relatedLinks })]);
     assert.equal(result.tools.length, 0);

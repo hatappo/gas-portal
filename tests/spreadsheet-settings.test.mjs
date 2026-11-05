@@ -173,7 +173,7 @@ test('Preview creates a fake source once and keeps demo entries after reload', (
   assert.equal(restored.document.querySelector('#setting-spreadsheet').value, 'preview-created-sheet');
   restored.run.withSuccessHandler((value) => { result = value; }).getCatalog();
   assert.equal(result.ok, true);
-  assert.equal(result.tools.length, 4);
+  assert.equal(result.tools.length, 6);
   assert.equal(result.tools[0].id, 'demo-address');
   assert.deepEqual(plain(result.issues), []);
 });

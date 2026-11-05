@@ -68,7 +68,7 @@ test('Release the language lock and do not expose storage errors', () => {
 test('Switch labels, accessibility text, warnings, and default content without losing filters or drafts', (t) => {
   const app = browser();
   t.after(() => app.dom.window.close());
-  app.requests[0].success({ ...catalog, issues: [{ row: 4, message: 'url に有効な HTTPS の URL を入力してください。' }] });
+  app.requests[0].success({ ...catalog, issues: [{ row: 4, message: 'url に有効な URL を入力してください。' }] });
   const { document: doc } = app;
   doc.getElementById('search').value = 'Guide';
   doc.getElementById('search').dispatchEvent(new app.dom.window.Event('input'));
@@ -92,7 +92,7 @@ test('Switch labels, accessibility text, warnings, and default content without l
   assert.equal(doc.getElementById('setting-headline').value, 'Unsaved custom headline');
   assert.equal(doc.getElementById('page-title').textContent, 'One place to start your workday.');
   assert.match(doc.getElementById('tool-rows').textContent, /Guide.*Internal/);
-  assert.match(doc.getElementById('warning-list').textContent, /Row 4: Enter a valid HTTPS URL/);
+  assert.match(doc.getElementById('warning-list').textContent, /Row 4: Enter a valid URL/);
   assert.match(doc.getElementById('warning-summary').textContent, /Entries not displayed: 1/);
   assert.equal(app.requests.length, 1);
   choose(app, 'ja');

@@ -48,6 +48,7 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
     ...overrides,
   });
   vm.runInContext(readFileSync('src/shared/i18n.js', 'utf8'), context);
+  vm.runInContext(readFileSync('src/shared/url-schemes.js', 'utf8'), context);
   for (const name of ['Catalog', 'SheetCatalog', 'Code', 'GitHub']) {
     vm.runInContext(readFileSync(`src/server/${name}.js`, 'utf8'), context);
   }
@@ -56,7 +57,7 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
 
 export const plain = (value) => JSON.parse(JSON.stringify(value));
 
-export function browser(setupWindow = () => {}, client = ['language', 'client', 'theme', 'settings', 'cache-settings', 'spreadsheet-settings', 'action-items', 'github'].map((file) => readFileSync(`src/browser/${file}.js`, 'utf8')).join('\n'), source = readFileSync('src/Index.html', 'utf8')) {
+export function browser(setupWindow = () => {}, client = ['language', 'client', 'theme', 'settings', 'cache-settings', 'url-scheme-settings', 'spreadsheet-settings', 'action-items', 'github'].map((file) => readFileSync(`src/browser/${file}.js`, 'utf8')).join('\n'), source = readFileSync('src/Index.html', 'utf8')) {
   const html = withPreviewContent(source, server().context.getPortalContent_({ PORTAL_LANGUAGE: 'ja' }))
     .replace(/<\?[\s\S]*?\?>/g, '');
   const dom = new JSDOM(html, { runScripts: 'outside-only', url: 'https://example.com' });
@@ -68,6 +69,7 @@ export function browser(setupWindow = () => {}, client = ['language', 'client', 
   const sourceSettingsRequests = [];
   const creationRequests = [];
   const githubRequests = [];
+  const urlSchemeRequests = [];
   const runner = {
     getGitHubConnections() { githubRequests.push({ kind: 'connections', success: this.success, failure: this.failure }); },
     saveGitHubConnection(input) { githubRequests.push({ kind: 'save', input, success: this.success, failure: this.failure }); },
@@ -77,6 +79,7 @@ export function browser(setupWindow = () => {}, client = ['language', 'client', 
     withFailureHandler(handler) { this.failure = handler; return this; },
     getCatalog(forceRefresh) { requests.push({ forceRefresh, success: this.success, failure: this.failure }); },
     saveActionsCacheTtl(seconds) { cacheSettingsRequests.push({ kind: 'actions', seconds, success: this.success, failure: this.failure }); },
+    saveUnblockedUrlSchemes(schemes) { urlSchemeRequests.push({ schemes, success: this.success, failure: this.failure }); },
     saveCatalogCacheTtl(seconds) { cacheSettingsRequests.push({ seconds, success: this.success, failure: this.failure }); },
     createPortalSpreadsheet(browserLanguage) { creationRequests.push({ browserLanguage, success: this.success, failure: this.failure }); },
     saveSpreadsheetSettings(settings) { sourceSettingsRequests.push({ settings, success: this.success, failure: this.failure }); },
@@ -88,8 +91,9 @@ export function browser(setupWindow = () => {}, client = ['language', 'client', 
   dom.window.google = { script: { run: runner } };
   setupWindow(dom.window);
   dom.window.eval(readFileSync('src/shared/i18n.js', 'utf8'));
+  dom.window.eval(readFileSync('src/shared/url-schemes.js', 'utf8'));
   dom.window.eval(client);
-  return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests, cacheSettingsRequests, sourceSettingsRequests, creationRequests, githubRequests };
+  return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests, cacheSettingsRequests, sourceSettingsRequests, creationRequests, githubRequests, urlSchemeRequests };
 }
 
 export const catalog = {

@@ -42,8 +42,8 @@ function parseCatalog_(entries) {
       message = PortalI18n.t("id, name, and url must be non-empty strings.");
     } else if ((counts.get(id) || 0) > 1) {
       message = PortalI18n.t("Duplicate id.");
-    } else if (!isSafeHttpsUrl_(entry.url)) {
-      message = PortalI18n.t("Enter a valid HTTPS URL in url.");
+    } else if (!isValidLinkUrl_(entry.url)) {
+      message = PortalI18n.t("Enter a valid URL in url.");
     } else if ((entry.scope !== undefined && typeof entry.scope !== 'string') ||
         !['', '社内', '社外', 'internal', 'external'].includes(rawScope)) {
       message = PortalI18n.t("scope must be internal or external.");
@@ -54,8 +54,8 @@ function parseCatalog_(entries) {
       message = PortalI18n.t("tags must be an array of strings.");
     } else if (entry.relatedLinks !== undefined && (!Array.isArray(entry.relatedLinks) ||
         entry.relatedLinks.some((/** @type {RelatedLink} */ link) => !link || Array.isArray(link) ||
-          !text_(link.label) || !text_(link.url) || !isSafeHttpsUrl_(link.url)))) {
-      message = PortalI18n.t("relatedLinks must be an array of objects with a non-empty label and a valid HTTPS url.");
+          !text_(link.label) || !text_(link.url) || !isValidLinkUrl_(link.url)))) {
+      message = PortalI18n.t("relatedLinks must be an array of objects with a non-empty label and a valid url.");
     }
     if (message) {
       issues.push({ row: index + 1, message });
@@ -84,18 +84,34 @@ function text_(value) {
 }
 
 /**
- * GAS V8 lacks WHATWG URL, so validate a restricted set of URL formats.
- * Allow ASCII hosts (Punycode for international domains), optional ports, paths, and queries.
- * @param {string} value
+ * Check URL syntax only. Whether a scheme may be opened is decided in the browser
+ * from the user's settings (see PortalUrlSchemes), so blocked links can still be shown.
+ * Web URLs keep strict host validation; other schemes such as vscode:// vary in structure.
+ * @param {unknown} value
  * @returns {boolean}
  */
-function isSafeHttpsUrl_(value) {
+function isValidLinkUrl_(value) {
+  if (typeof value !== 'string') return false;
   // Reject line breaks and control characters before trimming.
   // eslint-disable-next-line no-control-regex -- Explicitly reject control characters in URLs.
   if (/[\u0000-\u001f\u007f\\<>"`]/.test(value)) return false;
   const url = value.trim();
-  if (/\s/.test(url) || /%(?![\da-f]{2})/i.test(url)) return false;
-  const match = /^https:\/\/([a-z\d.-]+)(?::(\d{1,5}))?(?:[/?#][^\s]*)?$/i.exec(url);
+  if (url.length > 2048 || /\s/.test(url) || /%(?![\da-f]{2})/i.test(url)) return false;
+  const scheme = /^([a-z][a-z\d+.-]*):/i.exec(url);
+  if (!scheme) return false;
+  if (/^https?$/i.test(scheme[1])) return isSafeWebUrl_(url);
+  return url.length > scheme[0].length;
+}
+
+/**
+ * GAS V8 lacks WHATWG URL, so validate a restricted set of URL formats.
+ * Allow ASCII hosts (Punycode for international domains), optional ports, paths, and queries.
+ * Credentials are rejected because the host pattern excludes "@".
+ * @param {string} url A trimmed URL without control characters or whitespace.
+ * @returns {boolean}
+ */
+function isSafeWebUrl_(url) {
+  const match = /^https?:\/\/([a-z\d.-]+)(?::(\d{1,5}))?(?:[/?#][^\s]*)?$/i.exec(url);
   if (!match) return false;
   const host = match[1];
   if (host.length > 253 || host.split('.').some((label) =>

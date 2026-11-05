@@ -281,13 +281,13 @@ test('Discard pre-hidden caches and exclude hidden entries from RPC, HTML bootst
   const key = writes[0].key;
   const old = { ...JSON.parse(writes[0].value), tools: [{ ...entry(), id: 'secret-entry', name: 'Hidden entry' }] };
   entries.clear();
-  cache.put(key.replace(/^catalog-v2:/, 'catalog-v1:'), JSON.stringify(old), 21600);
+  cache.put(key.replace(/^catalog-v3:/, 'catalog-v2:'), JSON.stringify(old), 21600);
   context.doGet();
   const initial = JSON.parse(template.initialCatalogJson);
   assert.equal(initial.cache.hit, false);
   assert.equal(initial.tools.length, 1);
   assert.doesNotMatch(template.initialCatalogJson, /secret-entry|Hidden|hidden-tag/);
-  assert.match(writes.at(-1).key, /^catalog-v2:/);
+  assert.match(writes.at(-1).key, /^catalog-v3:/);
   assert.doesNotMatch(writes.at(-1).value, /secret-entry|Hidden|hidden-tag/);
   values[1][7] = true;
   assert.equal(context.getCatalog().tools.length, 1, 'Normal reads keep the cached snapshot');

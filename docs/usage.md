@@ -46,9 +46,9 @@ Columns are matched by their case-sensitive names in the first row, so you can r
 | scope | internal / external, or the supported Japanese aliases 社内 / 社外. Defaults to internal |
 | tags | Multiple tags separated by commas, Japanese commas, or line breaks |
 | name | Required. Display name |
-| url | Required. Primary HTTPS link |
+| url | Required. Primary link: `https://`, `http://`, or an app scheme such as `vscode://` |
 | description | Plain text; HTML and Markdown are not interpreted |
-| relatedLinks | One entry per line within a cell: HTTPS URL, a space, then a label |
+| relatedLinks | One entry per line within a cell: URL, a space, then a label |
 
 The optional `hidden` column is matched by its header, regardless of position. Only `TRUE` (ignoring case and surrounding whitespace) hides a row; other values remain visible. Hidden rows stay in the spreadsheet but are excluded before validation and duplicate-ID checks, and never enter the catalog response, embedded HTML data, or cache. They do not contribute tags, search results, or counts. After changing a checkbox, use **Fetch latest** to bypass an existing cache, or wait for cache expiry.
 
@@ -59,6 +59,18 @@ Optional columns can be omitted. Enter URLs as text rather than named smart chip
 Catalog reads use `spreadsheets.readonly`, which is not restricted to the configured file. Creation and table setup use `drive.file`, which allows writing files created by or explicitly opened with this app; the app does not request the broad `spreadsheets` write scope. Entering an existing spreadsheet ID does not grant per-file write access. The creation permission remains authorized after setup, while ordinary catalog loading only reads data. See the [Sheets authorization scopes](https://developers.google.com/workspace/sheets/api/scopes).
 
 When upgrading to this feature, push and deploy the new code and authorize the added scope as the deploying account. CLI deployment alone does not confirm that the new consent has been granted. Creation checks authorization before calling Sheets and shows editor instructions when consent is missing. If authorization is required, push the latest code, reload the GAS editor, and run `initializeProperties` with that account. This editor entry point calls `ScriptApp.requireAllScopes(ScriptApp.AuthMode.FULL)` before acquiring a lock or changing properties. Missing consent stops execution and opens the authorization flow. After granting consent, run it again if necessary. `PORTAL_AUTHORIZATION_CHECK_STARTED` and `PORTAL_AUTHORIZATION_GRANTED` identify the check and successful authorization in the execution log. Normal automatic property initialization does not invoke this consent flow. Creation blocked by the check logs `SPREADSHEET_CREATION_BLOCKED AUTHORIZATION_REQUIRED`. If the editor reports granted consent but the web app still reports missing consent, verify the executing account and deployment version before retrying. Keep this a personal project and control who can edit its code.
+
+### URL schemes
+
+Links accept any well-formed scheme, for example `https://`, `http://localhost:3000`, `vscode://file/path/to/project`, or `mailto:`. Web URLs keep strict host validation and reject embedded credentials. Malformed values are still reported as row issues.
+
+Whether a link can be opened is decided in the browser:
+
+- `javascript:` and `vbscript:` are always blocked because they run script in the portal page.
+- `data:`, `file:`, `blob:`, `about:`, and `filesystem:` are blocked by default. Uncheck them in **Settings → Tools & Links → Blocked URL schemes** to allow them. The choice is saved automatically in the `UNBLOCKED_URL_SCHEMES` User Property and applies immediately without refetching the catalog.
+- Every other scheme can be opened.
+
+Blocked links remain visible: the card or row is grayed out, has no link, and shows the URL as selectable text with a **Blocked scheme** label. Opening an app scheme such as `vscode://` hands the link to the operating system; the browser may ask for confirmation first.
 
 ## Tab URLs
 
@@ -84,6 +96,7 @@ The gear tab lets you edit the portal name, icon, headline, and description. The
 | ACTIONS_CACHE_SECONDS | 300 (5 minutes) |
 | SPREADSHEET_ID | Empty (configure in Settings) |
 | SHEET_NAME | Empty (first sheet) |
+| UNBLOCKED_URL_SCHEMES | Empty (all optional schemes blocked) |
 
 In English, the preset headline is “One place to start your workday.” and the description is “Keep your work tools, service links, and daily to-dos in one place.” Existing values that exactly match either preset are treated as presets for display, without rewriting stored values.
 

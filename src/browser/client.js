@@ -245,8 +245,39 @@
     return labels;
   }
 
-  /** @param {{url: string}} tool */
+  /** Read the saved setting on each render so a change applies without refetching. */
+  function unblockedSchemes() {
+    return PortalUrlSchemes.normalizeUnblocked(document.getElementById('url-scheme-settings')?.dataset.savedValue);
+  }
+
+  /** @param {string} url */
+  function isBlockedUrl(url) {
+    return PortalUrlSchemes.isBlocked(url, unblockedSchemes());
+  }
+
+  /** Show a blocked URL as plain text so it can be read and copied, never opened. @param {string} url */
+  function blockedUrl(url) {
+    const notice = document.createElement('span');
+    notice.className = 'blocked-url';
+    const label = document.createElement('span');
+    label.className = 'blocked-url-label';
+    label.textContent = t("Blocked scheme");
+    const text = document.createElement('span');
+    text.className = 'blocked-url-text';
+    text.textContent = url;
+    notice.append(label, text);
+    return notice;
+  }
+
+  /** A blocked URL gets a non-interactive element with no href. @param {{url: string}} tool */
   function toolLink(tool) {
+    if (isBlockedUrl(tool.url)) {
+      const blocked = document.createElement('span');
+      blocked.classList.add('is-blocked');
+      blocked.setAttribute('aria-disabled', 'true');
+      blocked.title = t('Blocked link: {url}', { url: tool.url });
+      return blocked;
+    }
     const link = document.createElement('a');
     link.href = tool.url;
     link.target = '_blank';
@@ -314,6 +345,7 @@
       const item = document.createElement('li');
       const link = toolLink(related);
       link.prepend(document.createTextNode(related.label));
+      if (link.classList.contains('is-blocked')) link.append(blockedUrl(related.url));
       item.append(link);
       list.append(item);
     });
@@ -326,7 +358,9 @@
     const container = document.createElement('article');
     container.className = 'tool-card';
     const link = toolLink(tool);
-    link.className = 'tool-main';
+    link.classList.add('tool-main');
+    const blocked = link.classList.contains('is-blocked');
+    container.classList.toggle('is-blocked', blocked);
     const title = document.createElement('h3');
     const titleText = document.createElement('span');
     titleText.textContent = tool.name;
@@ -335,6 +369,7 @@
     description.className = 'tool-description';
     description.textContent = tool.description;
     link.prepend(scopeBadge(tool), title, description, tagLabels(tool));
+    if (blocked) description.after(blockedUrl(tool.url));
     container.append(link);
     if (tool.relatedLinks?.length) container.append(relatedLinks(tool));
     item.append(container);
@@ -347,11 +382,12 @@
     const name = document.createElement('th');
     name.scope = 'row';
     const link = toolLink(tool);
-    link.className = 'tool-name-link';
+    link.classList.add('tool-name-link');
     const titleText = document.createElement('span');
     titleText.textContent = tool.name;
     link.prepend(toolFavicon(tool), titleText);
     name.append(link);
+    if (link.classList.contains('is-blocked')) name.append(blockedUrl(tool.url));
     const description = document.createElement('td');
     description.textContent = tool.description || '—';
     const scope = document.createElement('td');
@@ -458,11 +494,13 @@
     return safeUrl(tool.url);
   }
 
-  /** @param {string} value */
+  /** Check syntax only; blocked schemes are still rendered, without a link. @param {string} value */
   function safeUrl(value) {
     try {
       const url = new URL(value);
-      return url.protocol === 'https:' && !url.username && !url.password;
+      // Credentials matter for web hosts; "@" is ordinary in schemes such as mailto:.
+      const web = url.protocol === 'https:' || url.protocol === 'http:';
+      return Boolean(PortalUrlSchemes.schemeOf(value)) && !(web && (url.username || url.password));
     } catch {
       return false;
     }
@@ -557,6 +595,9 @@
     renderTags();
     renderTools();
     search.focus();
+  });
+  document.addEventListener('portal:urlschemeschange', () => {
+    if (catalogReady) renderTools();
   });
   document.addEventListener('portal:languagechange', () => {
     renderFreshness();
