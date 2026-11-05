@@ -35,11 +35,6 @@
             </div>
           </div>
           <div class="filter-toolbar">
-            <div id="scopes" class="segmented-control join" role="group" aria-label="Tool scope" data-i18n-aria-label="Tool scope">
-              <button id="scope-all" class="btn join-item" type="button" aria-pressed="true" disabled><span data-i18n="All">All</span></button>
-              <button id="scope-internal" class="btn join-item" type="button" aria-pressed="false" disabled><!-- building-2-icon --><span data-i18n="Internal">Internal</span></button>
-              <button id="scope-external" class="btn join-item" type="button" aria-pressed="false" disabled><!-- globe-icon --><span data-i18n="External">External</span></button>
-            </div>
             <div class="segmented-control view-switch join" role="group" aria-label="View mode" data-i18n-aria-label="View mode">
               <button id="view-cards" class="btn btn-square join-item" type="button" aria-label="Cards" title="Cards" aria-pressed="true" disabled><!-- layout-grid-icon --></button>
               <button id="view-list" class="btn btn-square join-item" type="button" aria-label="List" title="List" aria-pressed="false" disabled><!-- list-icon --></button>
@@ -63,7 +58,7 @@
           <div id="table-view" class="table-view" role="region" aria-label="Tools table (scroll horizontally on narrow screens)" data-i18n-aria-label="Tools table (scroll horizontally on narrow screens)" tabindex="0" hidden>
             <table class="table">
               <caption class="visually-hidden"><span data-i18n="Tools">Tools</span></caption>
-              <thead><tr><th scope="col"><span data-i18n="Tool">Tool</span></th><th scope="col"><span data-i18n="Description">Description</span></th><th scope="col"><span data-i18n="Scope">Scope</span></th><th scope="col">Tags</th><th scope="col"><span data-i18n="Related links">Related links</span></th></tr></thead>
+              <thead><tr><th scope="col"><span data-i18n="Tool">Tool</span></th><th scope="col"><span data-i18n="Description">Description</span></th><th scope="col">Tags</th><th scope="col"><span data-i18n="Related links">Related links</span></th></tr></thead>
               <tbody id="tool-rows"></tbody>
             </table>
           </div>
@@ -233,8 +228,6 @@
         <!-- repository-link -->
       </nav>
     </footer>
-    <template id="scope-icon-internal"><!-- building-2-icon --></template>
-    <template id="scope-icon-external"><!-- globe-icon --></template>
     <script type="application/json" id="initial-catalog"><?!= initialCatalogJson ?></script>
     <script type="module" src="/browser/main.js"></script>
   </body>

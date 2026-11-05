@@ -59,14 +59,13 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .search-box input { font-size: 16px; }
 .search-box input::placeholder { font-size: 13px; }
 .filter-toolbar { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px; }
-/* Pressed buttons (scope, view, tags) look like btn-primary. DaisyUI reads the same aria-pressed state. */
+/* Pressed buttons (view, tags) look like btn-primary. DaisyUI reads the same aria-pressed state. */
 .segmented-control .btn[aria-pressed="true"], .tag-button[aria-pressed="true"] { --btn-color: var(--color-primary); --btn-fg: var(--color-primary-content); --btn-border: var(--color-primary); }
 .segmented-control .btn { font-size: 12px; font-weight: 500; }
-/* Unselected toggle buttons differ from the page by background alone (about 1.1:1 in DaisyUI themes).
+/* Unselected toggle buttons (view, tags) differ from the page by background alone (about 1.1:1 in DaisyUI themes).
    A base-content border at 60% keeps their outline at 3:1 or more in every theme; the theme test checks this. */
 .segmented-control .btn:not([aria-pressed="true"]), .tag-button:not([aria-pressed="true"]) { --btn-border: color-mix(in srgb, var(--color-base-content) 60%, var(--color-base-100)); }
 .view-switch svg { width: 18px; height: 18px; }
-#scope-internal svg, #scope-external svg { flex: none; width: 14px; height: 14px; }
 .tag-filter { display: flex; align-items: flex-start; gap: 12px; padding: 0 0 22px; }
 .tag-heading { flex-shrink: 0; display: flex; align-items: center; min-height: 32px; font-size: 12px; font-weight: 600; }
 .tags { display: flex; flex: 1; min-width: 0; flex-wrap: wrap; gap: 6px; }
@@ -77,10 +76,8 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .tool-card:hover { border-color: var(--color-primary); transform: translateY(-2px); }
 .tool-main { position: relative; display: flex; flex-direction: column; flex: 1; padding: 24px; color: inherit; text-decoration: none; border-radius: var(--radius-box); }
 .tool-main:hover h3 { text-decoration: underline; text-underline-offset: 4px; }
-.tool-card h3 { display: flex; align-items: flex-start; gap: 10px; font-size: 16px; font-weight: 600; margin: 20px 0 8px; overflow-wrap: anywhere; }
+.tool-card h3 { display: flex; align-items: flex-start; gap: 10px; font-size: 16px; font-weight: 600; margin: 0 0 8px; overflow-wrap: anywhere; }
 .tool-description { font-size: 12px; line-height: 1.9; margin: 0; overflow-wrap: anywhere; }
-.scope-badge { align-self: flex-start; gap: 5px; font-weight: 600; white-space: nowrap; }
-.scope-badge svg { flex: none; width: 12px; height: 12px; }
 .tool-tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .tool-card .tool-tags { margin-top: auto; padding-top: 20px; }
 .tool-tag { height: auto; max-width: 100%; font-weight: 400; overflow-wrap: anywhere; }
@@ -91,11 +88,10 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .table-view { max-width: 100%; overflow-x: auto; border: var(--border) solid var(--color-base-300); border-radius: var(--radius-box); background: var(--color-base-100); }
 .table-view table { min-width: 800px; table-layout: fixed; }
 .table-view thead th { font-size: 11px; font-weight: 500; }
-.table-view thead th:nth-child(1) { width: 23%; }
-.table-view thead th:nth-child(2) { width: 29%; }
-.table-view thead th:nth-child(3) { width: 10%; }
-.table-view thead th:nth-child(4) { width: 18%; }
-.table-view thead th:nth-child(5) { width: 20%; }
+.table-view thead th:nth-child(1) { width: 26%; }
+.table-view thead th:nth-child(2) { width: 34%; }
+.table-view thead th:nth-child(3) { width: 20%; }
+.table-view thead th:nth-child(4) { width: 20%; }
 .table-view th, .table-view td { vertical-align: top; overflow-wrap: anywhere; }
 .table-view tbody tr:hover { background: var(--color-base-200); }
 .table-view tbody th { font-size: 13px; font-weight: 600; }
@@ -133,7 +129,6 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
   .tool-card { min-height: 170px; }
   .tool-main { padding: 22px; }
   .tool-card > .related-links { margin-right: 22px; margin-left: 22px; }
-  .tool-card h3 { margin-top: 15px; }
   .filter-toolbar { gap: 8px; }
   .segmented-control .btn:not(.btn-square) { padding-inline: 10px; }
   .table-view th, .table-view td { padding-left: 14px; padding-right: 14px; }

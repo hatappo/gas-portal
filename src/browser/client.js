@@ -20,8 +20,6 @@
   let issues = [];
   /** @type {Set<string>} */
   let selectedTags = new Set();
-  /** @type {'all' | 'internal' | 'external'} */
-  let selectedScope = 'all';
   /** @type {'cards' | 'list'} */
   let view = 'cards';
   let generation = 0;
@@ -217,26 +215,6 @@
     tags.forEach((tag) => addButton(tag, tag));
   }
 
-  function updateScopeButtons() {
-    for (const scope of ['all', 'internal', 'external']) {
-      element('scope-' + scope).setAttribute('aria-pressed', String(scope === selectedScope));
-    }
-  }
-
-  /** @param {CatalogTool} tool */
-  function scopeBadge(tool) {
-    const badge = document.createElement('span');
-    // Internal stays quiet; external is a filled neutral badge so it stands out in every theme.
-    badge.className = 'scope-badge scope-' + tool.scope + ' badge badge-sm ' + (tool.scope === 'external' ? 'badge-neutral' : 'badge-ghost');
-    // Icons differ in shape, so the scopes stay distinguishable without relying on color.
-    const icon = /** @type {HTMLTemplateElement | null} */ (document.getElementById('scope-icon-' + tool.scope))?.content.querySelector('svg');
-    if (icon) badge.append(icon.cloneNode(true));
-    const label = document.createElement('span');
-    label.textContent = tool.scope === 'internal' ? t("Internal") : t("External");
-    badge.append(label);
-    return badge;
-  }
-
   /** @param {CatalogTool} tool */
   function tagLabels(tool) {
     const labels = document.createElement('div');
@@ -414,7 +392,7 @@
     const description = document.createElement('p');
     description.className = 'tool-description';
     description.textContent = tool.description;
-    link.prepend(scopeBadge(tool), title, description, tagLabels(tool));
+    link.prepend(title, description, tagLabels(tool));
     if (blocked) description.after(blockedUrl(tool.url));
     container.append(link);
     if (tool.relatedLinks?.length) container.append(relatedLinks(tool));
@@ -436,14 +414,12 @@
     if (link.classList.contains('is-blocked')) name.append(blockedUrl(tool.url));
     const description = document.createElement('td');
     description.textContent = tool.description || '—';
-    const scope = document.createElement('td');
-    scope.append(scopeBadge(tool));
     const tags = document.createElement('td');
     tags.append(tagLabels(tool));
     const related = document.createElement('td');
     if (tool.relatedLinks?.length) related.append(relatedLinks(tool));
     else related.textContent = '—';
-    row.append(name, description, scope, tags, related);
+    row.append(name, description, tags, related);
     return row;
   }
 
@@ -462,7 +438,6 @@
   function renderTools() {
     const query = normalize(search.value);
     const visible = tools.filter((tool) =>
-      (selectedScope === 'all' || selectedScope === tool.scope) &&
       [...selectedTags].every((tag) => tool.tags.includes(tag)) &&
       normalize([tool.name, tool.description, ...tool.tags].join(' ')).includes(query));
     const list = element('tools');
@@ -480,7 +455,7 @@
       showStatus(issues.length ? t("No tools can be displayed") : t('No items to display'),
         issues.length ? t("Fix the spreadsheet using the issues listed above.") : t("Add tools to the spreadsheet to display them here."));
     } else if (visible.length === 0) {
-      showStatus(t('No items to display'), t("Try a different keyword, scope, or tag."), true);
+      showStatus(t('No items to display'), t("Try a different keyword or tag."), true);
     }
     animateResults(JSON.stringify([view, visible.map((tool) => tool.id)]));
   }
@@ -496,7 +471,7 @@
   /** @param {boolean} value */
   function setControlsDisabled(value) {
     search.disabled = value;
-    document.querySelectorAll('#scopes button, .view-switch button').forEach((button) => {
+    document.querySelectorAll('.view-switch button').forEach((button) => {
       /** @type {HTMLButtonElement} */ (button).disabled = value;
     });
   }
@@ -532,7 +507,7 @@
   function safeTool(tool) {
     if (!tool || ['id', 'name', 'url', 'description'].some((key) =>
       typeof tool[/** @type {keyof CatalogTool} */ (key)] !== 'string')) return false;
-    if (!['internal', 'external'].includes(tool.scope) || !Array.isArray(tool.tags) ||
+    if (!Array.isArray(tool.tags) ||
         !tool.tags.every((tag) => typeof tag === 'string')) return false;
     if (tool.icon !== undefined && (typeof tool.icon !== 'string' || !tool.icon.trim() ||
         (isIconUrl(tool.icon) ? !safeUrl(tool.icon) : /\s/.test(tool.icon) || Array.from(tool.icon).length > 8))) return false;
@@ -621,13 +596,6 @@
 
   refresh.addEventListener('click', () => { if (!refresh.disabled) loadCatalog(true); });
   search.addEventListener('input', renderTools);
-  /** @type {('all' | 'internal' | 'external')[]} */
-  const scopes = ['all', 'internal', 'external'];
-  scopes.forEach((scope) => element('scope-' + scope).addEventListener('click', () => {
-    selectedScope = scope;
-    updateScopeButtons();
-    renderTools();
-  }));
   /** @type {('cards' | 'list')[]} */
   const views = ['cards', 'list'];
   views.forEach((mode) => element('view-' + mode).addEventListener('click', () => {
@@ -637,9 +605,7 @@
   }));
   reset.addEventListener('click', () => {
     search.value = '';
-    selectedScope = 'all';
     selectedTags.clear();
-    updateScopeButtons();
     renderTags();
     renderTools();
     search.focus();

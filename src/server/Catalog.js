@@ -1,7 +1,7 @@
 /**
  * @typedef {{label: string, url: string}} RelatedLink
- * @typedef {{id: string, name: string, url: string, description?: string, tags?: string[], relatedLinks?: RelatedLink[], scope?: 'internal' | 'external' | '社内' | '社外', icon?: string}} CatalogEntry
- * @typedef {{id: string, name: string, url: string, description: string, category: string, tags: string[], relatedLinks: RelatedLink[], scope: 'internal' | 'external', icon?: string}} Tool
+ * @typedef {{id: string, name: string, url: string, description?: string, tags?: string[], relatedLinks?: RelatedLink[], icon?: string}} CatalogEntry
+ * @typedef {{id: string, name: string, url: string, description: string, category: string, tags: string[], relatedLinks: RelatedLink[], icon?: string}} Tool
  * @typedef {{row: number, message: string}} CatalogIssue row is the one-based array position.
  * @typedef {{tools: Tool[], issues: CatalogIssue[]}} Catalog
  */
@@ -36,7 +36,6 @@ function parseCatalog_(entries) {
     const id = text_(entry.id);
     const name = text_(entry.name);
     const url = text_(entry.url);
-    const rawScope = text_(entry.scope);
     let message = '';
     if (!id || !name || !url) {
       message = PortalI18n.t("id, name, and url must be non-empty strings.");
@@ -44,9 +43,6 @@ function parseCatalog_(entries) {
       message = PortalI18n.t("Duplicate id.");
     } else if (!isValidLinkUrl_(entry.url)) {
       message = PortalI18n.t("Enter a valid URL in url.");
-    } else if ((entry.scope !== undefined && typeof entry.scope !== 'string') ||
-        !['', '社内', '社外', 'internal', 'external'].includes(rawScope)) {
-      message = PortalI18n.t("scope must be internal or external.");
     } else if (entry.description !== undefined && typeof entry.description !== 'string') {
       message = PortalI18n.t("description must be a string.");
     } else if (entry.tags !== undefined && (!Array.isArray(entry.tags) ||
@@ -73,7 +69,6 @@ function parseCatalog_(entries) {
       tags: [...new Set([...tags.map((tag) => tag.trim()).filter(Boolean), ...autoTags])],
       relatedLinks: (/** @type {RelatedLink[]} */ (entry.relatedLinks || []))
         .map((link) => ({ label: link.label.trim(), url: link.url.trim() })),
-      scope: rawScope === '社外' || rawScope === 'external' ? 'external' : 'internal',
       // Omit the field when blank, keeping the response unchanged for tools without an icon.
       ...(icon ? { icon } : {}),
     });

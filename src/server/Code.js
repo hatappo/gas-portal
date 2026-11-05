@@ -363,7 +363,6 @@ function portalSpreadsheetColumns_(language) {
   return [
     { name: 'id', type: 'TEXT', width: 160, note: t('Required. Unique text ID. Entries are sorted by ID as text; leading zeros are preserved.') },
     { name: 'hidden', type: 'BOOLEAN', width: 100, note: t('Optional. Check TRUE to hide this entry. FALSE or blank keeps it visible. Hidden rows are excluded from search, tags, and counts.') },
-    { name: 'scope', type: 'DROPDOWN', width: 130, note: t('Optional. Choose internal or external. Blank means internal.') },
     { name: 'tags', type: 'TEXT', width: 200, note: t('Optional. Separate tags with commas or line breaks.') },
     { name: 'icon', type: 'TEXT', width: 120, note: t('Optional. An image URL starting with https:// or an emoji, shown instead of the automatic favicon. Leave blank to detect the favicon automatically.') },
     { name: 'name', type: 'TEXT', width: 220, note: t('Required. Display name shown in the portal.') },
@@ -436,7 +435,6 @@ function createPortalSpreadsheet(browserLanguage) {
         rowsProperties: { headerColorStyle: { rgbColor: { red: 113 / 255, green: 164 / 255, blue: 217 / 255 } } },
         columnProperties: columns.map((column, columnIndex) => ({
           columnIndex, columnName: column.name, columnType: column.type,
-          ...(column.type === 'DROPDOWN' ? { dataValidationRule: { condition: { type: 'ONE_OF_LIST', values: [{ userEnteredValue: 'internal' }, { userEnteredValue: 'external' }] } } } : {}),
         })),
       } } });
       stage = 'TABLE_SETUP';

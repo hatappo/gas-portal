@@ -6,15 +6,15 @@ import { withPreviewContent } from '../scripts/preview-project.mjs';
 
 export const entry = (overrides = {}) => ({
   id: 'address', name: 'アドレス生成', url: 'https://example.com/tool',
-  description: 'メール用の文字列を生成', scope: 'internal', tags: ['業務'],
+  description: 'メール用の文字列を生成', tags: ['業務'],
   relatedLinks: [],
   ...overrides,
 });
 
 export function sheetRows(entries) {
-  const headers = ['id', 'name', 'url', 'description', 'scope', 'tags', 'relatedLinks'];
+  const headers = ['id', 'name', 'url', 'description', 'tags', 'relatedLinks'];
   return [headers, ...entries.map((entry) => [
-    entry.id, entry.name, entry.url, entry.description || '', entry.scope || '', (entry.tags || []).join(','),
+    entry.id, entry.name, entry.url, entry.description || '', (entry.tags || []).join(','),
     (entry.relatedLinks || []).map((link) => `${link.url} ${link.label}`).join('\n'),
   ])];
 }
@@ -101,8 +101,8 @@ export function browser(setupWindow = () => {}, client = ['language', 'client', 
 export const catalog = {
   ok: true,
   tools: [
-    { id: 'address', name: 'アドレス生成', url: 'https://example.com/address', description: 'メールの文字列を生成', category: '業務', tags: ['業務'], scope: 'internal' },
-    { id: 'guide', name: 'Guide', url: 'https://example.com/guide', description: '社内の手引き', category: '資料', tags: ['資料'], scope: 'internal' },
+    { id: 'address', name: 'アドレス生成', url: 'https://example.com/address', description: 'メールの文字列を生成', category: '業務', tags: ['業務'] },
+    { id: 'guide', name: 'Guide', url: 'https://example.com/guide', description: '社内の手引き', category: '資料', tags: ['資料'] },
   ],
   issues: [],
 };
