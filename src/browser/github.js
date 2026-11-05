@@ -43,7 +43,7 @@
   /** @param {string} text @param {() => void} action */
   function button(text, action) {
     const node = document.createElement('button');
-    node.type = 'button'; node.className = 'action-text-button'; node.textContent = text;
+    node.type = 'button'; node.className = 'action-text-button btn btn-ghost btn-sm'; node.textContent = text;
     node.addEventListener('click', action);
     return node;
   }

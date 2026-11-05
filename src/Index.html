@@ -77,16 +77,16 @@
       </section>
       <section class="action-items" role="tabpanel" aria-labelledby="tab-actions" id="actions-panel" tabindex="0" hidden>
         <div class="actions-toolbar">
-          <button type="button" id="actions-settings" class="action-text-button" data-i18n="Manage connections">Manage connections</button>
+          <button type="button" id="actions-settings" class="action-text-button btn btn-ghost btn-sm" data-i18n="Manage connections">Manage connections</button>
           <div class="actions-summary">
             <span id="actions-count" class="count" role="status" aria-live="polite">—</span>
-            <button type="button" id="refresh-actions" class="refresh-catalog" aria-busy="true" disabled aria-label="Fetch latest" data-i18n-aria-label="Fetch latest" title="Fetch latest" data-i18n-title="Fetch latest">
+            <button type="button" id="refresh-actions" class="refresh-catalog btn btn-ghost" aria-busy="true" disabled aria-label="Fetch latest" data-i18n-aria-label="Fetch latest" title="Fetch latest" data-i18n-title="Fetch latest">
               <!-- refresh-cw-icon -->
               <span id="actions-freshness" class="catalog-freshness" title="Oldest retrieval time among successful connections" data-i18n-title="Oldest retrieval time among successful connections" hidden></span>
             </button>
           </div>
         </div>
-        <div id="actions-status" class="action-notice" role="status" aria-live="polite" hidden></div>
+        <div id="actions-status" class="action-notice alert" role="status" aria-live="polite" hidden></div>
         <div id="action-items" class="action-items-list" aria-label="Action Items" aria-busy="true"></div>
         <template id="action-external-icon"><!-- external-link-icon --></template>
       </section>
@@ -207,7 +207,7 @@
             </details>
             <div id="github-settings-loading" class="refresh-catalog actions-loading" role="status" aria-label="Loading…" data-i18n-aria-label="Loading…" aria-busy="true" hidden><!-- refresh-cw-icon --></div>
             <ul id="github-connections" class="github-connections"></ul>
-            <button type="button" id="add-github" class="action-text-button" data-i18n="Add connection" disabled>Add connection</button>
+            <button type="button" id="add-github" class="action-text-button btn btn-outline btn-sm" data-i18n="Add connection" disabled>Add connection</button>
             <form id="github-settings-form" class="portal-settings-form" hidden>
               <fieldset id="github-settings-fields">
                 <legend class="visually-hidden" data-i18n="GitHub connection">GitHub connection</legend>
@@ -219,7 +219,7 @@
               </fieldset>
             </form>
             <p id="github-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
-            <button type="button" id="retry-github-settings" class="action-text-button" hidden data-i18n="Try again">Try again</button>
+            <button type="button" id="retry-github-settings" class="action-text-button btn btn-ghost btn-sm" hidden data-i18n="Try again">Try again</button>
           </section>
         </div>
       </section>

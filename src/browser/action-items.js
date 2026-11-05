@@ -84,14 +84,14 @@
       const list = document.createElement('ul'); list.className = 'action-item-list';
       for (const item of items) {
         const row = document.createElement('li');
-        const title = link(item.title, item.url); title.className = 'action-item-title';
+        const title = link(item.title, item.url); title.className = 'action-item-title link link-hover';
         const meta = document.createElement('div'); meta.className = 'action-item-meta';
         meta.append(textNode(item.serviceLabel, 'action-service'), textNode(item.context, 'action-context'));
         const updated = document.createElement('time'); updated.dateTime = item.updatedAt;
         updated.textContent = t('Updated') + ' ' + new Intl.DateTimeFormat(document.documentElement.lang, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(item.updatedAt));
         meta.append(updated);
         const badges = document.createElement('div'); badges.className = 'action-item-reasons';
-        item.reasons.forEach((reason) => badges.append(textNode(t(reason), 'action-item-kind')));
+        item.reasons.forEach((reason) => badges.append(textNode(t(reason), 'action-item-kind badge badge-sm badge-ghost')));
         row.append(title, meta, badges); list.append(row);
       }
       content.append(list);
