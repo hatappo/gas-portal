@@ -222,7 +222,7 @@ test('Missing consent stops before Sheets or property writes and gives authoriza
   assert.equal(app.authorizationChecks(), 1);
   assert.deepEqual(plain(app.logs), [['SPREADSHEET_CREATION_BLOCKED', 'AUTHORIZATION_REQUIRED']]);
   assert.equal(app.isLocked(), false);
-  assert.match(app.context.createPortalSpreadsheet('ja').error, /追加の権限/);
+  assert.match(app.context.createPortalSpreadsheet('ja').error, /^Additional authorization is required\./);
   const configured = setup({ unauthorized: true, userProperties: { SPREADSHEET_ID: 'already-configured' } });
   assert.match(configured.context.createPortalSpreadsheet('en').error, /already configured/);
   assert.equal(configured.authorizationChecks(), 0);

@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
+import vm from 'node:vm';
 import { entry, server, plain } from './helpers.mjs';
 
 const parse = (entries) => plain(server().context.parseCatalog_(entries));
@@ -92,7 +94,7 @@ test("Exclude every duplicate ID and report one-based positions", () => {
   const result = parse([entry(), entry({ id: ' address ' }), entry({ id: 'unique' })]);
   assert.deepEqual(result.tools.map((tool) => tool.id), ['unique']);
   assert.deepEqual(result.issues.map((issue) => issue.row), [1, 2]);
-  assert.match(result.issues[0].message, /重複/);
+  assert.match(result.issues[0].message, /^Duplicate id\.$/);
 });
 
 test("Reject malformed URLs and embedded web credentials", () => {
@@ -153,7 +155,7 @@ test("Attach blank-id rows to the nearest tool row above, in row order, with onl
 test("Report a blank-id row with no tool row above it", () => {
   const result = parse([link({ name: 'Orphan' }), entry(), link({ name: 'Kept' })]);
   assert.deepEqual(result.issues.map((issue) => issue.row), [1]);
-  assert.match(result.issues[0].message, /id が空の行の上に/);
+  assert.match(result.issues[0].message, /^A row with a blank id needs a tool row above it\.$/);
   assert.deepEqual(result.tools[0].children.map((child) => child.name), ['Kept']);
 });
 
@@ -169,8 +171,8 @@ test("Exclude links below a broken tool row instead of moving them to an earlier
   ]);
   assert.deepEqual(result.tools.map((tool) => [tool.id, tool.children.map((child) => child.name)]), [['fine', []], ['next', ['Under next']]]);
   assert.deepEqual(result.issues.map((issue) => issue.row), [2, 3, 4, 5, 6]);
-  assert.match(result.issues[1].message, /親の行にエラー/);
-  assert.match(result.issues[4].message, /親の行にエラー/);
+  assert.match(result.issues[1].message, /^The parent row has errors\.$/);
+  assert.match(result.issues[4].message, /^The parent row has errors\.$/);
 });
 
 test("Validate related link rows on their own, without an id or duplicate check", () => {
@@ -183,7 +185,7 @@ test("Validate related link rows on their own, without an id or duplicate check"
     link({ name: 'Same', url: 'https://example.com/a' }),
   ]);
   assert.deepEqual(result.issues.map((issue) => issue.row), [2, 3, 4]);
-  assert.match(result.issues[0].message, /name・url/);
+  assert.match(result.issues[0].message, /^name and url must be non-empty strings\.$/);
   assert.deepEqual(result.tools[0].children.map((child) => child.name), ['Same', 'Same']);
 });
 
@@ -205,4 +207,14 @@ test('Reject icons that are not https images or short text', () => {
     assert.equal(result.tools.length, 0, String(icon));
     assert.match(result.issues[0].message, /icon/, String(icon));
   }
+});
+
+test('Every sentence the server code returns has a Japanese translation for the browser', () => {
+  const context = vm.createContext({});
+  vm.runInContext(readFileSync('src/shared/i18n.js', 'utf8'), context);
+  const sentences = ['src/server/Catalog.js', 'src/server/Code.js'].flatMap((file) =>
+    [...readFileSync(file, 'utf8').matchAll(/(["'])([A-Z{][^"'\n]* [^"'\n]*\.)\1/g)].map((match) => match[2]));
+  assert.ok(sentences.length > 30, `Found only ${sentences.length} sentences`);
+  const missing = sentences.filter((sentence) => context.PortalI18n.translate(sentence, 'ja') === sentence);
+  assert.deepEqual(missing, []);
 });
