@@ -15,7 +15,8 @@ test('Block script schemes always and the default list until unblocked', () => {
   for (const url of ['javascript:alert(1)', ' JavaScript:alert(1)', 'vbscript:msgbox', 'not a url', '/relative']) {
     assert.equal(schemes.isBlocked(url, ['data', 'javascript', 'vbscript']), true, url);
   }
-  for (const url of ['data:text/plain,x', 'file:///etc/hosts', 'blob:https://example.com/id', 'about:blank', 'filesystem:https://example.com/x']) {
+  for (const url of ['data:text/plain,x', 'file:///etc/hosts', 'blob:https://example.com/id', 'about:blank', 'filesystem:https://example.com/x',
+    'ms-msdt:/id PCWDiagnostic', 'MS-MSDT:x', 'search-ms:query=x', 'ms-officecmd:{"id":1}']) {
     assert.equal(schemes.isBlocked(url, []), true, url);
     assert.equal(schemes.isBlocked(url, schemes.optional), false, url);
   }
@@ -93,7 +94,7 @@ test('Save checkbox changes, re-render links, and restore choices after failure'
   const fieldset = document.querySelector('#url-scheme-settings');
   assert.ok(fieldset.closest('#settings-tools-panel'));
   const boxes = Object.fromEntries([...fieldset.querySelectorAll('input')].map((box) => [box.value, box]));
-  assert.deepEqual(Object.keys(boxes), ['data', 'file', 'blob', 'about', 'filesystem']);
+  assert.deepEqual(Object.keys(boxes), ['data', 'file', 'blob', 'about', 'filesystem', 'ms-msdt', 'search-ms', 'ms-officecmd']);
   assert.ok(Object.values(boxes).every((box) => box.checked), 'All optional schemes start blocked');
   const toggle = (scheme) => { boxes[scheme].checked = !boxes[scheme].checked; boxes[scheme].dispatchEvent(new dom.window.Event('change', { bubbles: true })); };
 

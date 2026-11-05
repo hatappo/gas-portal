@@ -2,8 +2,9 @@
 globalThis.PortalUrlSchemes = (() => {
   // These run script in the portal page itself, so settings can never unblock them.
   const fixed = ['javascript', 'vbscript'];
-  // Blocked by default. Each one can be unblocked in Settings.
-  const optional = ['data', 'file', 'blob', 'about', 'filesystem'];
+  // Blocked by default. Each one can be unblocked in Settings. The ms-msdt, search-ms, and ms-officecmd
+  // schemes start Windows programs and have been used to deliver attacks through links.
+  const optional = ['data', 'file', 'blob', 'about', 'filesystem', 'ms-msdt', 'search-ms', 'ms-officecmd'];
 
   /** Keep known optional schemes only, in their canonical order.
    * @param {unknown} value A comma-separated string or an array.

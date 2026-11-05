@@ -91,6 +91,9 @@ Automatic detection cannot see icons that a page declares in its HTML, which is 
 
 To find an icon by hand, open the page in your browser, open the developer tools (⌥⌘I on macOS, F12 elsewhere), search the **Elements** panel for `rel="icon"`, and copy the `href` value. A relative `href` must be made absolute with the page's origin.
 
+
+If others can edit the spreadsheet, note that an `icon` image URL is loaded every time you open the portal (without a referrer). A collaborator could use it to see when you visit, or to send a request to an internal URL from your browser. Automatic favicons only send the hostname of each tool's own URL.
+
 ### URL schemes
 
 Links accept any well-formed scheme, for example `https://`, `http://localhost:3000`, `vscode://file/path/to/project`, or `mailto:`. Web URLs keep strict host validation and reject embedded credentials. Malformed values are still reported as row issues.
@@ -98,8 +101,8 @@ Links accept any well-formed scheme, for example `https://`, `http://localhost:3
 Whether a link can be opened is decided in the browser:
 
 - `javascript:` and `vbscript:` are always blocked because they run script in the portal page.
-- `data:`, `file:`, `blob:`, `about:`, and `filesystem:` are blocked by default. Uncheck them in **Settings → Tools & Links → Blocked URL schemes** to allow them. The choice is saved automatically in the `UNBLOCKED_URL_SCHEMES` User Property and applies immediately without refetching the catalog.
-- Every other scheme can be opened.
+- `data:`, `file:`, `blob:`, `about:`, `filesystem:`, and the Windows handler schemes `ms-msdt:`, `search-ms:`, and `ms-officecmd:` (which start programs and have been abused through links) are blocked by default. A scheme added to this list in a later version starts blocked even if you unblocked others. Uncheck them in **Settings → Tools & Links → Blocked URL schemes** to allow them. The choice is saved automatically in the `UNBLOCKED_URL_SCHEMES` User Property and applies immediately without refetching the catalog.
+- Every other scheme can be opened. Opening one hands the link to the operating system, so be careful with links from a spreadsheet that others can edit.
 
 Blocked links remain visible: the card or row is grayed out, has no link, and shows the URL as selectable text with a **Blocked scheme** label. Opening an app scheme such as `vscode://` hands the link to the operating system; the browser may ask for confirmation first.
 
