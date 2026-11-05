@@ -121,6 +121,10 @@ npm run preview
 
 Add `install-links=false` to the consumer's `.npmrc` to keep the dependency as a symbolic link. Running npm ci in the consumer does not install dependencies in the linked repository. The consumer preview detects the linked source checkout and uses Vite HMR. Rebuild in this repository before `build`, `push`, or `ship` to update the packaged GAS output. Restart the preview after CLI or preview-server script changes. A directory dependency does not pin source contents in the lockfile; use release tarballs for regular work environments.
 
+## Workflow dependencies
+
+GitHub Actions dependencies are locked in `.github/workflows/actions.lock` ([workflow lockfiles](https://github.blog/changelog/2026-10-28-github-actions-workflow-lockfiles-are-generally-available/)). Workflows reference exact release tags, and runs use the commits recorded in the lockfile, including actions that other actions call. After adding a workflow or changing any `uses:`, run `gh actions-lock` (install once with `gh extension install github/gh-actions-lock`) and commit the workflow and lockfile together; review the lockfile diff. The **Verify actions lockfile** workflow runs `gh actions-lock --verify` on pushes to `main` and on pull requests.
+
 ## Releases
 
 The workflow in `.github/workflows/release.yml` runs when a `v*` tag is pushed. It checks that the tag matches package.json, runs lint, type checks, the build, and tests, then attaches the `.tgz` to a GitHub Release. No npm registry token is required. Only the publishing job grants write access to the standard GITHUB_TOKEN. Tags containing a suffix such as `-rc.1` produce prereleases.
