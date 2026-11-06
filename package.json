@@ -1,6 +1,6 @@
 {
   "name": "gas-portal",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "A personal work portal built with Google Apps Script.",
   "type": "module",
   "packageManager": "npm@11.20.0",
