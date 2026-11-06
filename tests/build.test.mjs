@@ -82,10 +82,11 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   assert.equal(app.document.querySelectorAll('#tools > li').length, 2);
   for (const [id, label] of [['view-cards', 'Cards'], ['view-list', 'List']]) {
     const button = app.document.getElementById(id);
-    assert.equal(button.title, label);
+    assert.equal(button.type, 'radio');
+    assert.equal(button.title, '');
     assert.equal(button.getAttribute('aria-label'), label);
     assert.equal(button.textContent.trim(), '');
-    assert.equal(button.querySelector('svg').getAttribute('aria-hidden'), 'true');
+    assert.equal(button.closest('label').querySelector('svg').getAttribute('aria-hidden'), 'true');
   }
   app.document.querySelector('#view-list').click();
   assert.equal(app.document.querySelectorAll('#tool-rows > tr').length, 2);

@@ -44,9 +44,9 @@
       }
     },
     {
-      "files": ["src/browser/*.js"],
+      "files": ["src/browser/*.js", "src/browser/*.tsx"],
       "env": { "browser": true },
-      "globals": { "google": "readonly", "PortalSave": "readonly", "PortalMotion": "readonly", "PortalToolView": "readonly" }
+      "globals": { "google": "readonly", "PortalSave": "readonly", "PortalMotion": "readonly" }
     }
   ]
 }

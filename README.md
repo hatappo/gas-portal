@@ -93,10 +93,14 @@ See the [usage guide](docs/usage.md) for initial setup, spreadsheet columns, dis
 
 ```sh
 npm ci
-npm run dev               # Vite: CSS HMR, JS/HTML reloads
+npm run dev               # Vite: Solid/CSS HMR, JS/HTML reloads
 npm run check             # Lint, type checks, build, and tests
 npm run pack:local
 ```
+
+The frontend uses [Solid](https://www.solidjs.com/) 1.x with [Kobalte](https://kobalte.dev/) tabs, tooltips, segmented controls, radio groups, toggle groups, and collapsible disclosures. `src/browser/*-view.tsx` owns the dynamic Tools and Action Items lists; `tabs.tsx` adopts the server-rendered panels so tab navigation preserves form drafts. The adjacent JavaScript controllers coordinate GAS RPCs, validation, timeouts, and routing. The theme picker uses a controlled Radio Group and retains the shared save helper for rollback and timeouts. Other settings forms still use their existing DOM controllers and shared save helper; they can be migrated independently. Disclosures share a 240ms height transition, keep their content mounted for controller updates, and respect reduced-motion preferences. Do not mutate Solid-owned list contents from those controllers. Shared translations, theme definitions, and catalog rules remain usable by both the browser and GAS.
+
+Solid and Kobalte are build-time dependencies, bundled into `Client.html`; deployed portals do not fetch them from a CDN. Source development, linked consumer previews, and production builds use the same Solid Vite plugin. Browser tests compile the components with this plugin before running their interactions in jsdom.
 
 Application source lives in `src/`; the CLI lives in `bin/` and `lib/`. Styles use [Tailwind CSS](https://tailwindcss.com/) v4 and [DaisyUI](https://daisyui.com/) v5, compiled into the inline GAS stylesheet at build time. Prefer DaisyUI components (`btn`, `input`, `card`, `badge`, …) and DaisyUI color variables over custom colors. The `include` list in `src/browser/styles.css` names the DaisyUI parts in use; add a component there before using it. Use `primary` only as a fill, not as text color, so every theme keeps readable contrast. `npm run build` generates GAS output in `dist/` and package assets in `assets/`. Published packages contain the CLI, compiled assets, and usage documentation. They exclude source files, tests, environment configuration, and credentials.
 

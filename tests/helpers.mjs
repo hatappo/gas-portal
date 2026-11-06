@@ -2,12 +2,27 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { createHash, randomUUID } from 'node:crypto';
 import { JSDOM } from 'jsdom';
+import { build } from 'vite';
+import solid from 'vite-plugin-solid';
+import path from 'node:path';
 import { withPreviewContent } from '../scripts/preview-project.mjs';
 import { renderPreview } from '../scripts/preview.mjs';
 import { sharedSources } from '../scripts/gas-sources.mjs';
 
 // The browser modules, in the order src/browser/main.js imports them.
 export const browserModules = [...readFileSync('src/browser/main.js', 'utf8').matchAll(/^import '\.\/([\w-]+)\.js';$/gm)].map((match) => match[1]);
+
+// Exercise the same JSX transform and browser runtime as the production bundle.
+export async function bundleBrowser(modules = browserModules) {
+  const entryId = path.resolve('tests/browser-entry.js');
+  const result = await build({ configFile: false, logLevel: 'silent', plugins: [solid(), {
+    name: 'browser-test-entry',
+    resolveId(id) { if (id === entryId) return id; },
+    load(id) { if (id === entryId) return modules.map((name) => `import ${JSON.stringify(path.resolve(`src/browser/${name}.js`))};`).join('\n'); },
+  }], build: { write: false, minify: false, lib: { entry: entryId, name: 'PortalTest', formats: ['iife'] } } });
+  return (Array.isArray(result) ? result : [result]).flatMap((bundle) => bundle.output).find((file) => file.type === 'chunk').code;
+}
+const browserClient = await bundleBrowser();
 
 export const entry = (overrides = {}) => ({
   id: 'address', name: 'アドレス生成', url: 'https://example.com/tool',
@@ -59,10 +74,10 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
 
 export const plain = (value) => JSON.parse(JSON.stringify(value));
 
-export function browser(setupWindow = () => {}, client = browserModules.map((file) => readFileSync(`src/browser/${file}.js`, 'utf8')).join('\n'), source = readFileSync('src/Index.html', 'utf8')) {
+export function browser(setupWindow = () => {}, client = browserClient, source = readFileSync('src/Index.html', 'utf8')) {
   const html = withPreviewContent(source, server().context.getPortalContent_({ PORTAL_LANGUAGE: 'ja' }))
     .replace(/<\?[\s\S]*?\?>/g, '');
-  const dom = new JSDOM(html, { runScripts: 'outside-only', url: 'https://example.com' });
+  const dom = new JSDOM(html, { runScripts: 'outside-only', url: 'https://example.com', pretendToBeVisual: true });
   const requests = [];
   const languageRequests = [];
   const themeRequests = [];

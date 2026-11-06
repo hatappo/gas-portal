@@ -241,7 +241,7 @@ test("Display search and theme choices in a source-free packaged preview", async
   const root = fixture(t);
   const html = readFileSync(path.join(buildPreview(root), 'index.html'), 'utf8');
   assert.doesNotMatch(html, /<\?|browser\/main.js|node_modules/);
-  const dom = new JSDOM(html, { url: 'http://localhost:4173/', runScripts: 'dangerously' });
+  const dom = new JSDOM(html, { url: 'http://localhost:4173/', runScripts: 'dangerously', pretendToBeVisual: true });
   t.after(() => dom.window.close());
   await new Promise((resolve) => setTimeout(resolve, 400));
   const doc = dom.window.document;

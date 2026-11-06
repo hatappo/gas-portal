@@ -7,6 +7,7 @@ import { withPreviewProject, withPreviewContent } from './preview-project.mjs';
 import { sharedSources } from './gas-sources.mjs';
 import { withPortalAssets } from './portal-html.mjs';
 // Re-exported so a consumer previewing a linked checkout resolves Tailwind from this package.
+export { default as solid } from 'vite-plugin-solid';
 export { default as tailwindcss } from '@tailwindcss/vite';
 
 // This file and its mock data are not uploaded to GAS.

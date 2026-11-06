@@ -1,3 +1,5 @@
+import { mountActionView } from './action-view';
+
 (() => {
   'use strict';
   /** @param {string} id */
@@ -15,29 +17,7 @@
   let loading = false;
   let timer = 0;
 
-  /** @param {string} text @param {string} className */
-  function textNode(text, className = '') {
-    const node = document.createElement('span'); node.textContent = text; node.className = className; return node;
-  }
-  /** Providers validate their own origins; the shared renderer also rejects unsafe schemes. @param {string} text @param {string} url */
-  function link(text, url) {
-    const node = document.createElement('a'); node.textContent = text;
-    try {
-      const parsed = new URL(url);
-      if (parsed.protocol === 'https:' && !parsed.username && !parsed.password) {
-        node.href = parsed.href; node.target = '_blank'; node.rel = 'noopener noreferrer';
-      }
-    } catch { /* Invalid destinations stay inert. */ }
-    node.append((/** @type {HTMLTemplateElement} */ (el('action-external-icon'))).content.cloneNode(true));
-    return node;
-  }
-  /** @param {string} description */
-  function emptyState(description) {
-    const box = document.createElement('div'); box.className = 'status'; box.setAttribute('role', 'status');
-    const title = document.createElement('h3'); title.textContent = t('No items to display');
-    const copy = document.createElement('p'); copy.textContent = t(description);
-    box.append(title, copy); return box;
-  }
+  const updateView = mountActionView();
   function render() {
     const pending = loading || [...providers.values()].some((provider) => provider.loading || !provider.ready && !provider.error);
     refresh.disabled = pending || !sources.size && ![...providers.values()].some((provider) => provider.error);
@@ -66,38 +46,8 @@
     const freshness = el('actions-freshness');
     freshness.hidden = timestamps.length === 0;
     freshness.textContent = timestamps.length ? new Intl.DateTimeFormat(document.documentElement.lang, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(Math.min(...timestamps)) : '';
-    const status = el('actions-status'); status.replaceChildren(); status.hidden = !notices.length;
-    if (notices.length) {
-      const details = document.createElement('details'); details.open = !items.length;
-      const summary = document.createElement('summary'); summary.textContent = t('Some results could not be retrieved.');
-      const list = document.createElement('ul');
-      for (const { label, notice } of notices) {
-        const row = document.createElement('li');
-        row.append(textNode([label, notice.reason && t(notice.reason), PortalI18n.translate(notice.message, document.documentElement.lang)].filter(Boolean).join(' · ')));
-        if (notice.url) row.append(' ', link(t('View source'), notice.url));
-        list.append(row);
-      }
-      details.append(summary, list); status.append(details);
-    }
-    const content = el('action-items'); content.replaceChildren();
-    if (items.length) {
-      const list = document.createElement('ul'); list.className = 'action-item-list';
-      for (const item of items) {
-        const row = document.createElement('li');
-        const title = link(item.title, item.url); title.className = 'action-item-title link link-hover';
-        const meta = document.createElement('div'); meta.className = 'action-item-meta';
-        meta.append(textNode(item.serviceLabel, 'action-service'), textNode(item.context, 'action-context'));
-        const updated = document.createElement('time'); updated.dateTime = item.updatedAt;
-        updated.textContent = t('Updated') + ' ' + new Intl.DateTimeFormat(document.documentElement.lang, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(item.updatedAt));
-        meta.append(updated);
-        const badges = document.createElement('div'); badges.className = 'action-item-reasons';
-        item.reasons.forEach((reason) => badges.append(textNode(t(reason), 'action-item-kind badge badge-sm badge-ghost')));
-        row.append(title, meta, badges); list.append(row);
-      }
-      content.append(list);
-    } else if (!pending && !notices.length) {
-      content.append(emptyState(sources.size ? 'No action items right now.' : 'Connect a service in Settings to see your action items.'));
-    }
+    el('actions-status').hidden = !notices.length;
+    updateView({ items, notices, pending, connected: sources.size > 0, language: document.documentElement.lang });
   }
 
   function cancelBatch() {

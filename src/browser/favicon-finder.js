@@ -54,8 +54,7 @@
   copy.addEventListener('click', () => {
     const manual = () => {
       // The code sits in a collapsed section; open it so the selection is visible and focusable.
-      const details = code.closest('details');
-      if (details) details.open = true;
+      code.dispatchEvent(new Event('portal:disclosure-open', { bubbles: true }));
       code.focus();
       code.select();
       status.textContent = t('Copying is not available here. The code is selected; press Ctrl+C or ⌘C.');

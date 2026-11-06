@@ -3,12 +3,13 @@
    Translations and server code are excluded: their plain words would match component names. */
 @source "../Index.html";
 @source "./*.js";
+@source "./*.tsx";
 @plugin "daisyui" {
   /* Keep in sync with src/shared/themes.js. */
   themes: lofi --default, dracula --prefersdark, light, nord, fantasy, emerald, cmyk, acid, lemonade, cyberpunk, wireframe, dark, dim, night, forest, halloween, synthwave, black, aqua, luxury, sunset;
   /* Only the parts the portal uses. Without this, plain words in markup such as "list" or "status"
      would pull in unrelated components. Add a name here before using a new component. */
-  include: properties, rootcolor, rootscrollgutter, scrollbar, svg, alert, badge, button, card, checkbox, input, join, link, select, tab, table, textarea, tooltip, radius;
+  include: properties, rootcolor, rootscrollgutter, scrollbar, svg, alert, badge, button, card, checkbox, input, join, link, select, tab, table, textarea, radius;
   logs: false;
 }
 
@@ -38,7 +39,7 @@ button, a, input { -webkit-tap-highlight-color: transparent; }
 .external-link-icon { width: 15px; height: 15px; flex-shrink: 0; }
 main { width: 100%; max-width: 1040px; flex: 1; margin: 0 auto; padding: 0 40px 60px; }
 .intro { padding: 48px 0 36px; }
-.intro[hidden] + .portal-tabs { margin-top: 24px; }
+.intro[hidden] ~ .tab-host .portal-tabs { margin-top: 24px; }
 .preview-label { margin: 0; margin-inline-start: auto; max-width: 46%; text-align: end; font-family: "Avenir Next", Avenir, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: .18em; }
 .preview-label span { white-space: nowrap; }
 h1 { margin: 0; font-size: clamp(25px, 3.5vw, 36px); line-height: 1.6; font-weight: 600; letter-spacing: .045em; overflow-wrap: anywhere; }
@@ -60,11 +61,11 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .search-box input::placeholder { font-size: 13px; }
 .filter-toolbar { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px; }
 /* Pressed buttons (view, tags) look like btn-primary. DaisyUI reads the same aria-pressed state. */
-.segmented-control .btn[aria-pressed="true"], .tag-button[aria-pressed="true"] { --btn-color: var(--color-primary); --btn-fg: var(--color-primary-content); --btn-border: var(--color-primary); }
+.segmented-control .btn:has(input:checked), .tag-button[aria-pressed="true"] { --btn-color: var(--color-primary); --btn-fg: var(--color-primary-content); --btn-border: var(--color-primary); }
 .segmented-control .btn { font-size: 12px; font-weight: 500; }
 /* Unselected toggle buttons (view, tags) differ from the page by background alone (about 1.1:1 in DaisyUI themes).
    A base-content border at 60% keeps their outline at 3:1 or more in every theme; the theme test checks this. */
-.segmented-control .btn:not([aria-pressed="true"]), .tag-button:not([aria-pressed="true"]) { --btn-border: color-mix(in srgb, var(--color-base-content) 60%, var(--color-base-100)); }
+.segmented-control .btn:not(:has(input:checked)), .tag-button:not([aria-pressed="true"]) { --btn-border: color-mix(in srgb, var(--color-base-content) 60%, var(--color-base-100)); }
 .view-switch svg { width: 18px; height: 18px; }
 .tag-filter { display: flex; align-items: flex-start; gap: 12px; padding: 0 0 22px; }
 .tag-heading { flex-shrink: 0; display: flex; align-items: center; min-height: 32px; font-size: 12px; font-weight: 600; }
@@ -105,9 +106,8 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .status h3 { font-size: 16px; margin: 12px 0 8px; }
 .status p { font-size: 13px; margin: 0; }
 .reset-button { margin-top: 16px; }
-/* DaisyUI .alert is a grid; let the summary and list flow as a block. */
+/* DaisyUI .alert is a grid; let the disclosure and list flow as a block. */
 .warnings { display: block; margin-bottom: 20px; font-size: 12px; overflow-wrap: anywhere; }
-.warnings summary { cursor: pointer; padding: 5px 0; }
 .warnings ul { padding-left: 22px; margin-bottom: 0; list-style: disc; }
 .visually-hidden, .skip-link:not(:focus) { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .skip-link:focus { display: block; padding: 12px; background: var(--color-base-100); }
@@ -245,7 +245,6 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .action-item-kind { height: auto; }
 /* DaisyUI .alert is a grid; let notices flow as a block. */
 .action-notice { display: block; margin: 0 0 16px; font-size: 12px; line-height: 1.7; }
-.action-notice summary { cursor: pointer; }
 .action-notice ul { padding-inline-start: 18px; margin: 8px 0 0; list-style: disc; }
 .action-notice a { text-decoration: underline; }
 @media (max-width: 600px) {
@@ -256,7 +255,6 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 @media (max-width: 600px) { .github-connection { flex-wrap: wrap; } }
 
 .github-pat-help { margin: 12px 0; line-height: 1.8; }
-.github-pat-help summary { cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
 .github-pat-help .github-connection-controls { flex-wrap: wrap; }
 /* Preflight removes list markers and paragraph margins; restore them for help text. */
 .github-pat-help ul { margin: 8px 0; padding-inline-start: 20px; list-style: disc; }
@@ -314,7 +312,25 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .bookmarklet-link { border-style: dashed; cursor: grab; }
 .bookmarklet-link:active { cursor: grabbing; }
 .favicon-finder .settings-heading + p { margin: 16px 0 8px; }
-.favicon-finder details { margin-top: 8px; }
-.favicon-finder details p { margin: 8px 0; }
-.favicon-finder summary { cursor: pointer; }
+.favicon-finder .portal-disclosure { margin-top: 8px; }
+.favicon-finder .portal-disclosure p { margin: 8px 0; }
 .bookmarklet-code { display: block; margin: 8px 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; resize: vertical; }
+
+/* Headless controls keep the existing themes and compact layout. */
+.tag-options { display: contents; }
+.view-switch .btn:has(input:focus-visible) { outline: 3px solid var(--color-base-content); outline-offset: 4px; }
+.portal-tooltip { z-index: 100; max-width: min(320px, calc(100vw - 24px)); padding: 7px 10px; border-radius: var(--radius-field); background: var(--color-base-content); color: var(--color-base-100); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; box-shadow: 0 3px 12px #0003; }
+
+/* Disclosure height follows its content, including warnings received after mounting. */
+.disclosure-trigger { display: flex; align-items: baseline; gap: 10px; width: 100%; padding: 8px 6px; border: 0; border-radius: var(--radius-field); background: transparent; color: inherit; font: inherit; text-align: start; transition: background-color 140ms ease; }
+.disclosure-trigger:hover { background: color-mix(in srgb, currentColor 7%, transparent); }
+.disclosure-trigger:focus-visible { outline-offset: 2px; }
+.disclosure-chevron { display: inline-block; flex: 0 0 7px; width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform 220ms ease; }
+.disclosure-trigger[data-expanded] .disclosure-chevron { transform: rotate(45deg); }
+.disclosure-body { display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden; transition: grid-template-rows 240ms cubic-bezier(.22, 1, .36, 1), opacity 160ms ease, visibility 0s linear 240ms; }
+.disclosure-content[data-expanded] > .disclosure-body { grid-template-rows: 1fr; opacity: 1; visibility: visible; transition-delay: 0s; }
+.disclosure-inner { min-height: 0; overflow: hidden; }
+.disclosure-copy { padding: 4px 6px 6px; }
+@media (prefers-reduced-motion: reduce) {
+  .disclosure-trigger, .disclosure-chevron, .disclosure-body { transition: none; }
+}

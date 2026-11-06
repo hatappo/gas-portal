@@ -1,3 +1,6 @@
+import { createSignal } from 'solid-js';
+import { mountTabs } from './tabs';
+
 // Portal and settings tabs, kept in sync with the URL hash.
 (() => {
   'use strict';
@@ -19,27 +22,17 @@
   const settingsTabs = ['appearance', 'tools', 'actions'].map((hash) => ({
     hash, button: element('settings-tab-' + hash), panel: element('settings-' + hash + '-panel'),
   }));
-  let activeSettingsTab = 0;
+  const [activeSettingsTab, setActiveSettingsTab] = createSignal(0);
   /** @param {number} index */
   function selectSettingsTab(index) {
-    activeSettingsTab = index;
-    settingsTabs.forEach(({ button, panel }, current) => {
-      button.setAttribute('aria-selected', String(current === index));
-      button.tabIndex = current === index ? 0 : -1;
-      panel.hidden = current !== index;
-    });
+    setActiveSettingsTab(index);
   }
-  let activeTab = 0;
+  const [activeTab, setActiveTab] = createSignal(0);
   /** @param {number} index */
   function selectPortalTab(index) {
-    if (activeTab === index) return;
-    activeTab = index;
+    if (activeTab() === index) return;
+    setActiveTab(index);
     panelAnimation?.cancel();
-    portalTabs.forEach(({ button, panel }, current) => {
-      button.setAttribute('aria-selected', String(current === index));
-      button.tabIndex = current === index ? 0 : -1;
-      panel.hidden = current !== index;
-    });
     panelAnimation = PortalMotion.appear(portalTabs[index].panel);
     document.dispatchEvent(new CustomEvent('portal:tabchange', { detail: portalTabs[index].hash }));
   }
@@ -66,7 +59,7 @@
   }
 
   /** @param {number} index @param {string} [hash] */
-  function navigatePortalTab(index, hash = index === 2 && activeSettingsTab !== 0 ? 'settings/' + settingsTabs[activeSettingsTab].hash : portalTabs[index].hash) {
+  function navigatePortalTab(index, hash = index === 2 && activeSettingsTab() !== 0 ? 'settings/' + settingsTabs[activeSettingsTab()].hash : portalTabs[index].hash) {
     navigationRevision++;
     selectPortalTab(index);
     if (routeHash === hash) return;
@@ -79,6 +72,12 @@
       console.warn('PORTAL_NAVIGATION_UPDATE_FAILED');
     }
   }
+
+  mountTabs(settingsTabs, activeSettingsTab, (index) => {
+    selectSettingsTab(index);
+    navigatePortalTab(2, 'settings/' + settingsTabs[index].hash);
+  });
+  mountTabs(portalTabs, activeTab, navigatePortalTab);
 
   if (useGasHistory) {
     try {
@@ -98,37 +97,4 @@
     applyRoute(window.location.hash);
   }
 
-  settingsTabs.forEach(({ button }, index) => {
-    const navigate = (/** @type {number} */ next) => {
-      selectSettingsTab(next);
-      navigatePortalTab(2, 'settings/' + settingsTabs[next].hash);
-    };
-    button.addEventListener('click', () => navigate(index));
-    button.addEventListener('keydown', (event) => {
-      let next;
-      if (event.key === 'ArrowRight') next = (index + 1) % settingsTabs.length;
-      else if (event.key === 'ArrowLeft') next = (index + settingsTabs.length - 1) % settingsTabs.length;
-      else if (event.key === 'Home') next = 0;
-      else if (event.key === 'End') next = settingsTabs.length - 1;
-      else return;
-      event.preventDefault();
-      navigate(next);
-      settingsTabs[next].button.focus();
-    });
-  });
-
-  portalTabs.forEach(({ button }, index) => {
-    button.addEventListener('click', () => navigatePortalTab(index));
-    button.addEventListener('keydown', (event) => {
-      let next;
-      if (event.key === 'ArrowRight') next = (index + 1) % portalTabs.length;
-      else if (event.key === 'ArrowLeft') next = (index + portalTabs.length - 1) % portalTabs.length;
-      else if (event.key === 'Home') next = 0;
-      else if (event.key === 'End') next = portalTabs.length - 1;
-      else return;
-      event.preventDefault();
-      navigatePortalTab(next);
-      portalTabs[next].button.focus();
-    });
-  });
 })();

@@ -207,7 +207,7 @@ test("Skip only the tool whose URL the browser rejects, and report it", (t) => {
 test("Ignore successful responses that arrive after timeout", (t) => {
   const timers = [];
   const { dom, document, requests } = browser((window) => {
-    window.setTimeout = (callback) => { timers.push(callback); return timers.length; };
+    window.setTimeout = (callback, delay) => { if (delay === 30000) timers.push(callback); return timers.length; };
     window.clearTimeout = () => {};
   });
   t.after(() => dom.window.close());
@@ -240,9 +240,11 @@ test("Render related link rows as independent safe links with tooltips in both v
       assert.match(link.textContent, /新しいタブ/);
     });
     const [described, plainItem] = document.querySelectorAll(`${container} .related-links li`);
-    assert.ok(described.classList.contains('tooltip'));
-    assert.equal(described.classList.contains('tooltip-left'), container === '#tool-rows', 'List-view tooltips open leftward inside the table');
-    assert.equal(described.dataset.tip, '<marquee>手順</marquee>の説明', 'Tooltips are attribute text, never HTML');
+    described.querySelector('a').focus();
+    const tooltip = document.querySelector('[role="tooltip"]');
+    assert.equal(tooltip.textContent, '<marquee>手順</marquee>の説明', 'Tooltip content is text, never HTML');
+    assert.equal(described.querySelector('a').getAttribute('aria-describedby'), tooltip.id);
+    described.querySelector('a').blur();
     assert.equal(described.querySelector('a').getAttribute('aria-description'), '<marquee>手順</marquee>の説明');
     assert.equal(plainItem.classList.contains('tooltip'), false);
     assert.equal(plainItem.querySelector('a').hasAttribute('aria-description'), false);
@@ -627,4 +629,26 @@ test('Ignore malformed icons in the browser and keep the tool', (t) => {
     assert.equal(frame.classList.contains('is-text'), false, String(icon));
     assert.equal(frame.querySelector('img').src, new URL(catalog.tools[0].url).origin + '/favicon.ico', String(icon));
   }
+});
+
+test('Solid preserves matching cards, loaded favicons, and tag focus across filters and language changes', (t) => {
+  const { dom, document, requests } = browser();
+  t.after(() => dom.window.close());
+  requests[0].success(catalog);
+  const card = document.querySelector('#tools > li');
+  const icon = card.querySelector('img');
+  icon.dispatchEvent(new dom.window.Event('load'));
+  const tag = [...document.querySelectorAll('#tags button')].find((button) => button.textContent === '業務');
+  tag.focus(); tag.click();
+  assert.equal(document.activeElement, tag);
+  assert.equal(document.querySelector('#tools > li'), card);
+  assert.equal(card.querySelector('img'), icon);
+  assert.equal(card.querySelector('.tool-favicon').classList.contains('is-loaded'), true);
+  document.documentElement.lang = 'en';
+  document.dispatchEvent(new dom.window.Event('portal:languagechange'));
+  assert.equal(document.querySelector('#tools > li'), card);
+  assert.equal(card.querySelector('img'), icon);
+  assert.equal(document.activeElement, tag);
+  assert.match(card.textContent, /opens in a new tab/);
+  assert.equal(document.querySelector('#tags button').textContent, 'All');
 });
