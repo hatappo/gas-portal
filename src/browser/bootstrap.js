@@ -13,11 +13,12 @@ import { initializeFaviconFinder } from './favicon-finder.js';
 import { initializeSpreadsheetSettings } from './spreadsheet-settings.js';
 import { initializeActions } from './action-items.js';
 import { initializeGitHub } from './github.js';
+import { initializeSlack } from './slack.js';
 import { mountDisclosures } from './disclosure';
 import { mountRefreshHints } from './ui';
 
-/** @param {{connectGitHub?: typeof initializeGitHub}} [options] */
-export function initializePortal({ connectGitHub = initializeGitHub } = {}) {
+/** @param {{connectGitHub?: typeof initializeGitHub, connectSlack?: typeof initializeSlack}} [options] */
+export function initializePortal({ connectGitHub = initializeGitHub, connectSlack = initializeSlack } = {}) {
   const motion = createMotion();
   initializeLanguage();
   initializeNavigation(motion);
@@ -31,6 +32,7 @@ export function initializePortal({ connectGitHub = initializeGitHub } = {}) {
   initializeSpreadsheetSettings();
   const actions = initializeActions();
   connectGitHub(actions);
+  connectSlack(actions);
   mountRefreshHints();
   return { actions };
 }

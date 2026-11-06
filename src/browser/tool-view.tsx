@@ -39,9 +39,10 @@ function Favicon(props: { url: string; icon?: string; class: string; size: numbe
   </span>;
 }
 
-function Tags(props: { tool: CatalogTool }) {
+type TaggedTool = { tool: CatalogTool; tagColor: (tag: string) => string | undefined };
+function Tags(props: TaggedTool) {
   return <div class="tool-tags" hidden={!props.tool.tags.length}>
-    <For each={props.tool.tags}>{(tag) => <span class="tool-tag badge badge-sm">{tag}</span>}</For>
+    <For each={props.tool.tags}>{(tag) => <span class="tool-tag badge badge-sm" style={{ "--tag-accent": props.tagColor(tag) }}>{tag}</span>}</For>
   </div>;
 }
 function BlockedUrl(props: { url: string; language: string }) {
@@ -72,25 +73,25 @@ function RelatedLinks(props: Presentation & { tool: CatalogTool; tooltipLeft?: b
     }}</For>
   </ul>;
 }
-export function ToolCard(props: Presentation & { tool: CatalogTool }) {
+export function ToolCard(props: Presentation & TaggedTool) {
   const blocked = () => PortalUrlSchemes.isBlocked(props.tool.url, props.unblocked);
   return <li><article class="tool-card card card-border bg-base-100" classList={{ 'is-blocked': blocked() }}>
     <ToolLink url={props.tool.url} language={props.language} unblocked={props.unblocked} class="tool-main">
       <h3><Favicon url={props.tool.url} icon={props.tool.icon} class="tool-favicon" size={20} /><span>{props.tool.name}</span></h3>
       <p class="tool-description">{props.tool.description}</p>
       <Show when={blocked()}><BlockedUrl url={props.tool.url} language={props.language} /></Show>
-      <Tags tool={props.tool} />
+      <Tags tool={props.tool} tagColor={props.tagColor} />
     </ToolLink>
     <Show when={props.tool.children?.length}><RelatedLinks tool={props.tool} language={props.language} unblocked={props.unblocked} /></Show>
   </article></li>;
 }
-export function ToolRow(props: Presentation & { tool: CatalogTool }) {
+export function ToolRow(props: Presentation & TaggedTool) {
   return <tr><th scope="row">
     <ToolLink url={props.tool.url} language={props.language} unblocked={props.unblocked} class="tool-name-link">
       <Favicon url={props.tool.url} icon={props.tool.icon} class="tool-favicon" size={20} /><span>{props.tool.name}</span>
     </ToolLink>
     <Show when={PortalUrlSchemes.isBlocked(props.tool.url, props.unblocked)}><BlockedUrl url={props.tool.url} language={props.language} /></Show>
-  </th><td>{props.tool.description || '—'}</td><td><Tags tool={props.tool} /></td><td>
+  </th><td>{props.tool.description || '—'}</td><td><Tags tool={props.tool} tagColor={props.tagColor} /></td><td>
     <Show when={props.tool.children?.length} fallback="—"><RelatedLinks tool={props.tool} language={props.language} unblocked={props.unblocked} tooltipLeft /></Show>
   </td></tr>;
 }

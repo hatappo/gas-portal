@@ -27,7 +27,7 @@ test('Fetch all connections in parallel, commit once, and deduplicate across con
   app.calls[0].done(result());
   assert.equal(app.rows().length, 1);
   assert.equal(app.rows()[0].querySelectorAll('.action-item-kind').length, 2);
-  assert.equal(app.document.getElementById('actions-count').textContent, '1 件を表示');
+  assert.equal(app.document.getElementById('actions-count').textContent, '1 / 1 件');
   assert.equal(app.refresh.disabled, false);
   const snapshot = app.document.getElementById('action-items').innerHTML;
   app.refresh.click(); app.refresh.click();
@@ -48,7 +48,7 @@ test('Combine services without ID collisions, sort by update time, and show the 
   assert.equal(app.rows().length, 2);
   assert.match(app.rows()[0].textContent, /Meeting/);
   assert.equal(app.rows()[0].querySelector('.action-service').textContent, 'Google Calendar');
-  assert.equal(app.document.getElementById('actions-freshness').textContent, new Intl.DateTimeFormat('ja', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(1700000000000));
+  assert.equal(app.document.getElementById('actions-freshness').textContent, new Intl.DateTimeFormat('ja', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(1700000000000) + ' 取得');
   app.refresh.click();
   assert.equal(app.calls.length, 4);
   assert.ok(app.calls.slice(2).every((call) => call.force));
@@ -110,7 +110,7 @@ test('Solid retains focused rows through loading, language changes and refreshed
   assert.equal(app.rows()[0], row);
   assert.equal(app.document.activeElement, link);
   assert.match(link.textContent, /New title/);
-  assert.equal(row.querySelector('.action-item-kind').textContent, 'Changes requested');
+  assert.equal(row.querySelector('.action-item-kind').textContent, 'GitHub Changes requested');
 });
 
 test('Reconciled notices update their source label and error text after a connection changes', (t) => {
@@ -144,4 +144,114 @@ test('Error disclosure preserves user toggles and expands when all results becom
   app.refresh.click();
   app.calls[2].done(result());
   assert.equal(app.document.querySelector('#actions-status .portal-disclosure'), null);
+});
+
+test('Action type filters use OR across services and reasons without requests or duplicate rows', t => {
+  const app = fixture(t);
+  const assigned = { ...item, id: 'issue', title: 'Assigned', reasons: ['Assigned issue'] };
+  const review = { ...item, id: 'review', title: 'Review', reasons: ['Direct review', 'Team review'] };
+  const bookmark = { ...item, service: 'slack', serviceLabel: 'Slack', id: 'saved', title: 'Saved', reasons: ['Bookmark'] };
+  app.api.setSources('demo', [app.source('all')]); app.start();
+  app.calls[0].done(result([assigned, review, bookmark]));
+  const filter = text => [...app.document.querySelectorAll('#action-filters button')].find(button => button.textContent === text);
+  assert.deepEqual([...app.document.querySelectorAll('.action-item-kind')].map(node => node.textContent), ['GitHub 担当 Issue', 'GitHub 直接のレビュー依頼', 'GitHub チームへのレビュー依頼', 'Slack ブックマーク']);
+  filter('GitHub 担当 Issue').click();
+  assert.equal(app.rows().length, 1);
+  assert.equal(app.document.getElementById('actions-count').textContent, '1 / 3 件');
+  filter('Slack ブックマーク').click();
+  assert.equal(app.rows().length, 2, 'Either selected type matches');
+  filter('GitHub 直接のレビュー依頼').click(); filter('GitHub チームへのレビュー依頼').click();
+  assert.equal(app.rows().length, 3, 'A PR matching two reasons still appears once');
+  assert.equal(app.calls.length, 1, 'Filtering must never call a service');
+  filter('すべて').click();
+  assert.equal(app.rows().length, 3);
+  assert.equal(filter('すべて').getAttribute('aria-pressed'), 'true');
+});
+
+test('Action type selection survives refresh, language and tab changes, with a clearable zero-match state', t => {
+  const app = fixture(t);
+  app.api.setSources('demo', [app.source('all')]); app.start();
+  app.calls[0].done(result());
+  const button = app.document.querySelector('.action-type-button'); button.focus(); button.click();
+  assert.equal(app.document.activeElement, button);
+  app.document.documentElement.lang = 'en';
+  app.document.dispatchEvent(new app.dom.window.Event('portal:languagechange'));
+  assert.equal(app.document.querySelector('.action-type-button'), button);
+  assert.equal(button.textContent, 'GitHub Direct review');
+  app.document.getElementById('tab-tools').click(); app.start();
+  assert.equal(button.getAttribute('aria-pressed'), 'true');
+  app.refresh.click();
+  assert.equal(app.rows().length, 1);
+  app.calls[1].done(result([{ ...item, id: 'issue', reasons: ['Assigned issue'] }]));
+  assert.equal(app.rows().length, 0);
+  assert.equal(button.getAttribute('aria-pressed'), 'true', 'Keep absent selected types so the filter remains explainable');
+  assert.match(app.document.getElementById('action-items').textContent, /No items match your filters/);
+  app.document.querySelector('#action-items .reset-button').click();
+  assert.equal(app.rows().length, 1);
+});
+
+test('Action type identity includes the service even when reason names match', t => {
+  const app = fixture(t);
+  app.api.setSources('demo', [app.source('all')]); app.start();
+  app.calls[0].done(result([item, { ...item, service: 'other', serviceLabel: 'Other', id: 'same-reason' }]));
+  app.document.querySelector('.action-type-button').click();
+  assert.equal(app.rows().length, 1);
+  assert.match(app.rows()[0].textContent, /GitHub/);
+});
+
+test('Tools and Actions share count and retrieval copy in both languages while keeping source details in tooltips', t => {
+  const app = fixture(t);
+  const fetchedAt = 1700000000000;
+  app.requests[0].success({ ok: true, tools: [{ id: 'one', name: 'One', url: 'https://example.com', description: '', tags: [] }], issues: [], cache: { hit: true, fetchedAt } });
+  app.api.setSources('github', [app.source('a')]); app.start();
+  app.calls[0].done({ ...result([item], fetchedAt), cached: true });
+  for (const language of ['ja', 'en']) {
+    app.document.documentElement.lang = language;
+    app.document.dispatchEvent(new app.dom.window.Event('portal:languagechange'));
+    assert.equal(app.document.getElementById('count').textContent, app.document.getElementById('actions-count').textContent);
+    assert.equal(app.document.getElementById('catalog-freshness').textContent, app.document.getElementById('actions-freshness').textContent);
+    assert.equal(app.document.getElementById('catalog-freshness').title, app.document.getElementById('actions-freshness').title);
+    assert.doesNotMatch(app.document.getElementById('catalog-freshness').textContent, /Cached|キャッシュ/);
+    assert.match(app.document.getElementById('catalog-freshness').title, /Cached|キャッシュ/);
+    for (const kind of ['catalog', 'actions']) assert.ok(app.document.getElementById('refresh-' + kind).getAttribute('aria-describedby').includes(kind + '-freshness'));
+  }
+});
+
+test('Action search matches loaded titles and messages, combines with type filters, and survives refresh', t => {
+  const app = fixture(t);
+  const bookmark = { ...item, service: 'slack', serviceLabel: 'Slack', id: 'saved', title: 'REVIEW 資料の確認', reasons: ['Bookmark'] };
+  app.api.setSources('demo', [app.source('all')]); app.start();
+  app.calls[0].done({ ...result([item, bookmark]), hasMore: true });
+  const search = app.document.getElementById('actions-search');
+  const enter = value => { search.value = value; search.dispatchEvent(new app.dom.window.Event('input')); };
+  enter('  ｒｅｖｉｅｗ  ');
+  assert.equal(app.rows().length, 2, 'Normalize case and full-width input');
+  const filter = [...app.document.querySelectorAll('.action-type-button')].find(node => node.textContent === 'Slack ブックマーク');
+  filter.click();
+  assert.equal(app.rows().length, 1, 'Text AND selected types');
+  enter('資料');
+  assert.equal(app.rows().length, 1, 'Slack message excerpt is searchable');
+  assert.equal(app.calls.length, 1, 'Typing and filtering do not send requests');
+  assert.ok(app.document.querySelector('.action-more-results'), 'Search keeps the additional-results notice visible');
+  app.document.querySelector('#action-filters .tag-button').click();
+  assert.equal(search.value, '資料', 'All clears types only');
+  assert.equal(app.rows().length, 1);
+  filter.click();
+  app.document.getElementById('tab-tools').click(); app.start();
+  app.document.documentElement.lang = 'en';
+  app.document.dispatchEvent(new app.dom.window.Event('portal:languagechange'));
+  assert.equal(search.value, '資料');
+  app.refresh.click();
+  app.calls[1].done(result([item, { ...bookmark, title: 'Different message' }]));
+  assert.equal(app.rows().length, 0);
+  assert.equal(app.document.getElementById('actions-count').textContent, '0 / 2 items');
+  assert.match(app.document.getElementById('action-items').textContent, /No items match your filters/);
+  app.document.querySelector('#action-items .reset-button').click();
+  assert.equal(search.value, '');
+  assert.equal(app.document.activeElement, search);
+  assert.equal(app.rows().length, 2);
+  enter('acme/portal');
+  assert.equal(app.rows().length, 0, 'Do not match metadata outside titles or messages');
+  enter('   ');
+  assert.equal(app.rows().length, 2);
 });

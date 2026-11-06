@@ -1,10 +1,9 @@
+import { renderListFreshness } from './list-presentation.js';
 import { mountActionView } from './action-view';
 
 export function initializeActions() {
   /** @param {string} id */
   const el = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
-  /** @param {string} key @param {Record<string, string | number>} [values] */
-  const t = (key, values = {}) => PortalI18n.t(key, document.documentElement.lang, values);
   const refresh = /** @type {HTMLButtonElement} */ (el('refresh-actions'));
   /** @type {Map<string, {ready: boolean, loading: boolean, error: string}>} */
   const providers = new Map();
@@ -14,6 +13,7 @@ export function initializeActions() {
   let results = new Map();
   let generation = 0;
   let loading = false;
+  let forcePending = false;
   let timer = 0;
 
   const updateView = mountActionView();
@@ -27,10 +27,12 @@ export function initializeActions() {
     /** @type {Array<{label: string, notice: ActionNotice}>} */
     const notices = [];
     const timestamps = [];
+    const moreSources = [];
     for (const provider of providers.values()) if (provider.error) notices.push({ label: '', notice: { message: provider.error } });
     for (const [key, source] of sources) {
       const result = results.get(key);
       if (!result) continue;
+      if (result.hasMore) moreSources.push(source.serviceLabel + ' · ' + source.label);
       if (result.fetchedAt !== undefined) timestamps.push(result.fetchedAt);
       result.notices.forEach((notice) => notices.push({ label: source.serviceLabel + ' · ' + source.label, notice }));
       for (const item of result.items) {
@@ -41,12 +43,13 @@ export function initializeActions() {
       }
     }
     const items = [...unique.values()].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt) || (a.service + ':' + a.id).localeCompare(b.service + ':' + b.id));
-    el('actions-count').textContent = results.size || !pending ? t('{count} shown', { count: items.length }) : '—';
-    const freshness = el('actions-freshness');
-    freshness.hidden = timestamps.length === 0;
-    freshness.textContent = timestamps.length ? new Intl.DateTimeFormat(document.documentElement.lang, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(Math.min(...timestamps)) : '';
+    renderListFreshness(el('actions-freshness'), {
+      fetchedAt: timestamps.length ? Math.min(...timestamps) : undefined,
+      cached: timestamps.length > 0 && [...results.values()].filter(result => result.fetchedAt !== undefined).every(result => result.cached === true),
+      oldest: sources.size > 1,
+    }, document.documentElement.lang);
     el('actions-status').hidden = !notices.length;
-    updateView({ items, notices, pending, connected: sources.size > 0, language: document.documentElement.lang });
+    updateView({ items, notices, moreSources, pending, hasResults: results.size > 0, connected: sources.size > 0, language: document.documentElement.lang });
   }
 
   function cancelBatch() {
@@ -54,7 +57,9 @@ export function initializeActions() {
   }
   /** Start independent RPCs together, commit once, and ignore obsolete callbacks. @param {boolean} [force] */
   function loadAll(force = false) {
-    if (loading || !sources.size) return;
+    if (loading || !sources.size || [...providers.values()].some((provider) => !provider.ready && !provider.error)) return;
+    force = force || forcePending;
+    forcePending = false;
     const current = ++generation;
     const pending = new Set(sources.keys());
     const next = new Map();
@@ -80,11 +85,11 @@ export function initializeActions() {
     }
   }
   function loadVisible() {
-    if (!el('actions-panel').hidden && [...sources.keys()].some((key) => !results.has(key))) loadAll();
+    if (!el('actions-panel').hidden && (forcePending || [...sources.keys()].some((key) => !results.has(key)))) loadAll();
   }
   const actions = {
     /** @param {string} provider @param {{ready: boolean, loading: boolean, error: string}} state */
-    setProviderState(provider, state) { providers.set(provider, state); render(); },
+    setProviderState(provider, state) { providers.set(provider, state); render(); loadVisible(); },
     /** @param {string} provider @param {ActionSource[]} entries */
     setSources(provider, entries) {
       // Preserve unchanged adapters, but discard removed/edited sources and in-flight batches.
@@ -100,8 +105,13 @@ export function initializeActions() {
   };
   refresh.addEventListener('click', () => {
     if (refresh.disabled) return;
+    forcePending = true;
     document.dispatchEvent(new Event('portal:refresh-actions'));
     loadAll(true);
+  });
+  el('actions-settings').addEventListener('click', () => {
+    el('settings-tab-actions').click();
+    el('settings-tab-actions').focus();
   });
   document.addEventListener('portal:tabchange', loadVisible);
   document.addEventListener('portal:languagechange', render);

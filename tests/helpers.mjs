@@ -20,9 +20,9 @@ export async function bundleModule(source) {
   }], build: { write: false, minify: false, lib: { entry: entryId, name: 'PortalTest', formats: ['iife'] } } });
   return (Array.isArray(result) ? result : [result]).flatMap((bundle) => bundle.output).find((file) => file.type === 'chunk').code;
 }
-export async function bundleBrowser({ connectGitHub = true, start = true } = {}) {
+export async function bundleBrowser({ connectGitHub = true, connectSlack = false, start = true } = {}) {
   const imports = sharedSources.map(file => `import ${JSON.stringify(path.resolve(file))};`).join('\n');
-  const init = `initializePortal(${connectGitHub ? '' : '{ connectGitHub: () => {} }'})`;
+  const init = `initializePortal({ ${connectGitHub ? '' : 'connectGitHub: () => {},'} ${connectSlack ? '' : 'connectSlack: () => {},'} })`;
   return bundleModule(`${imports}
     import { initializePortal } from ${JSON.stringify(path.resolve('src/browser/bootstrap.js'))};
     ${start ? `window.testPortal = ${init};` : `window.startPortal = () => ${init};`}`);
@@ -89,8 +89,14 @@ export function browser(setupWindow = () => {}, client = browserClient, source =
   const sourceSettingsRequests = [];
   const creationRequests = [];
   const githubRequests = [];
+  const slackRequests = [];
   const urlSchemeRequests = [];
   const runner = {
+    saveSlackBookmarkLimit(limit) { slackRequests.push({ kind: 'limit', limit, success: this.success, failure: this.failure }); },
+    getSlackConnections() { slackRequests.push({ kind: 'connections', success: this.success, failure: this.failure }); },
+    saveSlackConnection(input) { slackRequests.push({ kind: 'save', input, success: this.success, failure: this.failure }); },
+    disconnectSlack(id) { slackRequests.push({ kind: 'disconnect', id, success: this.success, failure: this.failure }); },
+    getSlackActionItems(id, force) { slackRequests.push({ kind: 'actions', id, force, success: this.success, failure: this.failure }); },
     getGitHubConnections() { githubRequests.push({ kind: 'connections', success: this.success, failure: this.failure }); },
     saveGitHubConnection(input) { githubRequests.push({ kind: 'save', input, success: this.success, failure: this.failure }); },
     disconnectGitHub(id) { githubRequests.push({ kind: 'disconnect', id, success: this.success, failure: this.failure }); },
@@ -111,7 +117,7 @@ export function browser(setupWindow = () => {}, client = browserClient, source =
   setupWindow(dom.window);
   for (const file of sharedSources) dom.window.eval(readFileSync(file, 'utf8'));
   dom.window.eval(client);
-  return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests, cacheSettingsRequests, sourceSettingsRequests, creationRequests, githubRequests, urlSchemeRequests };
+  return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests, cacheSettingsRequests, sourceSettingsRequests, creationRequests, githubRequests, slackRequests, urlSchemeRequests };
 }
 
 export const catalog = {

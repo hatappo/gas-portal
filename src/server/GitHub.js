@@ -21,7 +21,7 @@ function githubConnections_() {
 
 /** @param {GitHubConnection} connection */
 function githubPublicConnection_(connection) {
-  return { id: connection.id, label: (connection.owner || '*') + '@' + connection.login, login: connection.login, owner: connection.owner };
+  return { id: connection.id, label: (connection.owner || '*') + '@' + connection.login, login: connection.login, owner: connection.owner, tokenSuffix: connection.token.slice(-2) };
 }
 
 /** Metadata only. This RPC does not make GitHub requests. */

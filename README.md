@@ -2,7 +2,7 @@
 
 A personal work portal built with Google Apps Script, with a CLI for building, previewing, and deploying separate work environments.
 
-Display links from a spreadsheet as cards or a list. Connect an existing spreadsheet or create a new one with a typed table and column notes from Settings. Links may use app schemes such as `vscode://`; script schemes are always blocked, and other risky schemes are blocked until you allow them in Settings (see [URL schemes](docs/usage.md#url-schemes)). Search by name, description, or tags; filter by tags; add related links as rows with a blank id below their tool; and customize the appearance with 21 [DaisyUI](https://daisyui.com/) themes and editable display text. The settings tab lets you switch between Japanese and English; your language preference is saved in User Properties. The initial selection follows browser preferences, with English as the fallback. Action Items shows assigned GitHub issues, direct/team review requests, and changes requested on your own open PRs through user-managed fine-grained tokens. Configure up to three connections in Settings. Action Items combines their results into one deduplicated list with service labels and a single refresh button. Connections load in parallel, independently of the tool catalog, and share a configurable cache duration (five minutes by default). See [GitHub setup](docs/usage.md#github-action-items) for permissions, filters, and limitations.
+Display links from a spreadsheet as cards or a list. Connect an existing spreadsheet or create a new one with a typed table and column notes from Settings. Links may use app schemes such as `vscode://`; script schemes are always blocked, and other risky schemes are blocked until you allow them in Settings (see [URL schemes](docs/usage.md#url-schemes)). Search by name, description, or tags; filter by tags; add related links as rows with a blank id below their tool; and customize the appearance with 21 [DaisyUI](https://daisyui.com/) themes and editable display text. The settings tab lets you switch between Japanese and English; your language preference is saved in User Properties. The initial selection follows browser preferences, with English as the fallback. Action Items shows assigned GitHub issues, direct/team review requests, and changes requested on your own open PRs through user-managed fine-grained tokens. Slack saved-message search adds bookmarks to the same queue; see [Slack setup](docs/usage.md#slack-bookmarks). Configure up to three connections per service in Settings. Action Items combines their results into one deduplicated list with service labels and a single refresh button. Connections load in parallel, independently of the tool catalog, and share a configurable cache duration (five minutes by default). See [GitHub setup](docs/usage.md#github-action-items) for permissions, filters, and limitations.
 
 **Consumer projects only need configuration and a package dependency.** The CLI generates GAS code under `.portal/`. Each work environment can use its own Google account, Apps Script project, and spreadsheet.
 
@@ -101,15 +101,15 @@ npm run pack:local
 
 The frontend uses [Solid](https://www.solidjs.com/) 1.x with [Kobalte](https://kobalte.dev/) tabs, tooltips, segmented controls, radio groups, toggle groups, and collapsible disclosures. `src/browser/*-view.tsx` owns the dynamic Tools and Action Items lists; `tabs.tsx` adopts the server-rendered panels so tab navigation preserves form drafts. The adjacent JavaScript controllers coordinate GAS RPCs, validation, timeouts, and routing. The theme picker uses a controlled Radio Group and retains the shared save helper for rollback and timeouts. The portal-content form uses `settings-view.tsx` for input state, disabled controls, translated labels, and IME-safe icon entry. Its controller retains RPC validation and applies saved text to the page. Spreadsheet and service connection forms retain their existing DOM controllers and can be migrated independently. The initial HTML form supplies server-rendered values before the Solid enhancement mounts. Disclosures share a 240ms height transition, keep their content mounted for controller updates, and respect reduced-motion preferences. Do not mutate Solid-owned list contents from those controllers. Shared translations, theme definitions, and catalog rules remain usable by both the browser and GAS.
 
-`main.js` loads the browser/server shared definitions and calls `initializePortal` in `bootstrap.js`. Feature modules export initializers; importing them does not mount UI or start RPCs. The composition root passes the motion service to navigation/catalog and the Action Items coordinator to GitHub. Save helpers use module imports instead of window globals. Keep initialization order and service wiring in this one place.
+`main.js` loads the browser/server shared definitions and calls `initializePortal` in `bootstrap.js`. Feature modules export initializers; importing them does not mount UI or start RPCs. The composition root passes the motion service to navigation/catalog and the Action Items coordinator to GitHub and Slack. Save helpers use module imports instead of window globals. Keep initialization order and service wiring in this one place.
 
-Server sources are grouped by responsibility: `Code.js` handles page rendering and catalog RPC responses, `Settings.js` owns user preferences/initialization, and `SpreadsheetSetup.js` owns source settings and spreadsheet creation. `scripts/gas-sources.mjs` maps them to the existing GAS outputs; build, preview, and tests use the same source list. The deployed project still contains seven files, with unchanged RPC names and OAuth scopes.
+Server sources are grouped by responsibility: `Code.js` handles page rendering and catalog RPC responses, `Settings.js` owns user preferences/initialization, `SpreadsheetSetup.js` owns source settings and spreadsheet creation, and `GitHub.js`/`Slack.js` own service credentials and reads. `scripts/gas-sources.mjs` maps them to the existing GAS outputs; build, preview, and tests use the same source list. The deployed project still contains seven files, preserving existing RPC names and OAuth scopes.
 
 Solid and Kobalte are build-time dependencies, bundled into `Client.html`; deployed portals do not fetch them from a CDN. Source development, linked consumer previews, and production builds use the same Solid Vite plugin. Browser tests compile the components with this plugin before running their interactions in jsdom.
 
 Application source lives in `src/`; the CLI lives in `bin/` and `lib/`. Styles use [Tailwind CSS](https://tailwindcss.com/) v4 and [DaisyUI](https://daisyui.com/) v5, compiled into the inline GAS stylesheet at build time. Prefer DaisyUI components (`btn`, `input`, `card`, `badge`, …) and DaisyUI color variables over custom colors. The `include` list in `src/browser/styles.css` names the DaisyUI parts in use; add a component there before using it. Use `primary` only as a fill, not as text color, so every theme keeps readable contrast. `npm run build` generates GAS output in `dist/` and package assets in `assets/`. Published packages contain the CLI, compiled assets, and usage documentation. They exclude source files, tests, environment configuration, and credentials.
 
-`npm run screenshots` captures the local preview in every theme at 1280px and 390px for visual review, and writes per-theme images plus one contact sheet per view and width to the untracked `screenshots/` directory. It takes about 20 seconds. Narrow it with `--themes nord,night`, `--views tools,appearance`, or `--widths 390`; views are `tools`, `list`, `actions`, `appearance`, `settings-tools`, and `settings-actions`. It uses Playwright and is not part of `npm run check` or CI. The separate `npm run test:browser` smoke suite runs in CI and covers navigation/drafts, saving/resetting display settings, disclosure accessibility, and responsive card layout in two representative themes. Install the browser once with `npx playwright install chromium` (about 100MB). Page errors make the command fail.
+`npm run screenshots` captures the local preview in every theme at 1280px and 390px for visual review, and writes per-theme images plus one contact sheet per view and width to the untracked `screenshots/` directory. It takes about 20 seconds. Narrow it with `--themes nord,night`, `--views tools,appearance`, or `--widths 390`; views are `tools`, `list`, `actions`, `appearance`, `settings-tools`, and `settings-actions`. It uses Playwright and is not part of `npm run check` or CI. The separate `npm run test:browser` smoke suite runs in CI and covers navigation/drafts, saving/resetting display settings, disclosure accessibility, responsive card layout in two representative themes, and mixed GitHub/Slack actions with Slack connection settings. Install the browser once with `npx playwright install chromium` (about 100MB). Page errors make the command fail.
 
 To preview the GAS footer link during development, set `scriptId` in an untracked `.clasp.json`. The optional `SPREADSHEET_ID` environment variable accepts an ID or Google Sheets URL to preview the spreadsheet setting and footer link. Neither value is embedded in packaged assets.
 
@@ -134,6 +134,57 @@ npm run preview
 ```
 
 Add `install-links=false` to the consumer's `.npmrc` to keep the dependency as a symbolic link. Running npm ci in the consumer does not install dependencies in the linked repository. The consumer preview detects the linked source checkout and uses Vite HMR. Rebuild in this repository before `build`, `push`, or `ship` to update the packaged GAS output. Restart the preview after CLI or preview-server script changes. A directory dependency does not pin source contents in the lockfile; use release tarballs for regular work environments.
+
+## Slack saved-message probe
+
+Before implementing [Slack Action Items (#6)](https://github.com/hatappo/gas-portal/issues/6), test saved-message search from a source checkout. No GAS deployment is needed; the script makes two read-only requests directly to Slack and writes no files.
+
+1. Create an internal app for your test workspace at [Your Apps](https://api.slack.com/apps).
+2. Under **OAuth & Permissions → Scopes → User Token Scopes**, add `search:read`. This allows searching content accessible to the user, not just saved messages. No write scope or bot token is needed.
+3. Install/reinstall the app to the workspace and complete any required administrator approval. Copy the **User OAuth Token** (`xoxp-…`) locally.
+4. In this repository, run `npm run probe:slack` and paste the token at the hidden prompt. Do not put it in command arguments, files, chat, issues, or screenshots. Ctrl+C cancels. Each run prompts again; the token is not persisted.
+5. Compare the returned permalinks with your own Saved/To-dos in Slack. The script reports workspace/user IDs so you can confirm the account. It omits message bodies, but output still contains private message links; keep it local.
+
+The probe calls `auth.test`, then `search.messages` with `is:saved` by default. It fetches at most 100 results without automatic pagination or retries. `reportedSearchTotal` is Slack's search count, not a task count; `hasMore: true` means this page is incomplete, and `null` means completion cannot be determined. Zero results do not establish that your To-do list is empty. On `missing_scope`, add the **user** scope and reinstall; on rate limiting, wait for the reported delay.
+
+Test a known saved public-channel message, a private-channel message/DM, and an unsaved control message. Save/unsave the same message and rerun after allowing for indexing delay. Separately test message-backed To-dos, completed To-dos, manual To-dos, and saved files. Record which appear: message search is not guaranteed to cover To-do lifecycle fields, manual tasks or file-only saves.
+
+To compare search modes or investigate a missing bookmark, pass a query:
+
+```sh
+npm run probe:slack -- --query 'is:to-do'
+npm run probe:slack -- --query 'is:saved before:2026-10-10'
+```
+
+Use exactly the same query in the Slack UI and compare the resulting message links, not only counts. Date filters apply to the message date, not when it was bookmarked. If a known old message is still missing, search for a distinctive phrase from it in its channel **without** `is:saved`, in both the UI and the probe. This distinguishes a general API visibility/search mismatch from one specific to saved-item filtering. `echoedQuery` records Slack's returned query when present; an echo or a successful response does not prove every modifier was applied. Verify `is:to-do` with a known To-do and an ordinary message as a negative control, then compare after marking the To-do complete. This remains message search; it cannot establish coverage of manually entered To-dos.
+
+To inspect whether a search response contains completion metadata:
+
+```sh
+npm run probe:slack -- --query 'is:to-do' --inspect
+```
+
+The optional `inspection` output lists response field paths, types, and boolean values. It never prints raw string or numeric values, including message bodies. It samples only the first element of each array, with a maximum depth of five and 150 fields; `truncated` reports sampling or limits. Use a query selecting the test message if multiple results exist. A candidate status field can then be checked before/after completion; its absence from one sampled response is not proof that no API can expose completion state.
+
+For a complete first-page response, including **all returned message bodies, blocks and metadata**, explicitly enable raw output:
+
+```sh
+npm run probe:slack -- --query 'is:to-do' --raw
+```
+
+`rawResponse` is the JSON returned by `search.messages`, without the depth or array sampling used by `--inspect`. The token supplied to this run is redacted if it appears anywhere in the response; request headers and authentication responses are not included. Normal output remains unchanged without `--raw`. No files are written, and there is still no automatic pagination: the response covers at most the first 100 search results. Use a test conversation whose content can be inspected. Compare the completed and incomplete messages, including nested fields; for a stronger check, run the same query before and after changing **the same** test To-do's completion state without editing its message text. Different message text or a search score does not establish a completion-state field.
+
+A separate, explicit experiment tests whether an ordinary app-issued **User OAuth Token** can call the undocumented `saved.list` endpoint observed in Slack's To-do screen:
+
+```sh
+npm run probe:slack -- --saved-list --raw
+```
+
+This makes `auth.test` followed by one form POST to `https://slack.com/api/saved.list`, requesting `limit=15`, `filter=todo_with_completed`, and `include_tombstones=true`. It uses only the entered `xoxp-` token, with no browser credentials/cookies, preference writes, retries, or automatic pagination. The filter is copied from an observed client request; its semantics and dependence on user preferences are **not** a stable or documented contract. `state`, `todo_state`, completion/due dates, and item IDs are shown when returned. Unknown pagination stays `null`.
+
+Use the existing app token first; no supported public scope for this method has been identified. `not_allowed_token_type`, `unknown_method`, or `missing_scope` is a failed experiment, not an empty list. Do not infer that adding arbitrary scopes will fix it or that browser credentials should replace the app token. `unknown_method` only describes the standard API route tested. Even a successful response establishes observed behavior, not official support or suitability for distribution. The live experiment returned `not_allowed_token_type` with an app-issued user token. This endpoint is not used by the Portal UI.
+
+This probe deliberately tests the documented [legacy search.messages endpoint](https://docs.slack.dev/reference/methods/search.messages/); a user-run probe has returned two newly saved messages, matching the Slack UI search. A third older bookmark appeared in the dedicated Saved view but in neither search result; that discrepancy is deferred. A message-backed To-do was also returned by `is:to-do` before and after completion, in both the API and UI search. The raw search response contained no completion-state metadata. The production integration therefore uses only `is:saved` and does not claim To-do state or complete Saved-view coverage. The newer [Real-time Search API](https://docs.slack.dev/apis/web-api/real-time-search-api/) explicitly supports saved-message search but has AI-app and distribution requirements that remain unresolved for this portal. Do not treat a successful legacy search as confirmation of eligibility for that API.
 
 ## Workflow dependencies
 

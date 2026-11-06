@@ -10,7 +10,7 @@ export function withPreviewContent(html, portal, theme = 'auto') {
     .replace('<?!= themeAttribute ?>', () => theme === 'auto' ? '' : 'data-theme="' + theme.replace(/[&<>"']/g, (character) => escapes[character]) + '"')
     .replace(/<\? if \(portal\.spreadsheetUrl\) \{ \?>([\s\S]*?)<\? \} \?>/g,
     (_, content) => portal.spreadsheetUrl ? content : '')
-    .replace(/<\?= portal\.(spreadsheetId|sheetName|cacheSeconds|actionsCacheSeconds|unblockedUrlSchemes|languagePreference|language|name|brandLead|brandRest|headline|description|spreadsheetUrl|icon|defaultsJson) \?>/g,
+    .replace(/<\?= portal\.(spreadsheetId|sheetName|cacheSeconds|actionsCacheSeconds|slackBookmarkLimit|unblockedUrlSchemes|languagePreference|language|name|brandLead|brandRest|headline|description|spreadsheetUrl|icon|defaultsJson) \?>/g,
     (_, key) => portal[key].replace(/[&<>"']/g, (character) => escapes[character]));
 }
 

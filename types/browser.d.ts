@@ -25,14 +25,25 @@ type SpreadsheetSettingsResponse = { ok: true; settings: SpreadsheetSettings } |
 type SpreadsheetCreationResponse =
   | { ok: true; spreadsheetId: string }
   | { ok: false; error: string; spreadsheetId?: string; connected?: boolean; notCreated?: boolean };
-interface GitHubConnectionInfo { id: string; label: string; login: string; owner: string }
+interface GitHubConnectionInfo { tokenSuffix?: string; id: string; label: string; login: string; owner: string }
 interface GitHubConnectionInput { id: string; token: string; owner: string }
 interface GitHubActionItem { id: string; title: string; url: string; repository: string; number: number; updatedAt: string; kind: string; reasons: string[] }
 interface GitHubActionGroup { kind: string; items: GitHubActionItem[]; total: number; partial: boolean; error: string; searchUrl: string }
 type GitHubActionsResponse = { ok: true; groups: GitHubActionGroup[]; fetchedAt: number; cached: boolean } | { ok: false; error: string };
 type GitHubConnectionsResponse = { ok: true; connections: GitHubConnectionInfo[] } | { ok: false; error: string };
 type GitHubSaveResponse = { ok: true; connection: GitHubConnectionInfo } | { ok: false; error: string };
+interface SlackConnectionInfo { tokenSuffix?: string; id: string; label: string }
+interface SlackConnectionInput { id: string; token: string }
+interface SlackActionItem { id: string; title: string; url: string; context: string; postedAt: string }
+type SlackActionsResponse = { ok: true; items: SlackActionItem[]; hasMore?: boolean; error: string; partial: boolean; fetchedAt: number; cached: boolean } | { ok: false; error: string };
+type SlackConnectionsResponse = { ok: true; connections: SlackConnectionInfo[] } | { ok: false; error: string };
+type SlackSaveResponse = { ok: true; connection: SlackConnectionInfo } | { ok: false; error: string };
 interface GasRunner {
+  saveSlackBookmarkLimit(limit: number): void;
+  getSlackConnections(): void;
+  saveSlackConnection(input: SlackConnectionInput): void;
+  disconnectSlack(id: string): void;
+  getSlackActionItems(id: string, forceRefresh?: boolean): void;
   getGitHubConnections(): void;
   saveGitHubConnection(input: GitHubConnectionInput): void;
   disconnectGitHub(id: string): void;
@@ -71,8 +82,8 @@ declare const google: { script: {
 
 interface ActionItem {
   service: string; serviceLabel: string; id: string; title: string; url: string;
-  context: string; updatedAt: string; reasons: string[];
+  context: string; updatedAt: string; dateLabel?: string; reasons: string[];
 }
 interface ActionNotice { message: string; reason?: string; url?: string }
-interface ActionResult { items: ActionItem[]; notices: ActionNotice[]; fetchedAt?: number; cached?: boolean }
+interface ActionResult { hasMore?: boolean; items: ActionItem[]; notices: ActionNotice[]; fetchedAt?: number; cached?: boolean }
 interface ActionSource { id: string; label: string; serviceLabel: string; load(force: boolean, done: (result: ActionResult) => void): void }

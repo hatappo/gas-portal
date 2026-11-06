@@ -1,8 +1,8 @@
 /** Offline-only RPC fixture. Never persist, log, or send the token field anywhere. */
 export function createGitHubPreview(scenario, getCacheSeconds = () => 300) {
-  let connections = [{ id: '11111111-1111-4111-8111-111111111111', label: 'example@demo-user', login: 'demo-user', owner: 'example' }];
+  let connections = [{ id: '11111111-1111-4111-8111-111111111111', tokenSuffix: 'mo', label: 'example@demo-user', login: 'demo-user', owner: 'example' }];
   if (scenario === 'disconnected') connections = [];
-  if (scenario === 'multiple' || scenario === 'multiple-error') connections.push({ id: '22222222-2222-4222-8222-222222222222', label: '*@demo-user', login: 'demo-user', owner: '' });
+  if (scenario === 'multiple' || scenario === 'multiple-error') connections.push({ id: '22222222-2222-4222-8222-222222222222', tokenSuffix: 'mo', label: '*@demo-user', login: 'demo-user', owner: '' });
   const item = (number, title, kind, reasons) => ({
     id: 'example/portal#' + number, title, kind, reasons, repository: 'example/portal', number,
     url: 'https://github.com/example/portal/' + (kind === 'issue' ? 'issues/' : 'pull/') + number,
@@ -18,7 +18,7 @@ export function createGitHubPreview(scenario, getCacheSeconds = () => 300) {
     saveGitHubConnection(input) {
       // Only a dummy token is accepted in preview; no token is retained even in memory.
       if (input.token && input.token !== 'demo') return setTimeout(() => this.success({ ok: false, error: 'INVALID_INPUT' }), 150);
-      const connection = { id: input.id || crypto.randomUUID(), label: (input.owner.trim() || '*') + '@demo-user', login: 'demo-user', owner: input.owner.trim() };
+      const connection = { id: input.id || crypto.randomUUID(), tokenSuffix: 'mo', label: (input.owner.trim() || '*') + '@demo-user', login: 'demo-user', owner: input.owner.trim() };
       connections = [...connections.filter((entry) => entry.id !== connection.id), connection];
       fetched.delete(connection.id);
       setTimeout(() => this.success({ ok: true, connection }), 200);

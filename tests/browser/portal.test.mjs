@@ -100,3 +100,217 @@ for (const theme of ['lofi', 'dracula']) {
     }
   });
 }
+
+test('GitHub and Slack share one refresh control; Slack settings work on a narrow screen', async t => {
+  const page = await pageFor(t, { viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await page.locator('#tab-actions').click();
+  await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
+  assert.equal(await page.locator('#actions-panel button#refresh-actions').count(), 1);
+  assert.ok(await page.locator('.action-service', { hasText: 'GitHub' }).count() > 0);
+  assert.equal(await page.locator('.action-service', { hasText: 'Slack' }).count(), 2);
+  assert.match(await page.locator('.action-item-list').textContent(), /Posted/);
+  await page.locator('#refresh-actions').click();
+  assert.equal(await page.locator('#refresh-actions').getAttribute('aria-busy'), 'true');
+  assert.equal(await page.locator('.action-service', { hasText: 'Slack' }).count(), 2);
+  await page.waitForSelector('#refresh-actions[aria-busy="false"]');
+  await page.locator('#actions-settings').click();
+  await page.locator('#settings-actions-panel').waitFor({ state: 'visible' });
+  const disclosure = page.locator('.slack-token-help .disclosure-trigger');
+  await disclosure.focus(); await page.keyboard.press('Enter');
+  assert.match(await page.locator('.slack-token-help').textContent(), /User Token Scopes/);
+  assert.match(await page.locator('.slack-token-help').textContent(), /search:read/);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  await page.locator('#slack-connections button').first().click();
+  await page.locator('#replace-slack-token').click();
+  await page.locator('#slack-token').fill('demo');
+  await page.locator('#slack-settings-form [type="submit"]').click();
+  assert.equal(await page.locator('#slack-token').inputValue(), '');
+  await page.locator('#slack-settings-form').waitFor({ state: 'hidden' });
+  assert.match(await page.locator('#slack-settings-status').textContent(), /Connected/);
+  page.once('dialog', dialog => dialog.accept());
+  await page.locator('#slack-connections button').nth(1).click();
+  await page.waitForFunction(() => document.querySelector('#slack-connections').children.length === 0);
+  await page.locator('#add-slack').click();
+  await page.locator('#slack-token').fill('demo');
+  await page.locator('#slack-settings-form [type="submit"]').click();
+  await page.locator('#slack-settings-form').waitFor({ state: 'hidden' });
+  await page.locator('#tab-actions').click();
+  await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
+  assert.equal(await page.locator('.action-service', { hasText: 'Slack' }).count(), 2);
+});
+
+test('Slack limit changes update results and show more-results information without an error', async t => {
+  const page = await pageFor(t, { viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await page.goto(base + '/?github=empty&slack=more#actions');
+  await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
+  assert.equal(await page.locator('.action-item-list > li').count(), 20);
+  assert.equal(await page.locator('.action-more-results').count(), 1);
+  assert.equal(await page.locator('#actions-status').isVisible(), false);
+  await page.locator('#actions-settings').click();
+  await page.locator('#slack-bookmark-limit').selectOption('100');
+  await page.waitForFunction(() => document.getElementById('slack-bookmark-limit').dataset.savedValue === '100');
+  await page.locator('#tab-actions').click();
+  await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
+  assert.equal(await page.locator('.action-item-list > li').count(), 55);
+  assert.equal(await page.locator('.action-more-results').count(), 0);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  await page.reload();
+  await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
+  assert.equal(await page.locator('.action-item-list > li').count(), 55);
+});
+
+test('Action type chips filter with OR, retain keyboard focus and show readable colors across light and dark themes', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  await page.locator('#tab-actions').click();
+  await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
+  const assigned = page.getByRole('button', { name: 'GitHub Assigned issue', exact: true });
+  await assigned.focus(); await page.keyboard.press('Space');
+  assert.equal(await assigned.getAttribute('aria-pressed'), 'true');
+  assert.equal(await assigned.evaluate(el => el === document.activeElement), true);
+  assert.equal(await page.locator('.action-item-list > li').count(), 2);
+  await page.getByRole('button', { name: 'Slack Bookmark', exact: true }).click();
+  assert.equal(await page.locator('.action-item-list > li').count(), 4);
+  assert.equal(await page.locator('#actions-count').textContent(), '4 / 7 items');
+  await page.locator('#refresh-actions').click();
+  await page.waitForSelector('#refresh-actions[aria-busy="false"]');
+  assert.equal(await page.locator('.action-item-list > li').count(), 4);
+  for (const theme of ['lofi', 'dracula']) {
+    await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+    for (const width of [1280, 390, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      // Floating tooltips reposition on animation frames after a viewport resize.
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    }
+    const colors = await page.locator('.action-item-kind').evaluateAll(nodes => {
+      const canvas = document.createElement('canvas'); canvas.width = canvas.height = 1;
+      const ctx = canvas.getContext('2d');
+      const rgb = value => { ctx.clearRect(0, 0, 1, 1); ctx.fillStyle = value; ctx.fillRect(0, 0, 1, 1); return [...ctx.getImageData(0, 0, 1, 1).data].slice(0, 3); };
+      return nodes.map(node => ({ bg: rgb(getComputedStyle(node).backgroundColor), fg: rgb(getComputedStyle(node).color) }));
+    });
+    assert.ok(new Set(colors.map(color => color.bg.join())).size >= 2);
+    for (const { bg, fg } of colors) {
+      const luminance = rgb => rgb.map(value => value / 255).map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
+      const values = [luminance(bg), luminance(fg)].sort((a, b) => b - a);
+      assert.ok((values[0] + .05) / (values[1] + .05) >= 4.5, 'Badges must retain readable contrast');
+    }
+  }
+  await page.locator('#action-filters button').filter({ hasText: /^All$/ }).click();
+  assert.equal(await page.locator('.action-item-list > li').count(), 7);
+});
+
+test('Tools and Actions share counter, timestamp, filter and refresh styling', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  const selectors = {
+    tools: ['#count', '#catalog-freshness', '#refresh-catalog', '#tags .tag-button[aria-pressed="true"]', '#tag-filter', '.directory-toolbar', '.filter-toolbar'],
+    actions: ['#actions-count', '#actions-freshness', '#refresh-actions', '#action-filters .tag-button[aria-pressed="true"]', '.action-type-filter', '.actions-toolbar', '.actions-summary'],
+  };
+  for (const width of [1280, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    const controls = {};
+    for (const tab of ['tools', 'actions']) {
+      await page.locator('#tab-' + tab).click();
+      if (tab === 'actions') await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
+      controls[tab] = await page.evaluate(selectors => {
+        const style = (selector, keys) => {
+          const value = getComputedStyle(document.querySelector(selector));
+          return Object.fromEntries(keys.map(key => [key, value[key]]));
+        };
+        const button = ['fontSize', 'fontWeight', 'borderRadius', 'minHeight', 'paddingInlineStart', 'paddingInlineEnd'];
+        return {
+          counter: style(selectors[0], ['fontSize', 'fontFamily', 'fontVariantNumeric', 'minWidth']),
+          time: document.querySelector(selectors[1]).textContent,
+          refresh: style(selectors[2], button),
+          filter: style(selectors[3], [...button, 'backgroundColor', 'color', 'boxShadow']),
+          row: style(selectors[4], ['gap', 'flexWrap', 'paddingBottom']),
+          toolbar: style(selectors[5], ['gap', 'marginBottom']),
+          summary: style(selectors[6], ['gap']),
+        };
+      }, selectors[tab]);
+      assert.match(controls[tab].time, /^Retrieved \d{2}:\d{2}$/);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${tab} at ${width}px`);
+    }
+    for (const key of ['counter', 'refresh', 'filter', 'row', 'toolbar', 'summary']) assert.deepEqual(controls.tools[key], controls.actions[key], `${key} at ${width}px`);
+  }
+});
+
+test('Filter chips reserve borders for selection and retain visible keyboard focus without resizing', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  for (const theme of ['lofi', 'dracula']) {
+    await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+    for (const tab of ['tools', 'actions']) {
+      await page.locator('#tab-' + tab).click();
+      if (tab === 'actions') await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
+      const host = tab === 'tools' ? '#tags' : '#action-filters';
+      const chip = page.locator(host + ' .tag-button[aria-pressed="false"]').first();
+      const read = el => {
+        const style = getComputedStyle(el), bounds = el.getBoundingClientRect();
+        return { border: style.borderColor, shadow: style.boxShadow, width: bounds.width, height: bounds.height, outline: style.outlineStyle, outlineWidth: style.outlineWidth };
+      };
+      const initial = await chip.evaluate(read);
+      assert.equal(initial.border, 'rgba(0, 0, 0, 0)');
+      assert.equal(initial.shadow, 'none');
+      await page.keyboard.press('Tab');
+      await chip.focus();
+      const focused = await chip.evaluate(read);
+      assert.equal(focused.outline, 'solid');
+      assert.equal(focused.outlineWidth, '2px');
+      // Keep a stable locator after aria-pressed changes.
+      const label = await chip.textContent();
+      await page.keyboard.press('Space');
+      const selected = await page.getByRole('button', { name: label, exact: true }).evaluate(read);
+      assert.notEqual(selected.border, 'rgba(0, 0, 0, 0)');
+      assert.notEqual(selected.shadow, 'none');
+      assert.equal(selected.width, initial.width);
+      assert.equal(selected.height, initial.height);
+      await page.locator(host + ' button').filter({ hasText: /^All$/ }).click();
+    }
+  }
+});
+
+test('Action search filters locally and remains usable at narrow widths', async t => {
+  const page = await pageFor(t);
+  await page.locator('#tab-actions').click();
+  await page.locator('.action-item-list > li').first().waitFor();
+  const titles = await page.locator('.action-item-title').allTextContents();
+  const search = page.getByRole('searchbox', { name: 'Search by title or message' });
+  await search.fill(titles[0]);
+  assert.ok((await page.locator('.action-item-title').allTextContents()).every(title => title.toLowerCase().includes(titles[0].toLowerCase())));
+  assert.equal(await search.evaluate(node => node === document.activeElement), true);
+  for (const width of [1280, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    const bounds = await search.boundingBox();
+    assert.ok(bounds.width > 150, 'Search remains usable');
+  }
+  await search.fill('no matching title xyz');
+  await page.locator('#action-items').getByRole('button', { name: 'Clear filters' }).click();
+  assert.equal(await search.inputValue(), '');
+  assert.equal(await page.locator('.action-item-title').count(), titles.length);
+});
+
+test('Connection editors show masked suffixes and require an explicit switch to password entry', async t => {
+  const page = await pageFor(t);
+  await page.locator('#tab-settings').click();
+  await page.locator('#settings-tab-actions').click();
+  for (const service of ['github', 'slack']) {
+    await page.locator('#' + service + '-connections button').first().click();
+    const field = page.locator('#' + service + '-token');
+    assert.equal(await field.inputValue(), '••••••••mo');
+    assert.equal(await field.getAttribute('readonly'), '');
+    for (const width of [1280, 390, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    }
+    await page.locator('#replace-' + service + '-token').click();
+    assert.equal(await field.inputValue(), '');
+    assert.equal(await field.getAttribute('type'), 'password');
+    assert.equal(await field.evaluate(node => node === document.activeElement), true);
+    await field.fill('demo');
+    await page.locator('#' + service + '-settings-form button[type="submit"]').click();
+    await page.locator('#' + service + '-settings-form').waitFor({ state: 'hidden' });
+    await page.locator('#' + service + '-connections button').first().click();
+    assert.equal(await field.inputValue(), '••••••••mo');
+    await page.locator('#cancel-' + service).click();
+  }
+});

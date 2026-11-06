@@ -39,7 +39,7 @@ test('Render embedded data immediately and issue a forced RPC only when explicit
   assert.equal(document.querySelectorAll('#tools > li').length, 2);
   assert.equal(document.querySelector('#status').hidden, true);
   assert.equal(document.querySelector('#directory').getAttribute('aria-busy'), 'false');
-  assert.match(document.querySelector('#catalog-freshness').textContent, /キャッシュ/);
+  assert.match(document.querySelector('#catalog-freshness').title, /キャッシュ/);
   document.querySelector('#search').value = 'guide';
   document.querySelector('#search').dispatchEvent(new dom.window.Event('input'));
   document.querySelector('#view-list').click();
@@ -94,12 +94,12 @@ test('Display retrieval times without dates or day periods in both languages, in
     const app = embedded({ ...catalog, cache: { hit: true, fetchedAt: new Date(2026, 10, 4, hour, 5).getTime() } });
     t.after(() => app.dom.window.close());
     const time = `${String(hour).padStart(2, '0')}:05`;
-    assert.equal(app.document.getElementById('catalog-freshness').textContent, `キャッシュ · ${time} 取得`);
+    assert.equal(app.document.getElementById('catalog-freshness').textContent, `${time} 取得`);
     const language = app.document.getElementById('portal-language');
     language.value = 'en';
     language.dispatchEvent(new app.dom.window.Event('change'));
     app.languageRequests[0].success({ ok: true, language: 'en' });
-    assert.equal(app.document.getElementById('catalog-freshness').textContent, `Cached · Retrieved ${time}`);
+    assert.equal(app.document.getElementById('catalog-freshness').textContent, `Retrieved ${time}`);
   }
 });
 

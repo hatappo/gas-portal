@@ -23,6 +23,7 @@
     "PortalUrlSchemes": "readonly",
     "PortalThemes": "readonly",
     "PortalCatalogRules": "readonly",
+    "PortalSlackSettings": "readonly",
     "PortalCacheDurations": "readonly"
   },
   "rules": {
@@ -57,7 +58,7 @@
         "no-unused-vars": [
           "error",
           {
-            "varsIgnorePattern": "^(getGitHubConnections|saveGitHubConnection|disconnectGitHub|getGitHubActionItems|doGet|getCatalog|saveCatalogCacheTtl|saveActionsCacheTtl|normalizeCatalogCacheTtl_|readCachedSheetCatalog_|saveTheme|saveLanguage|include_|parseCatalog_|readSheetCatalog_|initializeScriptProperties|initializeProperties|savePortalSettings|saveSpreadsheetSettings|createPortalSpreadsheet|saveUnblockedUrlSchemes|doGet|getPortalLanguage_|getPortalPropertyDefaults_|getPortalTheme_|getPortalUserProperties_|initializeProperties|isPortalTheme_|normalizeActionsCacheTtl_|normalizeCatalogCacheTtl_|normalizePortalIcon_|normalizeSpreadsheetId_|parseCatalog_|readCachedSheetCatalog_|withPortalPropertiesLock_)$"
+            "varsIgnorePattern": "^(saveSlackBookmarkLimit|getSlackConnections|saveSlackConnection|disconnectSlack|getSlackActionItems|getGitHubConnections|saveGitHubConnection|disconnectGitHub|getGitHubActionItems|doGet|getCatalog|saveCatalogCacheTtl|saveActionsCacheTtl|normalizeCatalogCacheTtl_|readCachedSheetCatalog_|saveTheme|saveLanguage|include_|parseCatalog_|readSheetCatalog_|initializeScriptProperties|initializeProperties|savePortalSettings|saveSpreadsheetSettings|createPortalSpreadsheet|saveUnblockedUrlSchemes|doGet|getPortalLanguage_|getPortalPropertyDefaults_|getPortalTheme_|getPortalUserProperties_|initializeProperties|isPortalTheme_|normalizeActionsCacheTtl_|normalizeCatalogCacheTtl_|normalizePortalIcon_|normalizeSpreadsheetId_|parseCatalog_|readCachedSheetCatalog_|withPortalPropertiesLock_)$"
           }
         ]
       }
@@ -92,7 +93,7 @@
     },
     {
       "files": [
-        "src/server/GitHub.js"
+        "src/server/GitHub.js", "src/server/Slack.js"
       ],
       "globals": {
         "normalizeActionsCacheTtl_": "readonly"

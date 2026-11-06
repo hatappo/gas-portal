@@ -1,5 +1,6 @@
-import { createSignal, For, Show } from 'solid-js';
+import { createMemo, createSignal, For, Show } from 'solid-js';
 import { render } from 'solid-js/web';
+import { tagPalette } from './tag-palette.js';
 import { ToolCard, ToolRow } from './tool-view';
 import { ToggleGroup } from '@kobalte/core/toggle-group';
 import { SegmentedControl } from '@kobalte/core/segmented-control';
@@ -19,18 +20,20 @@ interface CatalogView {
 // Own only the dynamic lists; the GAS-rendered shell and settings retain their DOM.
 export function mountCatalogView(selectTags: (tags: string[]) => void, selectView: (view: 'cards' | 'list') => void) {
   const [state, setState] = createSignal<CatalogView>({ disabled: true, tools: [], tags: [], selected: new Set(), issues: [], view: 'cards', language: 'en', unblocked: [] });
+  const colors = createMemo(() => new Map(state().tags.map((tag, index) => [tag, tagPalette[index % tagPalette.length]])));
+  const tagColor = (tag: string) => colors().get(tag);
   const target = (id: string) => document.getElementById(id)!;
   render(() => <For each={state().view === 'cards' ? state().tools : []}>{(tool) =>
-    <ToolCard tool={tool} language={state().language} unblocked={state().unblocked} />}</For>, target('tools'));
+    <ToolCard tool={tool} tagColor={tagColor} language={state().language} unblocked={state().unblocked} />}</For>, target('tools'));
   render(() => <For each={state().view === 'list' ? state().tools : []}>{(tool) =>
-    <ToolRow tool={tool} language={state().language} unblocked={state().unblocked} />}</For>, target('tool-rows'));
+    <ToolRow tool={tool} tagColor={tagColor} language={state().language} unblocked={state().unblocked} />}</For>, target('tool-rows'));
   render(() => <Show when={state().tags.length}>
     <button type="button" class="tag-button btn btn-sm" aria-pressed={!state().selected.size} onClick={() => selectTags([])}>
       {PortalI18n.t('All', state().language)}
     </button>
     <ToggleGroup multiple class="tag-options" value={[...state().selected]} onChange={selectTags}
       aria-label={PortalI18n.t('Filter by tags', state().language)}>
-      <For each={state().tags}>{(tag) => <ToggleGroup.Item value={tag} class="tag-button btn btn-sm">{tag}</ToggleGroup.Item>}</For>
+      <For each={state().tags}>{(tag) => <ToggleGroup.Item value={tag} class="tag-button btn btn-sm" style={{ "--tag-accent": tagColor(tag) }}>{tag}</ToggleGroup.Item>}</For>
     </ToggleGroup>
   </Show>, target('tags'));
 

@@ -1,3 +1,4 @@
+import { initializeTokenField } from './token-field.js';
 /** @param {ReturnType<typeof import('./action-items.js').initializeActions>} actions */
 export function initializeGitHub(actions) {
   /** @param {string} id */
@@ -7,6 +8,7 @@ export function initializeGitHub(actions) {
   const form = /** @type {HTMLFormElement} */ (el('github-settings-form'));
   const fields = /** @type {HTMLFieldSetElement} */ (el('github-settings-fields'));
   const token = /** @type {HTMLInputElement} */ (el('github-token'));
+  const tokenField = initializeTokenField(token, /** @type {HTMLButtonElement} */ (el('replace-github-token')));
   const owner = /** @type {HTMLInputElement} */ (el('github-owner'));
   const add = /** @type {HTMLButtonElement} */ (el('add-github'));
   const settingsStatus = el('github-settings-status');
@@ -63,7 +65,7 @@ export function initializeGitHub(actions) {
     if (busy) return;
     editingId = connection?.id || '';
     owner.value = connection?.owner || '';
-    token.value = ''; token.required = !connection;
+    tokenField.edit(connection);
     form.hidden = false;
     settingsStatus.textContent = '';
     token.focus();
@@ -166,8 +168,7 @@ export function initializeGitHub(actions) {
   /** @param {string} [disconnectId] */
   function mutate(disconnectId) {
     if (busy) return;
-    const input = { id: editingId, token: token.value, owner: owner.value };
-    token.value = '';
+    const input = { id: editingId, token: tokenField.take(), owner: owner.value };
     busy = true; fields.disabled = true; renderConnections();
     settingsStatus.textContent = t(disconnectId ? 'Disconnecting…' : 'Checking and saving connection…');
     const generation = ++settingsRevision;
@@ -204,10 +205,6 @@ export function initializeGitHub(actions) {
   add.addEventListener('click', () => edit(undefined));
   el('cancel-github').addEventListener('click', () => { if (!busy) { form.hidden = true; token.value = ''; } });
   form.addEventListener('submit', (event) => { event.preventDefault(); mutate(); });
-  el('actions-settings').addEventListener('click', () => {
-    el('settings-tab-actions').click();
-    el('settings-tab-actions').focus();
-  });
   document.addEventListener('portal:refresh-actions', () => { if (!initialized) initialize(); });
   el('retry-github-settings').addEventListener('click', initialize);
   document.addEventListener('portal:tabchange', () => {

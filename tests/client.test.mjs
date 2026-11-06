@@ -652,3 +652,26 @@ test('Solid preserves matching cards, loaded favicons, and tag focus across filt
   assert.match(card.textContent, /opens in a new tab/);
   assert.equal(document.querySelector('#tags button').textContent, 'All');
 });
+
+test('Tool tags cycle through accents shared by filters, cards and rows without changing on search', t => {
+  const { dom, document, requests } = browser();
+  t.after(() => dom.window.close());
+  const tags = Array.from({ length: 8 }, (_, index) => 'Tag ' + index);
+  requests[0].success({ ...catalog, tools: tags.map((tag, index) => ({ ...catalog.tools[0], id: String(index), name: 'Tool ' + index, tags: [tag] })) });
+  const accents = () => new Map([...document.querySelectorAll('#tags .tag-options button')].map(node => [node.textContent, node.style.getPropertyValue('--tag-accent')]));
+  const colors = accents();
+  assert.equal(new Set(colors.values()).size, 6);
+  assert.equal(colors.get('Tag 0'), colors.get('Tag 6'));
+  const verifyBadges = selector => {
+    for (const node of document.querySelectorAll(selector)) assert.equal(node.style.getPropertyValue('--tag-accent'), colors.get(node.textContent));
+  };
+  verifyBadges('#tools .tool-tag');
+  const search = document.getElementById('search');
+  search.value = 'Tool 7'; search.dispatchEvent(new dom.window.Event('input'));
+  assert.equal(document.querySelectorAll('#tools .tool-card').length, 1);
+  assert.deepEqual(accents(), colors);
+  verifyBadges('#tools .tool-tag');
+  document.querySelector('#view-list').click();
+  assert.equal(document.querySelectorAll('#tool-rows tr').length, 1);
+  verifyBadges('#tool-rows .tool-tag');
+});
