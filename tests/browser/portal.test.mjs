@@ -178,6 +178,8 @@ test('Action type chips filter with OR, retain keyboard focus and show readable 
     await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
     for (const width of [1280, 390, 320]) {
       await page.setViewportSize({ width, height: 900 });
+      // Floating tooltips reposition on animation frames after a viewport resize.
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     }
     const colors = await page.locator('.action-item-kind').evaluateAll(nodes => {
