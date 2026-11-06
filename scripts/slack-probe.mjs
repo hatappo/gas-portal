@@ -2,16 +2,20 @@ import { createInterface } from 'node:readline';
 import { Writable } from 'node:stream';
 import { parseArgs } from 'node:util';
 
-const HELP = `Usage: npm run probe:slack -- [--query "is:saved"] [--inspect] [--raw]
+const HELP = `Usage: npm run probe:slack -- [--query "is:saved" | --saved-list] [--inspect] [--raw]
 
 Read-only Slack message-search probe (search.messages; defaults to is:saved).
 Use --query "is:to-do" to test To-do search, or add date/channel filters.
 Date filters refer to message dates, not the date a bookmark was added.
+--saved-list tests the undocumented saved.list endpoint with a normal xoxp token.
+It requests 15 items using the observed todo_with_completed filter; no preferences
+are changed. Success does not imply official support or stable filter semantics.
 --inspect adds response field names/types and boolean values, never raw text.
 Inspection samples the first element of arrays and limits depth/output size.
---raw adds the complete first-page search response, including all message bodies,
+--raw adds the complete first-page response, including all message bodies,
 blocks and metadata, without inspection sampling. The supplied token is redacted.
-Requires a User OAuth Token with search:read. Paste it at the hidden prompt.
+Search requires a User OAuth Token with search:read. No public scope requirement
+is known for saved.list; test the same token. Paste it at the hidden prompt.
 No token arguments, environment files, or saved credentials are used.
 By default, outputs account IDs and up to 100 message permalinks, without bodies.
 This is a source-checkout diagnostic, not a Portal integration or a To-do API.
@@ -27,19 +31,27 @@ const slackErrors = {
   token_expired: 'The token has expired. Obtain a current user token.',
   account_inactive: 'The Slack account is inactive.',
   missing_scope: 'Add search:read under User Token Scopes, then reinstall/reauthorize the app.',
-  not_allowed_token_type: 'This method needs a user token, not a bot or app token.',
+  not_allowed_token_type: 'Slack does not allow this token type for this method.',
+  not_allowed: 'Slack denied this operation for the current app or token.',
+  unknown_method: 'The endpoint is unavailable through this API route.',
+  method_deprecated: 'Slack reports that this method has been retired.',
+  invalid_arguments: 'Slack rejected the request arguments.',
   access_denied: 'Access was denied. Check workspace app approval and search permissions.',
   ratelimited: 'Slack rate-limited the request. Wait before trying again.',
 };
 
 async function request(method, token, params, fetchImpl) {
   const url = new URL(`https://slack.com/api/${method}`);
-  url.search = new URLSearchParams(params).toString();
+  const savedList = method === 'saved.list';
+  // Match the observed read-only form request using the app token, never browser cookies.
+  const body = savedList ? new URLSearchParams({ ...params, token }).toString() : undefined;
+  if (!savedList) url.search = new URLSearchParams(params).toString();
   let response, data;
   try {
     response = await fetchImpl(url, {
-      method: method === 'auth.test' ? 'POST' : 'GET',
-      headers: { Authorization: `Bearer ${token}` },
+      method: method === 'auth.test' || savedList ? 'POST' : 'GET',
+      headers: { Authorization: `Bearer ${token}`, ...(savedList ? { 'Content-Type': 'application/x-www-form-urlencoded' } : {}) },
+      body,
       redirect: 'error',
       signal: AbortSignal.timeout(15_000),
     });
@@ -55,8 +67,11 @@ async function request(method, token, params, fetchImpl) {
     throw new ProbeError(`${method}: request failed or timed out, or the response was not JSON.`);
   }
   if (data?.ok !== true) {
-    const message = Object.hasOwn(slackErrors, data?.error ?? '') ? slackErrors[data.error] : 'Slack rejected the request (unrecognized error).';
-    throw new ProbeError(`${method}: ${message}`);
+    const code = Object.hasOwn(slackErrors, data?.error ?? '') ? data.error : null;
+    const message = method === 'saved.list' && code === 'missing_scope'
+      ? 'Slack rejected the current permissions. No supported public scope for saved.list has been identified; do not add guessed scopes.'
+      : code ? slackErrors[code] : 'Slack rejected the request (unrecognized error).';
+    throw new ProbeError(`${method}${code ? ` [${code}]` : ''}: ${message}`);
   }
   return data;
 }
@@ -71,11 +86,12 @@ function validateQuery(value) {
 export function parseProbeOptions(args) {
   let values;
   try {
-    ({ values } = parseArgs({ args, options: { query: { type: 'string' }, help: { type: 'boolean' }, inspect: { type: 'boolean' }, raw: { type: 'boolean' } }, allowPositionals: false, strict: true }));
+    ({ values } = parseArgs({ args, options: { query: { type: 'string' }, help: { type: 'boolean' }, inspect: { type: 'boolean' }, raw: { type: 'boolean' }, 'saved-list': { type: 'boolean' } }, allowPositionals: false, strict: true }));
   } catch {
     throw new ProbeError('Unsupported arguments. Use --help; never pass a token as an argument.');
   }
-  return { help: values.help ?? false, inspect: values.inspect ?? false, raw: values.raw ?? false, query: validateQuery(values.query ?? 'is:saved') };
+  if (values['saved-list'] && values.query !== undefined) throw new ProbeError('--saved-list cannot be combined with --query.');
+  return { savedList: values['saved-list'] ?? false, help: values.help ?? false, inspect: values.inspect ?? false, raw: values.raw ?? false, query: validateQuery(values.query ?? 'is:saved') };
 }
 
 // Show structure rather than raw messages; boolean flags can be compared across states.
@@ -103,12 +119,49 @@ function inspectFields(data) {
   return { fields, truncated, note: 'Field names/types and boolean values only. Arrays show their first element; depth and output size are bounded. Missing fields in this sample do not prove the API never exposes them.' };
 }
 
-export async function probeMessages(token, fetchImpl = fetch, query = 'is:saved', inspect = false, raw = false) {
-  query = validateQuery(query);
-  token = token.trim();
+async function authenticateUser(token, fetchImpl) {
   if (!/^xoxp-[A-Za-z0-9-]+$/.test(token)) throw new ProbeError('Enter a User OAuth Token beginning with xoxp-.');
   const identity = await request('auth.test', token, {}, fetchImpl);
   if (identity.bot_id || !identity.user_id || !identity.team_id) throw new ProbeError('The token did not identify a workspace user.');
+  return identity;
+}
+
+export async function probeSavedItems(token, fetchImpl = fetch, { inspect = false, raw = false } = {}) {
+  token = token.trim();
+  const identity = await authenticateUser(token, fetchImpl);
+  const filter = 'todo_with_completed';
+  const data = await request('saved.list', token, { limit: '15', filter, include_tombstones: 'true' }, fetchImpl);
+  if (!Array.isArray(data.saved_items)) throw new ProbeError('saved.list: unexpected response; no saved-item list was returned.');
+  const cursor = data.response_metadata?.next_cursor;
+  return {
+    workspaceId: identity.team_id,
+    userId: identity.user_id,
+    method: 'saved.list',
+    experimental: true,
+    filter,
+    fetchedAt: new Date().toISOString(),
+    returnedCount: data.saved_items.length,
+    hasMore: typeof cursor === 'string' ? cursor.length > 0 : null,
+    items: data.saved_items.map(item => ({
+      itemId: item.item_id ?? null,
+      itemType: item.item_type ?? null,
+      timestamp: item.ts ?? null,
+      state: item.state ?? null,
+      todoState: item.todo_state ?? null,
+      dateCompleted: item.date_completed ?? null,
+      dateDue: item.date_due ?? null,
+      isArchived: item.is_archived ?? null,
+    })),
+    ...(inspect ? { inspection: inspectFields(data) } : {}),
+    ...(raw ? { rawResponse: JSON.parse(JSON.stringify(data).replaceAll(token, '[REDACTED]')) } : {}),
+    note: 'Undocumented endpoint; first page only, no retries, pagination, or preference writes. Filter semantics and OAuth support are unverified. A failed request is not an empty task list.',
+  };
+}
+
+export async function probeMessages(token, fetchImpl = fetch, query = 'is:saved', inspect = false, raw = false) {
+  query = validateQuery(query);
+  token = token.trim();
+  const identity = await authenticateUser(token, fetchImpl);
   const data = await request('search.messages', token, {
     query, count: '100', cursor: '*', sort: 'timestamp', sort_dir: 'desc', highlight: 'false',
   }, fetchImpl);
@@ -168,7 +221,9 @@ if (import.meta.main) {
       console.log(HELP);
     } else {
       const token = await readHiddenToken();
-      const result = await probeMessages(token, fetch, options.query, options.inspect, options.raw);
+      const result = options.savedList
+        ? await probeSavedItems(token, fetch, options)
+        : await probeMessages(token, fetch, options.query, options.inspect, options.raw);
       // Defense in depth: never echo the token even if an upstream field contains it.
       console.log(JSON.stringify(result, null, 2).replaceAll(token.trim(), '[REDACTED]'));
     }

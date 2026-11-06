@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { PassThrough } from 'node:stream';
 import { execFileSync } from 'node:child_process';
-import { probeMessages, parseProbeOptions, readHiddenToken } from '../scripts/slack-probe.mjs';
+import { probeMessages, probeSavedItems, parseProbeOptions, readHiddenToken } from '../scripts/slack-probe.mjs';
 
 const token = 'xoxp-test-only-never-a-live-token';
 const identity = { ok: true, user_id: 'U_TEST', team_id: 'T_TEST' };
@@ -127,8 +127,8 @@ test('Custom queries remain one encoded search parameter and report the query ec
 });
 
 test('Query arguments preserve the saved-message default and reject invalid options before authentication', async () => {
-  assert.deepEqual(parseProbeOptions([]), { help: false, inspect: false, raw: false, query: 'is:saved' });
-  assert.deepEqual(parseProbeOptions(['--query', 'is:to-do']), { help: false, inspect: false, raw: false, query: 'is:to-do' });
+  assert.deepEqual(parseProbeOptions([]), { savedList: false, help: false, inspect: false, raw: false, query: 'is:saved' });
+  assert.deepEqual(parseProbeOptions(['--query', 'is:to-do']), { savedList: false, help: false, inspect: false, raw: false, query: 'is:to-do' });
   assert.equal(parseProbeOptions(['--query=is:saved before:2026-10-10']).query, 'is:saved before:2026-10-10');
   for (const args of [['--query'], ['--query', ' '], ['--query', 'a'.repeat(1001)], ['--query', 'a\nb'], ['--token', token], [token]]) {
     assert.throws(() => parseProbeOptions(args), error => !error.message.includes(token));
@@ -189,4 +189,57 @@ test('Raw mode retains every returned message and deep fields only when explicit
   assert.equal(raw.rawResponse.messages.matches.length, 2);
   assert.equal(raw.rawResponse.messages.matches[0].blocks[0].elements[0].elements[0].text, 'Deep nested text');
   assert.doesNotMatch(JSON.stringify(raw), /xoxp-/);
+});
+
+
+test('Saved-list probe uses only app-token authentication and a read-only form request, preserving item state', async () => {
+  assert.equal(parseProbeOptions(['--saved-list', '--raw']).savedList, true);
+  assert.throws(() => parseProbeOptions(['--saved-list', '--query', 'is:saved']), /cannot be combined/);
+  const calls = [];
+  const data = { ok: true, saved_items: [
+    { item_id: 'C_TEST', item_type: 'message', ts: '1.1', state: 'completed', todo_state: 'completed', date_completed: 123, date_due: 0, is_archived: false },
+    { item_id: 'C_TEST', item_type: 'message', ts: '2.2', state: 'in_progress', todo_state: 'in_progress', date_completed: 0 },
+  ], response_metadata: { next_cursor: 'more' }, reflected: token };
+  const result = await probeSavedItems(token, async (url, options) => {
+    calls.push(url.pathname);
+    assert.equal(url.origin, 'https://slack.com');
+    assert.equal(options.headers.Authorization, `Bearer ${token}`);
+    assert.equal(Object.hasOwn(options.headers, 'Cookie'), false);
+    assert.equal(options.redirect, 'error');
+    if (url.pathname === '/api/auth.test') return reply(identity);
+    assert.equal(url.pathname, '/api/saved.list');
+    assert.equal(url.search, '');
+    assert.equal(options.method, 'POST');
+    assert.equal(options.headers['Content-Type'], 'application/x-www-form-urlencoded');
+    assert.deepEqual(Object.fromEntries(new URLSearchParams(options.body)), { limit: '15', filter: 'todo_with_completed', include_tombstones: 'true', token });
+    return reply(data);
+  }, { raw: true });
+  assert.deepEqual(calls, ['/api/auth.test', '/api/saved.list']);
+  assert.equal(result.method, 'saved.list');
+  assert.equal(result.hasMore, true);
+  assert.equal(result.items[0].dateCompleted, 123);
+  assert.equal(result.items[1].dateCompleted, 0);
+  assert.equal(result.items[1].todoState, 'in_progress');
+  assert.equal(result.rawResponse.reflected, '[REDACTED]');
+  assert.doesNotMatch(JSON.stringify(result), /xoxp-/);
+});
+
+test('Saved-list rejection is an error, never an empty task list, and does not recommend browser credentials or guessed scopes', async () => {
+  let calls = 0;
+  await assert.rejects(probeSavedItems('xoxc-not-a-real-token', async () => { calls++; }), /xoxp-/);
+  assert.equal(calls, 0);
+  for (const code of ['not_allowed_token_type', 'unknown_method', 'missing_scope']) {
+    await assert.rejects(probeSavedItems(token, searchFetch(reply({ ok: false, error: code }))), error => {
+      assert.ok(error.message.includes(`[${code}]`));
+      assert.doesNotMatch(error.message, /Add search:read|Cookie|xoxc/);
+      return true;
+    });
+  }
+  await assert.rejects(probeSavedItems(token, searchFetch(reply({ ok: true }))), /no saved-item list/);
+  for (const [metadata, expected] of [[{ next_cursor: '' }, false], [undefined, null]]) {
+    const result = await probeSavedItems(token, searchFetch(reply({ ok: true, saved_items: [], response_metadata: metadata })));
+    assert.equal(result.returnedCount, 0);
+    assert.equal(result.hasMore, expected);
+    assert.equal(Object.hasOwn(result, 'rawResponse'), false);
+  }
 });

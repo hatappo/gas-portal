@@ -174,6 +174,16 @@ npm run probe:slack -- --query 'is:to-do' --raw
 
 `rawResponse` is the JSON returned by `search.messages`, without the depth or array sampling used by `--inspect`. The token supplied to this run is redacted if it appears anywhere in the response; request headers and authentication responses are not included. Normal output remains unchanged without `--raw`. No files are written, and there is still no automatic pagination: the response covers at most the first 100 search results. Use a test conversation whose content can be inspected. Compare the completed and incomplete messages, including nested fields; for a stronger check, run the same query before and after changing **the same** test To-do's completion state without editing its message text. Different message text or a search score does not establish a completion-state field.
 
+A separate, explicit experiment tests whether an ordinary app-issued **User OAuth Token** can call the undocumented `saved.list` endpoint observed in Slack's To-do screen:
+
+```sh
+npm run probe:slack -- --saved-list --raw
+```
+
+This makes `auth.test` followed by one form POST to `https://slack.com/api/saved.list`, requesting `limit=15`, `filter=todo_with_completed`, and `include_tombstones=true`. It uses only the entered `xoxp-` token, with no browser credentials/cookies, preference writes, retries, or automatic pagination. The filter is copied from an observed client request; its semantics and dependence on user preferences are **not** a stable or documented contract. `state`, `todo_state`, completion/due dates, and item IDs are shown when returned. Unknown pagination stays `null`.
+
+Use the existing app token first; no supported public scope for this method has been identified. `not_allowed_token_type`, `unknown_method`, or `missing_scope` is a failed experiment, not an empty list. Do not infer that adding arbitrary scopes will fix it or that browser credentials should replace the app token. `unknown_method` only describes the standard API route tested. Even a successful response establishes observed behavior, not official support or suitability for distribution. This diagnostic is not part of the Portal UI.
+
 This probe deliberately tests the documented [legacy search.messages endpoint](https://docs.slack.dev/reference/methods/search.messages/); a user-run probe has returned two newly saved messages, matching the Slack UI search. A third older bookmark appeared in the dedicated Saved view but in neither search result; that discrepancy is deferred. A message-backed To-do was also returned by `is:to-do` before and after completion, in both the API and UI search. Therefore that query alone does not establish an incomplete-task feed; full coverage and completion-state metadata remain unverified. The newer [Real-time Search API](https://docs.slack.dev/apis/web-api/real-time-search-api/) explicitly supports saved-message search but has AI-app and distribution requirements that remain unresolved for this portal. Do not treat a successful legacy search as confirmation of eligibility for that API.
 
 ## Workflow dependencies
