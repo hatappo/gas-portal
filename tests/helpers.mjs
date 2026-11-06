@@ -7,7 +7,7 @@ import solid from 'vite-plugin-solid';
 import path from 'node:path';
 import { withPreviewContent } from '../scripts/preview-project.mjs';
 import { renderPreview } from '../scripts/preview.mjs';
-import { sharedSources } from '../scripts/gas-sources.mjs';
+import { sharedSources, serverSources } from '../scripts/gas-sources.mjs';
 
 // The browser modules, in the order src/browser/main.js imports them.
 export const browserModules = [...readFileSync('src/browser/main.js', 'utf8').matchAll(/^import '\.\/([\w-]+)\.js';$/gm)].map((match) => match[1]);
@@ -66,9 +66,7 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
     ...overrides,
   });
   for (const file of sharedSources) vm.runInContext(readFileSync(file, 'utf8'), context);
-  for (const name of ['Catalog', 'SheetCatalog', 'Code', 'GitHub']) {
-    vm.runInContext(readFileSync(`src/server/${name}.js`, 'utf8'), context);
-  }
+  for (const file of serverSources) vm.runInContext(readFileSync(file, 'utf8'), context);
   return { context, logs, calls };
 }
 

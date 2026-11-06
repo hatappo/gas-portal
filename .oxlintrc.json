@@ -1,9 +1,23 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["eslint", "unicorn", "oxc"],
-  "categories": { "correctness": "error" },
-  "ignorePatterns": ["dist/**", "assets/**", "node_modules/**"],
-  "env": { "builtin": true, "es2024": true, "node": true },
+  "plugins": [
+    "eslint",
+    "unicorn",
+    "oxc"
+  ],
+  "categories": {
+    "correctness": "error"
+  },
+  "ignorePatterns": [
+    "dist/**",
+    "assets/**",
+    "node_modules/**"
+  ],
+  "env": {
+    "builtin": true,
+    "es2024": true,
+    "node": true
+  },
   "globals": {
     "PortalI18n": "readonly",
     "PortalUrlSchemes": "readonly",
@@ -16,9 +30,19 @@
     "no-unused-vars": "error"
   },
   "overrides": [
-    { "files": ["tests/browser/*.mjs"], "env": { "browser": true, "node": true } },
     {
-      "files": ["src/server/*.js"],
+      "files": [
+        "tests/browser/*.mjs"
+      ],
+      "env": {
+        "browser": true,
+        "node": true
+      }
+    },
+    {
+      "files": [
+        "src/server/*.js"
+      ],
       "globals": {
         "HtmlService": "readonly",
         "UrlFetchApp": "readonly",
@@ -30,24 +54,73 @@
         "PropertiesService": "readonly"
       },
       "rules": {
-        "no-unused-vars": ["error", { "varsIgnorePattern": "^(getGitHubConnections|saveGitHubConnection|disconnectGitHub|getGitHubActionItems|doGet|getCatalog|saveCatalogCacheTtl|saveActionsCacheTtl|normalizeCatalogCacheTtl_|readCachedSheetCatalog_|saveTheme|saveLanguage|include_|parseCatalog_|readSheetCatalog_|initializeScriptProperties|initializeProperties|savePortalSettings|saveSpreadsheetSettings|createPortalSpreadsheet|saveUnblockedUrlSchemes)$" }]
+        "no-unused-vars": [
+          "error",
+          {
+            "varsIgnorePattern": "^(getGitHubConnections|saveGitHubConnection|disconnectGitHub|getGitHubActionItems|doGet|getCatalog|saveCatalogCacheTtl|saveActionsCacheTtl|normalizeCatalogCacheTtl_|readCachedSheetCatalog_|saveTheme|saveLanguage|include_|parseCatalog_|readSheetCatalog_|initializeScriptProperties|initializeProperties|savePortalSettings|saveSpreadsheetSettings|createPortalSpreadsheet|saveUnblockedUrlSchemes|doGet|getPortalLanguage_|getPortalPropertyDefaults_|getPortalTheme_|getPortalUserProperties_|initializeProperties|isPortalTheme_|normalizeActionsCacheTtl_|normalizeCatalogCacheTtl_|normalizePortalIcon_|normalizeSpreadsheetId_|parseCatalog_|readCachedSheetCatalog_|withPortalPropertiesLock_)$"
+          }
+        ]
       }
     },
-    { "files": ["src/server/Code.js"], "globals": { "readCachedSheetCatalog_": "readonly" } },
-    { "files": ["src/server/GitHub.js"], "globals": { "normalizeActionsCacheTtl_": "readonly" } },
     {
-      "files": ["src/server/SheetCatalog.js"],
+      "files": [
+        "src/browser/*.js",
+        "src/browser/*.tsx"
+      ],
+      "env": {
+        "browser": true
+      },
       "globals": {
-        "parseCatalog_": "readonly",
-        "normalizeCatalogCacheTtl_": "readonly",
-        "getPortalUserProperties_": "readonly",
-        "normalizeSpreadsheetId_": "readonly"
+        "google": "readonly",
+        "PortalSave": "readonly",
+        "PortalMotion": "readonly"
       }
     },
     {
-      "files": ["src/browser/*.js", "src/browser/*.tsx"],
-      "env": { "browser": true },
-      "globals": { "google": "readonly", "PortalSave": "readonly", "PortalMotion": "readonly" }
+      "files": [
+        "src/server/Code.js"
+      ],
+      "globals": {
+        "getPortalPropertyDefaults_": "readonly",
+        "getPortalTheme_": "readonly",
+        "getPortalUserProperties_": "readonly",
+        "isPortalTheme_": "readonly",
+        "normalizeActionsCacheTtl_": "readonly",
+        "normalizeCatalogCacheTtl_": "readonly",
+        "normalizePortalIcon_": "readonly",
+        "normalizeSpreadsheetId_": "readonly",
+        "readCachedSheetCatalog_": "readonly"
+      }
+    },
+    {
+      "files": [
+        "src/server/GitHub.js"
+      ],
+      "globals": {
+        "normalizeActionsCacheTtl_": "readonly"
+      }
+    },
+    {
+      "files": [
+        "src/server/SheetCatalog.js"
+      ],
+      "globals": {
+        "doGet": "readonly",
+        "getPortalUserProperties_": "readonly",
+        "normalizeCatalogCacheTtl_": "readonly",
+        "normalizeSpreadsheetId_": "readonly",
+        "parseCatalog_": "readonly"
+      }
+    },
+    {
+      "files": [
+        "src/server/SpreadsheetSetup.js"
+      ],
+      "globals": {
+        "getPortalLanguage_": "readonly",
+        "initializeProperties": "readonly",
+        "withPortalPropertiesLock_": "readonly"
+      }
     }
   ]
 }
