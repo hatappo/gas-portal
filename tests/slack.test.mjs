@@ -19,6 +19,8 @@ function fixture(userProperties = {}) {
 test('Slack validates app-issued user tokens and exposes metadata without secrets or extra identity requests', () => {
   const app = fixture(), connection = app.connect();
   assert.equal(connection.label, 'Demo@alex');
+  assert.deepEqual(Object.keys(connection).sort(), ['id', 'label', 'tokenSuffix']);
+  assert.equal(connection.tokenSuffix, input.token.slice(-2));
   assert.equal(JSON.parse(Object.values(app.userProperties)[0]).token, input.token);
   assert.deepEqual(plain(app.context.getSlackConnections()), { ok: true, connections: [plain(connection)] });
   assert.equal(app.requests.length, 0);
@@ -205,4 +207,18 @@ test('Slack limit settings validate input, preserve other properties and initial
   assert.equal(app.context.getPortalContent_(app.userProperties).slackBookmarkLimit, '50');
   app.context.PropertiesService.getUserProperties = () => { throw new Error('private failure'); };
   assert.deepEqual(plain(app.context.saveSlackBookmarkLimit(20)), { ok: false });
+});
+
+
+test('Slack exposes only the new two-character suffix after rotating credentials', () => {
+  const app = fixture(), connection = app.connect();
+  const token = input.token + 'XY';
+  const updated = app.context.saveSlackConnection({ ...input, id: connection.id, token });
+  assert.equal(updated.ok, true);
+  assert.equal(updated.connection.tokenSuffix, 'XY');
+  app.requests.length = 0;
+  const metadata = app.context.getSlackConnections();
+  assert.equal(metadata.connections[0].tokenSuffix, 'XY');
+  assert.equal(app.requests.length, 0, 'Reading the suffix does not contact the provider');
+  assert.doesNotMatch(JSON.stringify(metadata), /TEST[_-]SECRET|"token"/);
 });

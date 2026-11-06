@@ -121,6 +121,7 @@ test('GitHub and Slack share one refresh control; Slack settings work on a narro
   assert.match(await page.locator('.slack-token-help').textContent(), /search:read/);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await page.locator('#slack-connections button').first().click();
+  await page.locator('#replace-slack-token').click();
   await page.locator('#slack-token').fill('demo');
   await page.locator('#slack-settings-form [type="submit"]').click();
   assert.equal(await page.locator('#slack-token').inputValue(), '');
@@ -284,4 +285,30 @@ test('Action search filters locally and remains usable at narrow widths', async 
   await page.locator('#action-items').getByRole('button', { name: 'Clear filters' }).click();
   assert.equal(await search.inputValue(), '');
   assert.equal(await page.locator('.action-item-title').count(), titles.length);
+});
+
+test('Connection editors show masked suffixes and require an explicit switch to password entry', async t => {
+  const page = await pageFor(t);
+  await page.locator('#tab-settings').click();
+  await page.locator('#settings-tab-actions').click();
+  for (const service of ['github', 'slack']) {
+    await page.locator('#' + service + '-connections button').first().click();
+    const field = page.locator('#' + service + '-token');
+    assert.equal(await field.inputValue(), '••••••••mo');
+    assert.equal(await field.getAttribute('readonly'), '');
+    for (const width of [1280, 390, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    }
+    await page.locator('#replace-' + service + '-token').click();
+    assert.equal(await field.inputValue(), '');
+    assert.equal(await field.getAttribute('type'), 'password');
+    assert.equal(await field.evaluate(node => node === document.activeElement), true);
+    await field.fill('demo');
+    await page.locator('#' + service + '-settings-form button[type="submit"]').click();
+    await page.locator('#' + service + '-settings-form').waitFor({ state: 'hidden' });
+    await page.locator('#' + service + '-connections button').first().click();
+    assert.equal(await field.inputValue(), '••••••••mo');
+    await page.locator('#cancel-' + service).click();
+  }
 });

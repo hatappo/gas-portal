@@ -337,3 +337,8 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 @media (prefers-reduced-motion: reduce) {
   .disclosure-trigger, .disclosure-chevron, .disclosure-body { transition: none; }
 }
+
+.token-input-row { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 20px; }
+.token-input-row .settings-field { flex: 1; min-width: 0; margin-bottom: 0; }
+.token-input-row > button { flex-shrink: 0; margin-bottom: 4px; }
+.token-input-row input[readonly] { background: var(--color-base-200); color: var(--portal-muted); cursor: default; }

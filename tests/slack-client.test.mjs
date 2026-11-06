@@ -75,7 +75,8 @@ test('Slack settings save and clear passwords, edit without revealing credential
   assert.doesNotMatch(app.document.body.innerHTML, /TEST-SECRET/);
   app.get('slack-connections').querySelector('button').click();
   assert.equal(app.get('slack-token').required, false);
-  assert.equal(app.get('slack-token').value, '');
+  assert.equal(app.get('slack-token').value, '••••••••');
+  assert.equal(app.get('slack-token').readOnly, true);
   app.click('cancel-slack');
   app.dom.window.confirm = () => true;
   app.get('slack-connections').querySelectorAll('button')[1].click();

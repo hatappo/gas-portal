@@ -28,6 +28,8 @@ test('Validate and privately store fine-grained credentials; expose only explici
   const connection = app.connect();
   const saved = Object.values(app.userProperties).map(JSON.parse)[0];
   assert.equal(saved.token, input.token);
+  assert.deepEqual(Object.keys(connection).sort(), ['id', 'label', 'login', 'owner', 'tokenSuffix']);
+  assert.equal(connection.tokenSuffix, input.token.slice(-2));
   assert.equal(saved.login, 'octocat');
   for (const result of [connection, app.context.getGitHubConnections(), app.context.getPortalContent_(app.userProperties)]) assert.doesNotMatch(JSON.stringify(result), /TEST_SECRET|"token"/);
   const updated = app.context.saveGitHubConnection({ ...input, id: connection.id, token: '', owner: '' });
@@ -251,4 +253,18 @@ test('Detect revoked credentials in the first search without identity lookup or 
   assert.equal(app.requests.length, 1);
   assert.match(app.requests[0].url, /\/search\/issues\?/);
   assert.equal(app.cache.size, 0);
+});
+
+
+test('GitHub exposes only the new two-character suffix after rotating credentials', () => {
+  const app = fixture(), connection = app.connect();
+  const token = input.token + 'XY';
+  const updated = app.context.saveGitHubConnection({ ...input, id: connection.id, token });
+  assert.equal(updated.ok, true);
+  assert.equal(updated.connection.tokenSuffix, 'XY');
+  app.requests.length = 0;
+  const metadata = app.context.getGitHubConnections();
+  assert.equal(metadata.connections[0].tokenSuffix, 'XY');
+  assert.equal(app.requests.length, 0, 'Reading the suffix does not contact the provider');
+  assert.doesNotMatch(JSON.stringify(metadata), /TEST[_-]SECRET|"token"/);
 });

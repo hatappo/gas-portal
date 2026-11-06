@@ -13,7 +13,7 @@ test('Slack preview is wired into the page, accepts only dummy credentials and k
   assert.equal(call('saveSlackConnection', { id: '', token: '' }).error, 'INVALID_INPUT');
   assert.equal(call('saveSlackConnection', { id: '', token: 'demo' }).connection.label, 'Example workspace@demo-user');
   assert.equal(call('getSlackActionItems', id).items.length, 2);
-  assert.doesNotMatch(JSON.stringify(call('getSlackConnections')), /token|SECRET/);
+  assert.doesNotMatch(JSON.stringify(call('getSlackConnections')), /"token"|SECRET/);
   assert.deepEqual(storage, originalStorage);
   assert.equal(call('disconnectSlack', id).ok, true);
   assert.equal(call('getSlackActionItems', id).error, 'INVALID_CONNECTION');

@@ -1,3 +1,4 @@
+import { initializeTokenField } from './token-field.js';
 import { createSaver } from './save-control.js';
 /** @param {ReturnType<typeof import('./action-items.js').initializeActions>} actions */
 export function initializeSlack(actions) {
@@ -33,6 +34,7 @@ export function initializeSlack(actions) {
   const form = /** @type {HTMLFormElement} */ (el('slack-settings-form'));
   const fields = /** @type {HTMLFieldSetElement} */ (el('slack-settings-fields'));
   const token = /** @type {HTMLInputElement} */ (el('slack-token'));
+  const tokenField = initializeTokenField(token, /** @type {HTMLButtonElement} */ (el('replace-slack-token')));
   const add = /** @type {HTMLButtonElement} */ (el('add-slack'));
   const settingsStatus = el('slack-settings-status');
   actions.setProviderState('slack', { ready: false, loading: false, error: '' });
@@ -81,7 +83,7 @@ export function initializeSlack(actions) {
   function edit(connection) {
     if (busy) return;
     editingId = connection?.id || '';
-    token.value = ''; token.required = !connection;
+    tokenField.edit(connection);
     form.hidden = false;
     settingsStatus.textContent = '';
     token.focus();
@@ -178,8 +180,7 @@ export function initializeSlack(actions) {
   /** @param {string} [disconnectId] */
   function mutate(disconnectId) {
     if (busy) return;
-    const input = { id: editingId, token: token.value };
-    token.value = '';
+    const input = { id: editingId, token: tokenField.take() };
     busy = true; fields.disabled = true; renderConnections();
     settingsStatus.textContent = t(disconnectId ? 'Disconnecting…' : 'Checking and saving connection…');
     const generation = ++settingsRevision;

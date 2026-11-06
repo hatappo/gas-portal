@@ -1,13 +1,13 @@
 /** Offline-only fixture. Tokens are neither persisted nor sent to Slack. */
 export function createSlackPreview(scenario, getCacheSeconds = () => 300, getLimit = () => 20) {
-  let connections = scenario === 'disconnected' ? [] : [{ id: '33333333-3333-4333-8333-333333333333', label: 'Example workspace@demo-user' }];
+  let connections = scenario === 'disconnected' ? [] : [{ id: '33333333-3333-4333-8333-333333333333', tokenSuffix: 'mo', label: 'Example workspace@demo-user' }];
   const fetched = new Map();
   return {
     getSlackConnections() { setTimeout(() => this.success({ ok: true, connections }), 200); },
     saveSlackConnection(input) {
       if ((input.token && input.token !== 'demo') || (!input.id && !input.token)) return setTimeout(() => this.success({ ok: false, error: 'INVALID_INPUT' }), 150);
       if (!input.id && connections.length) return setTimeout(() => this.success({ ok: false, error: 'DUPLICATE_CONNECTION' }), 150);
-      const connection = { id: input.id || '33333333-3333-4333-8333-333333333333', label: 'Example workspace@demo-user' };
+      const connection = { id: input.id || '33333333-3333-4333-8333-333333333333', tokenSuffix: 'mo', label: 'Example workspace@demo-user' };
       connections = [connection]; fetched.clear();
       setTimeout(() => this.success({ ok: true, connection }), 200);
     },

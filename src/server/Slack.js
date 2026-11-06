@@ -19,7 +19,7 @@ function slackConnections_() {
 }
 /** @param {SlackConnection} connection */
 function slackPublicConnection_(connection) {
-  return { id: connection.id, label: connection.workspace + '@' + connection.user };
+  return { id: connection.id, label: connection.workspace + '@' + connection.user, tokenSuffix: connection.token.slice(-2) };
 }
 /** Metadata only; identity is verified once when saving the token. */
 function getSlackConnections() {

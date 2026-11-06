@@ -214,8 +214,11 @@
             <form id="github-settings-form" class="portal-settings-form" hidden>
               <fieldset id="github-settings-fields">
                 <legend class="visually-hidden" data-i18n="GitHub connection">GitHub connection</legend>
-                <label class="settings-field"><span data-i18n="Fine-grained personal access token">Fine-grained personal access token</span><input type="password" id="github-token" class="input w-full" maxlength="255" autocomplete="new-password" spellcheck="false" placeholder="github_pat_…" aria-describedby="github-token-help github-pat-permissions"></label>
-                <p id="github-token-help" class="settings-help" data-i18n="When editing, leave the token empty to keep the saved token. Never enter a real token in local preview.">When editing, leave the token empty to keep the saved token. Never enter a real token in local preview.</p>
+                <div class="token-input-row">
+                  <label class="settings-field"><span data-i18n="Fine-grained personal access token">Fine-grained personal access token</span><input type="password" id="github-token" class="input w-full" maxlength="255" autocomplete="new-password" spellcheck="false" placeholder="github_pat_…" aria-describedby="github-token-help github-pat-permissions"></label>
+                  <button type="button" id="replace-github-token" class="btn btn-ghost btn-sm" data-i18n="Replace token" hidden>Replace token</button>
+                </div>
+                <p id="github-token-help" class="settings-help" data-i18n="Choose Replace token to enter a new token. Leaving it empty keeps the saved token. Never enter a real token in local preview.">Choose Replace token to enter a new token. Leaving it empty keeps the saved token. Never enter a real token in local preview.</p>
                 <label class="settings-field"><span data-i18n="Organization or owner (optional)">Organization or owner (optional)</span><input id="github-owner" class="input w-full" maxlength="39" autocomplete="off" placeholder="my-organization"></label>
                 <p class="settings-help" data-i18n="Connections are shown as owner@GitHub-user. A blank owner appears as * and searches all accessible repositories, including public repositories owned by others.">Connections are shown as owner@GitHub-user. A blank owner appears as * and searches all accessible repositories, including public repositories owned by others.</p>
                 <div class="settings-form-actions"><button type="submit" class="settings-save btn btn-primary" data-i18n="Save connection">Save connection</button><button type="button" id="cancel-github" class="settings-reset btn" data-i18n="Cancel">Cancel</button></div>
@@ -248,8 +251,11 @@
             <form id="slack-settings-form" class="portal-settings-form" hidden>
               <fieldset id="slack-settings-fields">
                 <legend class="visually-hidden" data-i18n="Slack connection">Slack connection</legend>
-                <label class="settings-field"><span data-i18n="Slack User OAuth Token">Slack User OAuth Token</span><input type="password" id="slack-token" class="input w-full" maxlength="512" autocomplete="new-password" spellcheck="false" placeholder="xoxp-…" aria-describedby="slack-token-help slack-token-permissions"></label>
-                <p id="slack-token-help" class="settings-help" data-i18n="When editing, leave the token empty to keep the saved token. Never enter a real token in local preview.">When editing, leave the token empty to keep the saved token. Never enter a real token in local preview.</p>
+                <div class="token-input-row">
+                  <label class="settings-field"><span data-i18n="Slack User OAuth Token">Slack User OAuth Token</span><input type="password" id="slack-token" class="input w-full" maxlength="512" autocomplete="new-password" spellcheck="false" placeholder="xoxp-…" aria-describedby="slack-token-help slack-token-permissions"></label>
+                  <button type="button" id="replace-slack-token" class="btn btn-ghost btn-sm" data-i18n="Replace token" hidden>Replace token</button>
+                </div>
+                <p id="slack-token-help" class="settings-help" data-i18n="Choose Replace token to enter a new token. Leaving it empty keeps the saved token. Never enter a real token in local preview.">Choose Replace token to enter a new token. Leaving it empty keeps the saved token. Never enter a real token in local preview.</p>
                 <div class="settings-form-actions"><button type="submit" class="settings-save btn btn-primary" data-i18n="Save connection">Save connection</button><button type="button" id="cancel-slack" class="settings-reset btn" data-i18n="Cancel">Cancel</button></div>
               </fieldset>
             </form>

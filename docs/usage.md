@@ -254,3 +254,5 @@ Preview includes a fictional Slack connection and two saved messages. It never c
 Settings has three subtabs: **Appearance** (portal text, theme, then language), **Tools & Links** (spreadsheet and catalog cache), and **Action Items** (shared cache duration, then GitHub and Slack connections). Switching tabs preserves unsaved form values; each control keeps its existing save behavior.
 
 Direct links use `#settings/appearance`, `#settings/tools`, and `#settings/actions`. The existing `#settings` link opens Appearance. Browser back/forward works in both the GAS web app and local preview. Arrow keys and Home/End navigate within the focused tab row. **Manage connections** opens Action Items settings directly.
+
+When editing GitHub or Slack connections, the token field is read-only and shows a fixed mask plus its last two characters. Only those two characters are included in connection metadata; saved tokens are never returned in full. Choose **Replace token** to enter a replacement. An empty replacement preserves the existing token. Local preview shows a fictional suffix (`mo`).
