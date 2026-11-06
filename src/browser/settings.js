@@ -1,5 +1,5 @@
-(() => {
-  'use strict';
+import { createSaver, serverError } from './save-control.js';
+export function initializeSettings() {
   /** @param {string} key @param {Record<string, string | number>} [values] */
   const t = (key, values = {}) => PortalI18n.t(key, document.documentElement.lang, values);
   const form = /** @type {HTMLFormElement} */ (document.getElementById('portal-settings-form'));
@@ -12,7 +12,7 @@
     PORTAL_DESCRIPTION: /** @type {HTMLTextAreaElement} */ (document.getElementById('setting-description')),
   };
   const keys = /** @type {(keyof PortalSettings)[]} */ (Object.keys(inputs));
-  const saveForm = PortalSave.createSaver({ status, t, setBusy: (busy) => { fields.disabled = busy; } });
+  const saveForm = createSaver({ status, t, setBusy: (busy) => { fields.disabled = busy; } });
 
   /** Keep the icon to one character while typing. maxlength counts UTF-16 units, so it cannot
    * do this for emoji or combining kana marks. Keep the character just typed, so typing next to
@@ -68,7 +68,7 @@
     saveForm({
       send: (runner) => runner.savePortalSettings(readForm(), document.documentElement.lang),
       confirm: (/** @type {PortalSettingsResponse} */ response) => {
-        if (!response?.ok) return PortalSave.serverError(response);
+        if (!response?.ok) return serverError(response);
         if (!response.settings || !keys.every((key) => typeof response.settings[key] === 'string')) return false;
         apply(response.settings);
         return t("Saved");
@@ -103,4 +103,4 @@
     keys.forEach((key) => { inputs[key].value = defaults[key]; });
     status.textContent = t("The fields have been reset. Select “Save changes” to apply them.");
   });
-})();
+}

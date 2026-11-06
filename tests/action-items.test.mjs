@@ -2,14 +2,14 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { browser, bundleBrowser } from './helpers.mjs';
 
-const client = await bundleBrowser(['save-control', 'language', 'motion', 'navigation', 'client', 'action-items']);
+const client = await bundleBrowser({ connectGitHub: false });
 const item = { service: 'github', serviceLabel: 'GitHub', id: 'acme/portal#1', title: 'Review changes', url: 'https://github.com/acme/portal/pull/1', context: 'acme/portal #1', updatedAt: '2026-11-04T12:00:00Z', reasons: ['Direct review'] };
 const result = (items = [item], fetchedAt = 1700000000000) => ({ items, notices: [], fetchedAt });
 function fixture(t, setup = () => {}) {
   const app = browser(setup, client); t.after(() => app.dom.window.close());
   const calls = [];
   const source = (id, serviceLabel = 'GitHub') => ({ id, label: id + '@octocat', serviceLabel, load(force, done) { calls.push({ id, force, done }); } });
-  const api = app.dom.window.PortalActions;
+  const api = app.dom.window.testPortal.actions;
   const start = () => app.document.getElementById('tab-actions').click();
   const refresh = app.document.getElementById('refresh-actions');
   const rows = () => [...app.document.querySelectorAll('.action-item-list > li')];

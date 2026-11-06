@@ -58,14 +58,6 @@ interface SaveRequest<T> {
   timeoutMessage?: string;
   timeoutMs?: number;
 }
-declare var PortalSave: {
-  createSaver(control: { status: HTMLElement; t: (key: string) => string; setBusy: (busy: boolean) => void }): <T>(request: SaveRequest<T>) => void;
-  serverError(response: unknown): false | { error: string };
-};
-declare var PortalMotion: {
-  appear(target: HTMLElement): Animation | undefined;
-  onReduce(callback: () => void): void;
-};
 interface GasLocation { hash: string }
 interface GasHistory {
   push(state: null, params: null, hash: string): void;
@@ -84,9 +76,3 @@ interface ActionItem {
 interface ActionNotice { message: string; reason?: string; url?: string }
 interface ActionResult { items: ActionItem[]; notices: ActionNotice[]; fetchedAt?: number; cached?: boolean }
 interface ActionSource { id: string; label: string; serviceLabel: string; load(force: boolean, done: (result: ActionResult) => void): void }
-interface Window {
-  PortalActions: {
-    setProviderState(provider: string, state: {ready: boolean; loading: boolean; error: string}): void;
-    setSources(provider: string, sources: ActionSource[]): void;
-  };
-}

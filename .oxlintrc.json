@@ -71,9 +71,7 @@
         "browser": true
       },
       "globals": {
-        "google": "readonly",
-        "PortalSave": "readonly",
-        "PortalMotion": "readonly"
+        "google": "readonly"
       }
     },
     {

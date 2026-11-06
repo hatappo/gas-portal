@@ -1,6 +1,5 @@
 // The short appearance animation shared by the results and tab panels.
-window.PortalMotion = (() => {
-  'use strict';
+export function createMotion() {
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
 
   /** Animate an element into view, unless the user prefers reduced motion.
@@ -20,4 +19,4 @@ window.PortalMotion = (() => {
   }
 
   return { appear, onReduce };
-})();
+}

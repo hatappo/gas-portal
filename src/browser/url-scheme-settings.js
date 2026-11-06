@@ -1,5 +1,5 @@
-(() => {
-  'use strict';
+import { createSaver } from './save-control.js';
+export function initializeUrlSchemeSettings() {
   // A checked box means the scheme is blocked. Storage keeps the unblocked ones,
   // so schemes added to the default list later start out blocked.
   const fieldset = /** @type {HTMLFieldSetElement | null} */ (document.getElementById('url-scheme-settings'));
@@ -24,7 +24,7 @@
   let saved = PortalUrlSchemes.normalizeUnblocked(fieldset.dataset.savedValue);
   const show = () => boxes.forEach((box) => { box.checked = !saved.includes(box.value); });
   show();
-  const save = PortalSave.createSaver({ status, t, setBusy: (busy) => { fieldset.disabled = busy; } });
+  const save = createSaver({ status, t, setBusy: (busy) => { fieldset.disabled = busy; } });
   fieldset.addEventListener('change', () => {
     if (fieldset.disabled) return;
     const next = PortalUrlSchemes.normalizeUnblocked(boxes.filter((box) => !box.checked).map((box) => box.value));
@@ -43,4 +43,4 @@
       failureMessage: 'Could not save URL scheme settings. Please try again.',
     });
   });
-})();
+}

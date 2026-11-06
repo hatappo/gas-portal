@@ -9,18 +9,23 @@ import { withPreviewContent } from '../scripts/preview-project.mjs';
 import { renderPreview } from '../scripts/preview.mjs';
 import { sharedSources, serverSources } from '../scripts/gas-sources.mjs';
 
-// The browser modules, in the order src/browser/main.js imports them.
-export const browserModules = [...readFileSync('src/browser/main.js', 'utf8').matchAll(/^import '\.\/([\w-]+)\.js';$/gm)].map((match) => match[1]);
-
-// Exercise the same JSX transform and browser runtime as the production bundle.
-export async function bundleBrowser(modules = browserModules) {
+// Compile explicit startup with the production JSX transform. Individual services can be
+// replaced at the composition boundary without exposing production globals.
+export async function bundleModule(source) {
   const entryId = path.resolve('tests/browser-entry.js');
   const result = await build({ configFile: false, logLevel: 'silent', plugins: [solid(), {
     name: 'browser-test-entry',
     resolveId(id) { if (id === entryId) return id; },
-    load(id) { if (id === entryId) return modules.map((name) => `import ${JSON.stringify(path.resolve(`src/browser/${name}.js`))};`).join('\n'); },
+    load(id) { if (id === entryId) return source; },
   }], build: { write: false, minify: false, lib: { entry: entryId, name: 'PortalTest', formats: ['iife'] } } });
   return (Array.isArray(result) ? result : [result]).flatMap((bundle) => bundle.output).find((file) => file.type === 'chunk').code;
+}
+export async function bundleBrowser({ connectGitHub = true, start = true } = {}) {
+  const imports = sharedSources.map(file => `import ${JSON.stringify(path.resolve(file))};`).join('\n');
+  const init = `initializePortal(${connectGitHub ? '' : '{ connectGitHub: () => {} }'})`;
+  return bundleModule(`${imports}
+    import { initializePortal } from ${JSON.stringify(path.resolve('src/browser/bootstrap.js'))};
+    ${start ? `window.testPortal = ${init};` : `window.startPortal = () => ${init};`}`);
 }
 const browserClient = await bundleBrowser();
 

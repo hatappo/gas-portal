@@ -1,7 +1,6 @@
 import { mountActionView } from './action-view';
 
-(() => {
-  'use strict';
+export function initializeActions() {
   /** @param {string} id */
   const el = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
   /** @param {string} key @param {Record<string, string | number>} [values] */
@@ -83,8 +82,10 @@ import { mountActionView } from './action-view';
   function loadVisible() {
     if (!el('actions-panel').hidden && [...sources.keys()].some((key) => !results.has(key))) loadAll();
   }
-  window.PortalActions = {
+  const actions = {
+    /** @param {string} provider @param {{ready: boolean, loading: boolean, error: string}} state */
     setProviderState(provider, state) { providers.set(provider, state); render(); },
+    /** @param {string} provider @param {ActionSource[]} entries */
     setSources(provider, entries) {
       // Preserve unchanged adapters, but discard removed/edited sources and in-flight batches.
       cancelBatch();
@@ -104,4 +105,5 @@ import { mountActionView } from './action-view';
   });
   document.addEventListener('portal:tabchange', loadVisible);
   document.addEventListener('portal:languagechange', render);
-})();
+  return actions;
+}

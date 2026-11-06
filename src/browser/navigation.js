@@ -2,8 +2,8 @@ import { createSignal } from 'solid-js';
 import { mountTabs } from './tabs';
 
 // Portal and settings tabs, kept in sync with the URL hash.
-(() => {
-  'use strict';
+/** @param {ReturnType<typeof import('./motion.js').createMotion>} motion */
+export function initializeNavigation(motion) {
   /** @param {string} id @returns {HTMLElement} */
   function element(id) {
     const node = document.getElementById(id);
@@ -12,7 +12,7 @@ import { mountTabs } from './tabs';
   }
   /** @type {Animation | undefined} */
   let panelAnimation;
-  PortalMotion.onReduce(() => panelAnimation?.cancel());
+  motion.onReduce(() => panelAnimation?.cancel());
 
   const portalTabs = [
     { hash: 'tools', button: element('tab-tools'), panel: element('directory') },
@@ -33,7 +33,7 @@ import { mountTabs } from './tabs';
     if (activeTab() === index) return;
     setActiveTab(index);
     panelAnimation?.cancel();
-    panelAnimation = PortalMotion.appear(portalTabs[index].panel);
+    panelAnimation = motion.appear(portalTabs[index].panel);
     document.dispatchEvent(new CustomEvent('portal:tabchange', { detail: portalTabs[index].hash }));
   }
   // GAS renders this code in a sandbox iframe. Its bridge controls the public URL;
@@ -97,4 +97,4 @@ import { mountTabs } from './tabs';
     applyRoute(window.location.hash);
   }
 
-})();
+}

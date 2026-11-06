@@ -1,8 +1,8 @@
 import { mountCatalogView } from './catalog-view';
 
 // Coordinates catalog RPCs and validation; Solid owns the dynamic lists.
-(() => {
-  'use strict';
+/** @param {ReturnType<typeof import('./motion.js').createMotion>} motion */
+export function initializeCatalog(motion) {
   /** @param {string} key @param {Record<string, string | number>} [values] */
   const t = (key, values = {}) => PortalI18n.t(key, document.documentElement.lang, values);
 
@@ -32,14 +32,14 @@ import { mountCatalogView } from './catalog-view';
   let resultAnimation;
   // Switching tabs stops the result animation; reduced motion stops it at once.
   document.addEventListener('portal:tabchange', () => resultAnimation?.cancel());
-  PortalMotion.onReduce(() => resultAnimation?.cancel());
+  motion.onReduce(() => resultAnimation?.cancel());
 
   /** Skip unchanged results and show the latest input without waiting for earlier animations. @param {string} signature */
   function animateResults(signature) {
     if (signature === resultSignature) return;
     resultSignature = signature;
     resultAnimation?.cancel();
-    if (!element('directory').hidden) resultAnimation = PortalMotion.appear(element('results'));
+    if (!element('directory').hidden) resultAnimation = motion.appear(element('results'));
   }
 
   /** @param {string} text */
@@ -265,4 +265,4 @@ import { mountCatalogView } from './catalog-view';
     // Only test fixtures render without embedded data; the built page always embeds it.
     loadCatalog();
   }
-})();
+}
