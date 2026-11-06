@@ -197,7 +197,7 @@ Tokens and connection settings are stored only in the executing user's `GITHUB_C
 
 - Four categories are searched separately: assigned open issues, directly requested PR reviews, team-requested PR reviews, and changes requested on your own open PRs (`is:open is:pr author:LOGIN review:changes_requested`). The same GitHub issue or PR is displayed once across all categories and connections, with its reason labels merged. Service identifiers keep items from different services distinct. Connection labels stay in Settings and error details.
 - Changes requested means GitHub’s explicit **Request changes** review status. Ordinary comments asking for edits are not detected. A PR may remain in this state after you push a fix until its review status changes. The same optional owner filter applies; leave it blank to include your PRs in other owners’ accessible repositories.
-- The unified list is sorted by update time and shows the service, repository, item number, update time, reason labels, and original link. Team results use GitHub's team-review qualifier; visibility depends on the authenticated account/token and organization policies. They are not inferred from display names or arbitrary mentions.
+- GitHub rows use update time in the unified list and show the service, repository, item number, update time, reason labels, and original link. Team results use GitHub's team-review qualifier; visibility depends on the authenticated account/token and organization policies. They are not inferred from display names or arbitrary mentions.
 - Loading uses a rotating refresh icon (disabled animation with reduced-motion preferences), without a loading message. Existing results stay visible during refresh. Successful empty results use the same empty-state panel as Tools & Links; failures remain explicit errors.
 - Action Items loads asynchronously only after its tab is opened. All connection RPCs start together, and the list updates once after every connection succeeds, fails, or reaches the 60-second batch timeout. The single refresh button bypasses every connection cache. Previous results, count, and retrieval time remain visible while refreshing. Opening Settings loads connection metadata but does not fetch issue/PR data. Initial connection loading uses an icon-only spinner in Settings and the shared refresh spinner in Action Items. No GitHub network requests occur in `doGet`.
 - The authenticated GitHub login is verified and saved when a connection is created or edited. Live task reads use that saved login and call the four searches directly, without another `/user` request. Search responses detect revoked/expired credentials. Connection metadata comes from User Properties, with no GitHub request. Action Items stays asynchronous and is never embedded in the page HTML.
@@ -214,8 +214,34 @@ Use `/?github=multiple#actions` for overlapping connections with one extra perso
 
 References: [GitHub Search API](https://docs.github.com/en/rest/search/search#search-issues-and-pull-requests), [review search qualifiers](https://docs.github.com/en/search-github/searching-on-github/searching-issues-and-pull-requests#search-by-pull-request-review-status-and-reviewer), [authenticated user](https://docs.github.com/en/rest/users/users#get-the-authenticated-user), and [fine-grained PAT setup and limitations](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
 
+## Slack bookmarks
+
+Slack bookmarks appear in the shared **Action Items** list alongside GitHub, with a **Slack** service label and **Bookmark** badge. The portal uses the documented legacy [`search.messages`](https://docs.slack.dev/reference/methods/search.messages/) method with `is:saved`; it does not use browser sessions or the undocumented `saved.list` endpoint.
+
+### Connect a workspace
+
+1. Create an app in [Slack Apps](https://api.slack.com/apps) for the workspace you want to connect. Under **OAuth & Permissions → User Token Scopes**, add **`search:read`**, then install or reinstall the app. Workspace administrators may need to approve it.
+2. Copy the **User OAuth Token** starting with `xoxp-`. Bot tokens, browser session tokens, and cookies are not supported. `search:read` permits searching messages the user can access, not only bookmarks; the portal always queries `is:saved` and never modifies Slack data. Automatic token rotation/refresh is not implemented; replace expired or revoked tokens in Settings.
+3. Deploy the updated portal with `npm run ship`. No additional GAS scope is needed if GitHub already works: both use `script.external_request`.
+4. Open **Settings → Action Items → Slack → Add connection**, paste the token, and save. `auth.test` verifies the workspace and user once at save time; the connection label is generated as `workspace@user`. Up to three distinct workspace/user connections are supported. Edit an existing connection to replace its token; leave the token blank to keep it. The password field is cleared immediately after submission.
+5. Open **Action Items**. Its single refresh button fetches both GitHub and Slack connections together and bypasses all their caches.
+
+Credentials live only in the executing user's `SLACK_CONNECTION_<id>` User Properties. They are excluded from HTML, metadata responses, result caches and logs. As with GitHub, User Properties are not a secret vault: code running as that user can read them. **Disconnect** deletes the local credential and cache, but does not uninstall the Slack app or revoke its token.
+
+### Search coverage and caching
+
+- These are **saved-message search results**, not a verified list of outstanding tasks. The dedicated Saved/Later view can contain entries that search does not return. User search preferences, message grouping, visibility and indexing can affect results. Saved files and manual To-dos are not included; message-backed To-do completion state is unavailable. A successful empty response means the search returned no messages.
+- Each refresh fetches at most two pages of 100 messages per connection. Truncation, rejected records or a failed later page produce a partial-result notice. Successful earlier pages remain visible. Counts describe displayed items, never a guaranteed bookmark total. Rate limits produce an error without automatic retries.
+- Titles are plain-text excerpts, up to 500 characters; Slack rich text, attachments and mentions are not fully rendered or resolved. Each row links to the original message and shows its workspace, channel and **posting time**, not when it was saved. The unified queue sorts GitHub updates and Slack posting times together.
+- No Slack calls run during `doGet`. Connection metadata comes from User Properties; reads call search directly without repeating `auth.test`. All connections start asynchronously after provider metadata settles. A failed provider does not hide results from another.
+- The shared **Action Items cache duration** applies (five minutes by default). Cache keys include a credential revision; editing or disconnecting invalidates the connection cache. Cached excerpts are private to the executing user. Failed requests are not cached, and **Fetch latest** bypasses cached results. The list is a snapshot, with no background polling.
+
+### Offline preview
+
+Preview includes a fictional Slack connection and two saved messages. It never contacts Slack or retains a token. Use only `demo` in the token field; mock connections reset on reload. Query parameters support `slack=disconnected`, `empty`, `partial`, `unauthorized`, `rate-limit`, `scope`, and `error`, independently of `github=…`. For example, `/?github=empty&slack=partial#actions` shows Slack results with a partial failure. To inspect a fully empty or disconnected queue, set the same scenario for both services.
+
 ## Settings navigation
 
-Settings has three subtabs: **Appearance** (portal text, theme, then language), **Tools & Links** (spreadsheet and catalog cache), and **Action Items** (shared cache duration, then GitHub connections). Switching tabs preserves unsaved form values; each control keeps its existing save behavior.
+Settings has three subtabs: **Appearance** (portal text, theme, then language), **Tools & Links** (spreadsheet and catalog cache), and **Action Items** (shared cache duration, then GitHub and Slack connections). Switching tabs preserves unsaved form values; each control keeps its existing save behavior.
 
 Direct links use `#settings/appearance`, `#settings/tools`, and `#settings/actions`. The existing `#settings` link opens Appearance. Browser back/forward works in both the GAS web app and local preview. Arrow keys and Home/End navigate within the focused tab row. **Manage connections** opens Action Items settings directly.

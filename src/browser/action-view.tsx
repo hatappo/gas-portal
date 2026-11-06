@@ -27,7 +27,7 @@ function ActionRow(props: { item: ActionItem; language: string }) {
   return <li>
     <SourceLink url={props.item.url} class="action-item-title link link-hover">{props.item.title}</SourceLink>
     <div class="action-item-meta"><span class="action-service">{props.item.serviceLabel}</span><span class="action-context">{props.item.context}</span>
-      <time dateTime={props.item.updatedAt}>{t('Updated', props.language) + ' ' + new Intl.DateTimeFormat(props.language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(props.item.updatedAt))}</time>
+      <time dateTime={props.item.updatedAt}>{t(props.item.dateLabel || 'Updated', props.language) + ' ' + new Intl.DateTimeFormat(props.language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(props.item.updatedAt))}</time>
     </div>
     <div class="action-item-reasons"><For each={props.item.reasons}>{(reason) => <span class="action-item-kind badge badge-sm badge-ghost">{t(reason, props.language)}</span>}</For></div>
   </li>;

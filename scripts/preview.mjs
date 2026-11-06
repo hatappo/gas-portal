@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { createGitHubPreview } from './github-preview.mjs';
+import { createSlackPreview } from './slack-preview.mjs';
 import { withPreviewProject, withPreviewContent } from './preview-project.mjs';
 import { sharedSources, serverSources } from './gas-sources.mjs';
 import { withPortalAssets } from './portal-html.mjs';
@@ -39,6 +40,7 @@ export function renderPreview(html, root, options = {}) {
   const portal = context.getPortalContent_({ SPREADSHEET_ID: options.spreadsheetId ?? process.env.SPREADSHEET_ID ?? '' });
   return withPreviewContent(withPreviewProject(withPortalAssets(html, root), options.configPath ?? path.join(root, '.clasp.json')), portal)
     .replace('placeholder="github_pat_…"', 'placeholder="demo"')
+    .replace('placeholder="xoxp-…"', 'placeholder="demo"')
     .replace('<?!= initialCatalogJson ?>', () => context.serializeCatalog_(catalog))
     .replace('<!-- preview-label -->', '<p class="preview-label"><span>LOCAL PREVIEW</span> · <span data-i18n="Mock data">Mock data</span></p>')
     .replace('<script type="module" src="/browser/main.js"></script>', () => `<script>
@@ -141,8 +143,10 @@ export function renderPreview(html, root, options = {}) {
         if (initial) initial.textContent = JSON.stringify(readPreviewCatalog());
       }
       const createGitHubPreview = ${createGitHubPreview.toString()};
+      const createSlackPreview = ${createSlackPreview.toString()};
       const google = {script: {run: {
         ...createGitHubPreview(new URLSearchParams(location.search).get('github'), () => previewActionsCacheSeconds),
+        ...createSlackPreview(new URLSearchParams(location.search).get('slack'), () => previewActionsCacheSeconds),
         withSuccessHandler(fn) {return {...this, success: fn};},
         withFailureHandler(fn) {return {...this, failure: fn};},
         savePortalSettings(input, browserLanguage) {setTimeout(() => {

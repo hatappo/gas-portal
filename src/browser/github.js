@@ -204,10 +204,6 @@ export function initializeGitHub(actions) {
   add.addEventListener('click', () => edit(undefined));
   el('cancel-github').addEventListener('click', () => { if (!busy) { form.hidden = true; token.value = ''; } });
   form.addEventListener('submit', (event) => { event.preventDefault(); mutate(); });
-  el('actions-settings').addEventListener('click', () => {
-    el('settings-tab-actions').click();
-    el('settings-tab-actions').focus();
-  });
   document.addEventListener('portal:refresh-actions', () => { if (!initialized) initialize(); });
   el('retry-github-settings').addEventListener('click', initialize);
   document.addEventListener('portal:tabchange', () => {

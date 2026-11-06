@@ -7,7 +7,7 @@ test('Disclosure panels retain controller nodes and exclude closed content from 
   t.after(() => app.dom.window.close());
   const doc = app.document;
   assert.equal(doc.querySelectorAll('details').length, 0);
-  assert.equal(doc.querySelectorAll('.portal-disclosure').length, 3);
+  assert.equal(doc.querySelectorAll('.portal-disclosure').length, 4);
   const code = doc.getElementById('favicon-finder-code');
   const panel = code.closest('.disclosure-content');
   const trigger = code.closest('.portal-disclosure').querySelector('button');

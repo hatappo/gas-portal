@@ -14,6 +14,7 @@ export function initializeActions() {
   let results = new Map();
   let generation = 0;
   let loading = false;
+  let forcePending = false;
   let timer = 0;
 
   const updateView = mountActionView();
@@ -54,7 +55,9 @@ export function initializeActions() {
   }
   /** Start independent RPCs together, commit once, and ignore obsolete callbacks. @param {boolean} [force] */
   function loadAll(force = false) {
-    if (loading || !sources.size) return;
+    if (loading || !sources.size || [...providers.values()].some((provider) => !provider.ready && !provider.error)) return;
+    force = force || forcePending;
+    forcePending = false;
     const current = ++generation;
     const pending = new Set(sources.keys());
     const next = new Map();
@@ -80,11 +83,11 @@ export function initializeActions() {
     }
   }
   function loadVisible() {
-    if (!el('actions-panel').hidden && [...sources.keys()].some((key) => !results.has(key))) loadAll();
+    if (!el('actions-panel').hidden && (forcePending || [...sources.keys()].some((key) => !results.has(key)))) loadAll();
   }
   const actions = {
     /** @param {string} provider @param {{ready: boolean, loading: boolean, error: string}} state */
-    setProviderState(provider, state) { providers.set(provider, state); render(); },
+    setProviderState(provider, state) { providers.set(provider, state); render(); loadVisible(); },
     /** @param {string} provider @param {ActionSource[]} entries */
     setSources(provider, entries) {
       // Preserve unchanged adapters, but discard removed/edited sources and in-flight batches.
@@ -100,8 +103,13 @@ export function initializeActions() {
   };
   refresh.addEventListener('click', () => {
     if (refresh.disabled) return;
+    forcePending = true;
     document.dispatchEvent(new Event('portal:refresh-actions'));
     loadAll(true);
+  });
+  el('actions-settings').addEventListener('click', () => {
+    el('settings-tab-actions').click();
+    el('settings-tab-actions').focus();
   });
   document.addEventListener('portal:tabchange', loadVisible);
   document.addEventListener('portal:languagechange', render);

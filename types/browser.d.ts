@@ -32,7 +32,17 @@ interface GitHubActionGroup { kind: string; items: GitHubActionItem[]; total: nu
 type GitHubActionsResponse = { ok: true; groups: GitHubActionGroup[]; fetchedAt: number; cached: boolean } | { ok: false; error: string };
 type GitHubConnectionsResponse = { ok: true; connections: GitHubConnectionInfo[] } | { ok: false; error: string };
 type GitHubSaveResponse = { ok: true; connection: GitHubConnectionInfo } | { ok: false; error: string };
+interface SlackConnectionInfo { id: string; label: string }
+interface SlackConnectionInput { id: string; token: string }
+interface SlackActionItem { id: string; title: string; url: string; context: string; postedAt: string }
+type SlackActionsResponse = { ok: true; items: SlackActionItem[]; error: string; partial: boolean; fetchedAt: number; cached: boolean } | { ok: false; error: string };
+type SlackConnectionsResponse = { ok: true; connections: SlackConnectionInfo[] } | { ok: false; error: string };
+type SlackSaveResponse = { ok: true; connection: SlackConnectionInfo } | { ok: false; error: string };
 interface GasRunner {
+  getSlackConnections(): void;
+  saveSlackConnection(input: SlackConnectionInput): void;
+  disconnectSlack(id: string): void;
+  getSlackActionItems(id: string, forceRefresh?: boolean): void;
   getGitHubConnections(): void;
   saveGitHubConnection(input: GitHubConnectionInput): void;
   disconnectGitHub(id: string): void;
@@ -71,7 +81,7 @@ declare const google: { script: {
 
 interface ActionItem {
   service: string; serviceLabel: string; id: string; title: string; url: string;
-  context: string; updatedAt: string; reasons: string[];
+  context: string; updatedAt: string; dateLabel?: string; reasons: string[];
 }
 interface ActionNotice { message: string; reason?: string; url?: string }
 interface ActionResult { items: ActionItem[]; notices: ActionNotice[]; fetchedAt?: number; cached?: boolean }

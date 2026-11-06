@@ -222,13 +222,13 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 #spreadsheet-settings-fields:disabled #create-spreadsheet { cursor: wait; }
 
 /* Quiet, compact work queue; existing theme tokens keep all palettes consistent. */
-.github-connection { display: flex; align-items: center; gap: 12px; }
+:is(.github-connection, .slack-connection) { display: flex; align-items: center; gap: 12px; }
 .action-text-button { font-size: 12px; font-weight: 500; }
-.github-connections { list-style: none; padding: 0; margin: 12px 0 0; }
-.github-connection { justify-content: space-between; border-bottom: 1px solid var(--color-base-300); padding: 8px 0; }
-.github-connection strong { font-size: 14px; overflow-wrap: anywhere; }
-.github-connection p { margin: 4px 0; }
-.github-connection-controls { display: flex; flex-shrink: 0; flex-wrap: wrap; gap: 4px 12px; }
+:is(.github-connections, .slack-connections) { list-style: none; padding: 0; margin: 12px 0 0; }
+:is(.github-connection, .slack-connection) { justify-content: space-between; border-bottom: 1px solid var(--color-base-300); padding: 8px 0; }
+:is(.github-connection, .slack-connection) strong { font-size: 14px; overflow-wrap: anywhere; }
+:is(.github-connection, .slack-connection) p { margin: 4px 0; }
+:is(.github-connection-controls, .slack-connection-controls) { display: flex; flex-shrink: 0; flex-wrap: wrap; gap: 4px 12px; }
 .actions-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .actions-summary { display: flex; align-items: center; gap: 8px; }
 .actions-summary .count { min-width: 8ch; }
@@ -251,14 +251,14 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
   .action-item-list > li { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .action-item-reasons { grid-column: 1; grid-row: auto; justify-content: flex-start; max-width: none; }
 }
-#github-settings-form { max-width: 680px; }
-@media (max-width: 600px) { .github-connection { flex-wrap: wrap; } }
+:is(#github-settings-form, #slack-settings-form) { max-width: 680px; }
+@media (max-width: 600px) { :is(.github-connection, .slack-connection) { flex-wrap: wrap; } }
 
-.github-pat-help { margin: 12px 0; line-height: 1.8; }
-.github-pat-help .github-connection-controls { flex-wrap: wrap; }
+:is(.github-pat-help, .slack-token-help) { margin: 12px 0; line-height: 1.8; }
+:is(.github-pat-help, .slack-token-help) :is(.github-connection-controls, .slack-connection-controls) { flex-wrap: wrap; }
 /* Preflight removes list markers and paragraph margins; restore them for help text. */
-.github-pat-help ul { margin: 8px 0; padding-inline-start: 20px; list-style: disc; }
-.github-pat-help p { margin: 8px 0; }
+:is(.github-pat-help, .slack-token-help) ul { margin: 8px 0; padding-inline-start: 20px; list-style: disc; }
+:is(.github-pat-help, .slack-token-help) p { margin: 8px 0; }
 
 @media (max-width: 600px) { .search-controls { flex-wrap: wrap; gap: 6px; } .search-controls .search-box { flex-basis: 100%; } }
 

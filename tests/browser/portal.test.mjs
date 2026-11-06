@@ -100,3 +100,40 @@ for (const theme of ['lofi', 'dracula']) {
     }
   });
 }
+
+test('GitHub and Slack share one refresh control; Slack settings work on a narrow screen', async t => {
+  const page = await pageFor(t, { viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await page.locator('#tab-actions').click();
+  await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
+  assert.equal(await page.locator('#actions-panel button#refresh-actions').count(), 1);
+  assert.ok(await page.locator('.action-service', { hasText: 'GitHub' }).count() > 0);
+  assert.equal(await page.locator('.action-service', { hasText: 'Slack' }).count(), 2);
+  assert.match(await page.locator('.action-item-list').textContent(), /Posted/);
+  await page.locator('#refresh-actions').click();
+  assert.equal(await page.locator('#refresh-actions').getAttribute('aria-busy'), 'true');
+  assert.equal(await page.locator('.action-service', { hasText: 'Slack' }).count(), 2);
+  await page.waitForSelector('#refresh-actions[aria-busy="false"]');
+  await page.locator('#actions-settings').click();
+  await page.locator('#settings-actions-panel').waitFor({ state: 'visible' });
+  const disclosure = page.locator('.slack-token-help .disclosure-trigger');
+  await disclosure.focus(); await page.keyboard.press('Enter');
+  assert.match(await page.locator('.slack-token-help').textContent(), /User Token Scopes/);
+  assert.match(await page.locator('.slack-token-help').textContent(), /search:read/);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  await page.locator('#slack-connections button').first().click();
+  await page.locator('#slack-token').fill('demo');
+  await page.locator('#slack-settings-form [type="submit"]').click();
+  assert.equal(await page.locator('#slack-token').inputValue(), '');
+  await page.locator('#slack-settings-form').waitFor({ state: 'hidden' });
+  assert.match(await page.locator('#slack-settings-status').textContent(), /Connected/);
+  page.once('dialog', dialog => dialog.accept());
+  await page.locator('#slack-connections button').nth(1).click();
+  await page.waitForFunction(() => document.querySelector('#slack-connections').children.length === 0);
+  await page.locator('#add-slack').click();
+  await page.locator('#slack-token').fill('demo');
+  await page.locator('#slack-settings-form [type="submit"]').click();
+  await page.locator('#slack-settings-form').waitFor({ state: 'hidden' });
+  await page.locator('#tab-actions').click();
+  await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
+  assert.equal(await page.locator('.action-service', { hasText: 'Slack' }).count(), 2);
+});

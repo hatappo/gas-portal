@@ -12,7 +12,7 @@ export const sharedSources = [
 
 // Source boundaries do not change the public seven-file GAS project layout.
 export const serverGroups = {
-  'Code.js': ['Settings', 'SpreadsheetSetup', 'GitHub', 'Code'],
+  'Code.js': ['Settings', 'SpreadsheetSetup', 'GitHub', 'Slack', 'Code'],
   'Catalog.js': ['Catalog'],
   'SheetCatalog.js': ['SheetCatalog'],
 };
