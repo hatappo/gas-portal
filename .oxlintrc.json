@@ -16,6 +16,7 @@
     "no-unused-vars": "error"
   },
   "overrides": [
+    { "files": ["tests/browser/*.mjs"], "env": { "browser": true, "node": true } },
     {
       "files": ["src/server/*.js"],
       "globals": {

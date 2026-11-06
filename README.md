@@ -95,6 +95,7 @@ See the [usage guide](docs/usage.md) for initial setup, spreadsheet columns, dis
 npm ci
 npm run dev               # Vite: Solid/CSS HMR, JS/HTML reloads
 npm run check             # Lint, type checks, build, and tests
+npm run test:browser      # Small Chromium smoke suite (also runs in CI)
 npm run pack:local
 ```
 
@@ -104,7 +105,7 @@ Solid and Kobalte are build-time dependencies, bundled into `Client.html`; deplo
 
 Application source lives in `src/`; the CLI lives in `bin/` and `lib/`. Styles use [Tailwind CSS](https://tailwindcss.com/) v4 and [DaisyUI](https://daisyui.com/) v5, compiled into the inline GAS stylesheet at build time. Prefer DaisyUI components (`btn`, `input`, `card`, `badge`, …) and DaisyUI color variables over custom colors. The `include` list in `src/browser/styles.css` names the DaisyUI parts in use; add a component there before using it. Use `primary` only as a fill, not as text color, so every theme keeps readable contrast. `npm run build` generates GAS output in `dist/` and package assets in `assets/`. Published packages contain the CLI, compiled assets, and usage documentation. They exclude source files, tests, environment configuration, and credentials.
 
-`npm run screenshots` captures the local preview in every theme at 1280px and 390px for visual review, and writes per-theme images plus one contact sheet per view and width to the untracked `screenshots/` directory. It takes about 20 seconds. Narrow it with `--themes nord,night`, `--views tools,appearance`, or `--widths 390`; views are `tools`, `list`, `actions`, `appearance`, `settings-tools`, and `settings-actions`. It uses Playwright and is not part of `npm run check` or CI. Install the browser once with `npx playwright install chromium` (about 100MB). Page errors make the command fail.
+`npm run screenshots` captures the local preview in every theme at 1280px and 390px for visual review, and writes per-theme images plus one contact sheet per view and width to the untracked `screenshots/` directory. It takes about 20 seconds. Narrow it with `--themes nord,night`, `--views tools,appearance`, or `--widths 390`; views are `tools`, `list`, `actions`, `appearance`, `settings-tools`, and `settings-actions`. It uses Playwright and is not part of `npm run check` or CI. The separate `npm run test:browser` smoke suite runs in CI and covers navigation/drafts, saving/resetting display settings, disclosure accessibility, and responsive card layout in two representative themes. Install the browser once with `npx playwright install chromium` (about 100MB). Page errors make the command fail.
 
 To preview the GAS footer link during development, set `scriptId` in an untracked `.clasp.json`. The optional `SPREADSHEET_ID` environment variable accepts an ID or Google Sheets URL to preview the spreadsheet setting and footer link. Neither value is embedded in packaged assets.
 

@@ -1,0 +1,102 @@
+import assert from 'node:assert/strict';
+import { before, after, test } from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { chromium } from 'playwright';
+import { createServer } from 'vite';
+
+let server, browser, base;
+before(async () => {
+  server = await createServer({ configFile: fileURLToPath(new URL('../../vite.config.mjs', import.meta.url)), server: { port: 0 }, logLevel: 'error' });
+  await server.listen();
+  base = 'http://127.0.0.1:' + server.httpServer.address().port;
+  browser = await chromium.launch();
+});
+after(async () => { await browser?.close(); await server?.close(); });
+
+async function pageFor(t, options = {}) {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'en-US', ...options });
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  // The smoke suite uses only the local fixture, including its image fallbacks.
+  await page.route('**/*', route => route.request().url().startsWith(base) ? route.continue() : route.abort());
+  t.after(async () => { await context.close(); assert.deepEqual(errors, []); });
+  await page.goto(base);
+  await page.waitForSelector('#directory[aria-busy="false"] .tool-card');
+  return page;
+}
+
+test('Tabs preserve drafts and history; defaults only apply after saving', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  await page.locator('#tab-tools').focus();
+  await page.keyboard.press('ArrowRight');
+  await page.waitForFunction(() => document.activeElement.id === 'tab-actions');
+  await page.locator('#tab-settings').click();
+  await page.locator('#setting-name').fill('Draft portal');
+  await page.locator('#settings-tab-tools').click();
+  await page.locator('#settings-tools-panel').waitFor({ state: 'visible' });
+  await page.goBack();
+  await page.locator('#settings-appearance-panel').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#setting-name').inputValue(), 'Draft portal');
+  await page.locator('#portal-settings-form [type="submit"]').click();
+  await page.waitForFunction(() => document.querySelector('.brand-name').textContent === 'Draft portal');
+  await page.locator('#reset-portal-settings').click();
+  assert.equal(await page.locator('#setting-name').inputValue(), 'My Portal');
+  assert.equal(await page.locator('.brand-name').textContent(), 'Draft portal');
+  await page.locator('#setting-headline').fill('');
+  await page.locator('#setting-description').fill('');
+  await page.locator('#portal-settings-form [type="submit"]').click();
+  await page.locator('.intro').waitFor({ state: 'hidden' });
+  await page.reload();
+  await page.locator('#setting-name').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#setting-name').inputValue(), 'My Portal');
+  assert.equal(await page.locator('#setting-headline').inputValue(), '');
+});
+
+test('Disclosure keyboard operation keeps closed content inert and respects reduced motion', async t => {
+  const page = await pageFor(t);
+  await page.locator('#tab-settings').click();
+  await page.locator('#settings-tab-actions').click();
+  const trigger = page.locator('.github-pat-help .disclosure-trigger');
+  const content = page.locator('.github-pat-help .disclosure-content');
+  const body = page.locator('.github-pat-help .disclosure-body');
+  await trigger.focus();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => document.querySelector('.github-pat-help .disclosure-trigger').getAttribute('aria-expanded') === 'true');
+  assert.notEqual(await body.evaluate(el => getComputedStyle(el).transitionDuration), '0s');
+  await page.keyboard.press('Space');
+  assert.equal(await content.getAttribute('inert'), '');
+  await content.locator('a').first().evaluate(el => el.focus());
+  assert.equal(await trigger.evaluate(el => el === document.activeElement), true);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  assert.equal(await body.evaluate(el => getComputedStyle(el).transitionDuration), '0s');
+  await trigger.click();
+  assert.ok((await body.boundingBox()).height > 0);
+});
+
+for (const theme of ['lofi', 'dracula']) {
+  test(`Cards retain natural heights and row spacing in ${theme}`, async t => {
+    const page = await pageFor(t, { reducedMotion: 'reduce' });
+    await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+    for (const width of [1280, 800, 390, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      const result = await page.evaluate(() => {
+        const cards = [...document.querySelectorAll('.tool-card')];
+        cards[0].querySelector('.tool-description').textContent = 'Short.';
+        cards[1].querySelector('.tool-description').textContent = 'Long content that must not stretch adjacent cards. '.repeat(16);
+        const bounds = cards.map(card => { const r = card.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, height: r.height }; });
+        const cols = getComputedStyle(document.getElementById('tools')).gridTemplateColumns.split(' ').length;
+        const tag = cards[0].querySelector('.tool-tag');
+        return { bounds, cols, overflow: document.documentElement.scrollWidth > innerWidth,
+          tagFill: getComputedStyle(tag).backgroundColor, cardFill: getComputedStyle(cards[0]).backgroundColor };
+      });
+      assert.equal(result.overflow, false, `${width}px overflow`);
+      assert.notEqual(result.tagFill, result.cardFill);
+      if (result.cols > 1) {
+        assert.equal(result.bounds[0].top, result.bounds[1].top);
+        assert.ok(result.bounds[1].height > result.bounds[0].height + 80);
+        assert.ok(result.bounds[result.cols].top > Math.max(...result.bounds.slice(0, result.cols).map(r => r.bottom)));
+      }
+    }
+  });
+}
