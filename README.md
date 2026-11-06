@@ -135,6 +135,22 @@ npm run preview
 
 Add `install-links=false` to the consumer's `.npmrc` to keep the dependency as a symbolic link. Running npm ci in the consumer does not install dependencies in the linked repository. The consumer preview detects the linked source checkout and uses Vite HMR. Rebuild in this repository before `build`, `push`, or `ship` to update the packaged GAS output. Restart the preview after CLI or preview-server script changes. A directory dependency does not pin source contents in the lockfile; use release tarballs for regular work environments.
 
+## Slack saved-message probe
+
+Before implementing [Slack Action Items (#6)](https://github.com/hatappo/gas-portal/issues/6), test saved-message search from a source checkout. No GAS deployment is needed; the script makes two read-only requests directly to Slack and writes no files.
+
+1. Create an internal app for your test workspace at [Your Apps](https://api.slack.com/apps).
+2. Under **OAuth & Permissions → Scopes → User Token Scopes**, add `search:read`. This allows searching content accessible to the user, not just saved messages. No write scope or bot token is needed.
+3. Install/reinstall the app to the workspace and complete any required administrator approval. Copy the **User OAuth Token** (`xoxp-…`) locally.
+4. In this repository, run `npm run probe:slack` and paste the token at the hidden prompt. Do not put it in command arguments, files, chat, issues, or screenshots. Ctrl+C cancels. Each run prompts again; the token is not persisted.
+5. Compare the returned permalinks with your own Saved/To-dos in Slack. The script reports workspace/user IDs so you can confirm the account. It omits message bodies, but output still contains private message links; keep it local.
+
+The probe calls `auth.test`, then `search.messages` with `is:saved`. It fetches at most 100 results without automatic pagination or retries. `reportedSearchTotal` is Slack's search count, not a task count; `hasMore: true` means this page is incomplete, and `null` means completion cannot be determined. Zero results do not establish that your To-do list is empty. On `missing_scope`, add the **user** scope and reinstall; on rate limiting, wait for the reported delay.
+
+Test a known saved public-channel message, a private-channel message/DM, and an unsaved control message. Save/unsave the same message and rerun after allowing for indexing delay. Separately test message-backed To-dos, completed To-dos, manual To-dos, and saved files. Record which appear: message search is not guaranteed to cover To-do lifecycle fields, manual tasks or file-only saves.
+
+This probe deliberately tests the documented [legacy search.messages endpoint](https://docs.slack.dev/reference/methods/search.messages/); support for `is:saved` still needs live verification. The newer [Real-time Search API](https://docs.slack.dev/apis/web-api/real-time-search-api/) explicitly supports saved-message search but has AI-app and distribution requirements that remain unresolved for this portal. Do not treat a successful legacy search as confirmation of eligibility for that API.
+
 ## Workflow dependencies
 
 GitHub Actions dependencies are locked in `.github/workflows/actions.lock` ([workflow lockfiles](https://github.blog/changelog/2026-10-28-github-actions-workflow-lockfiles-are-generally-available/)). Workflows reference exact release tags, and runs use the commits recorded in the lockfile, including actions that other actions call. After adding a workflow or changing any `uses:`, run `gh actions-lock` (install once with `gh extension install github/gh-actions-lock`) and commit the workflow and lockfile together; review the lockfile diff. The **Verify actions lockfile** workflow runs `gh actions-lock --verify` on pushes to `main` and on pull requests.

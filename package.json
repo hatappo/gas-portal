@@ -20,7 +20,8 @@
     "pack:local": "npm run build && node scripts/pack-local.mjs",
     "build:favicons": "node scripts/build-favicons.mjs",
     "screenshots": "node scripts/screenshots.mjs",
-    "test:browser": "node --test tests/browser/*.test.mjs"
+    "test:browser": "node --test tests/browser/*.test.mjs",
+    "probe:slack": "node scripts/slack-probe.mjs"
   },
   "devDependencies": {
     "@fontsource/libre-baskerville": "5.3.0",
