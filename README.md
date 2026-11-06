@@ -166,6 +166,14 @@ npm run probe:slack -- --query 'is:to-do' --inspect
 
 The optional `inspection` output lists response field paths, types, and boolean values. It never prints raw string or numeric values, including message bodies. It samples only the first element of each array, with a maximum depth of five and 150 fields; `truncated` reports sampling or limits. Use a query selecting the test message if multiple results exist. A candidate status field can then be checked before/after completion; its absence from one sampled response is not proof that no API can expose completion state.
 
+For a complete first-page response, including **all returned message bodies, blocks and metadata**, explicitly enable raw output:
+
+```sh
+npm run probe:slack -- --query 'is:to-do' --raw
+```
+
+`rawResponse` is the JSON returned by `search.messages`, without the depth or array sampling used by `--inspect`. The token supplied to this run is redacted if it appears anywhere in the response; request headers and authentication responses are not included. Normal output remains unchanged without `--raw`. No files are written, and there is still no automatic pagination: the response covers at most the first 100 search results. Use a test conversation whose content can be inspected. Compare the completed and incomplete messages, including nested fields; for a stronger check, run the same query before and after changing **the same** test To-do's completion state without editing its message text. Different message text or a search score does not establish a completion-state field.
+
 This probe deliberately tests the documented [legacy search.messages endpoint](https://docs.slack.dev/reference/methods/search.messages/); a user-run probe has returned two newly saved messages, matching the Slack UI search. A third older bookmark appeared in the dedicated Saved view but in neither search result; that discrepancy is deferred. A message-backed To-do was also returned by `is:to-do` before and after completion, in both the API and UI search. Therefore that query alone does not establish an incomplete-task feed; full coverage and completion-state metadata remain unverified. The newer [Real-time Search API](https://docs.slack.dev/apis/web-api/real-time-search-api/) explicitly supports saved-message search but has AI-app and distribution requirements that remain unresolved for this portal. Do not treat a successful legacy search as confirmation of eligibility for that API.
 
 ## Workflow dependencies

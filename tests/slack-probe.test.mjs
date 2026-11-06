@@ -127,8 +127,8 @@ test('Custom queries remain one encoded search parameter and report the query ec
 });
 
 test('Query arguments preserve the saved-message default and reject invalid options before authentication', async () => {
-  assert.deepEqual(parseProbeOptions([]), { help: false, inspect: false, query: 'is:saved' });
-  assert.deepEqual(parseProbeOptions(['--query', 'is:to-do']), { help: false, inspect: false, query: 'is:to-do' });
+  assert.deepEqual(parseProbeOptions([]), { help: false, inspect: false, raw: false, query: 'is:saved' });
+  assert.deepEqual(parseProbeOptions(['--query', 'is:to-do']), { help: false, inspect: false, raw: false, query: 'is:to-do' });
   assert.equal(parseProbeOptions(['--query=is:saved before:2026-10-10']).query, 'is:saved before:2026-10-10');
   for (const args of [['--query'], ['--query', ' '], ['--query', 'a'.repeat(1001)], ['--query', 'a\nb'], ['--token', token], [token]]) {
     assert.throws(() => parseProbeOptions(args), error => !error.message.includes(token));
@@ -168,4 +168,25 @@ test('Inspection reports sampling and depth/size limits instead of claiming exha
     assert.ok(result.inspection.fields.length <= 150);
     assert.doesNotMatch(JSON.stringify(result), /PRIVATE_/);
   }
+});
+
+
+test('Raw mode retains every returned message and deep fields only when explicitly requested, and redacts the supplied token', async () => {
+  assert.equal(parseProbeOptions(['--raw']).raw, true);
+  assert.equal(parseProbeOptions(['--raw', '--inspect']).inspect, true);
+  const payload = { ok: true, query: 'is:to-do', messages: { total: 2, matches: [
+    { ts: '1.1', text: 'First test message', blocks: [{ elements: [{ elements: [{ text: 'Deep nested text', diagnostic: token }] }] }], todo: { completed: false } },
+    { ts: '2.2', text: 'Second test message', todo: { completed: true }, extra: { reflected: `prefix ${token} suffix` } },
+  ] }, response_metadata: { next_cursor: '' } };
+  const plain = await probeMessages(token, searchFetch(reply(payload)));
+  const inspected = await probeMessages(token, searchFetch(reply(payload)), 'is:to-do', true);
+  for (const result of [plain, inspected]) {
+    assert.equal(Object.hasOwn(result, 'rawResponse'), false);
+    assert.doesNotMatch(JSON.stringify(result), /First test message|Second test message|Deep nested text/);
+  }
+  const raw = await probeMessages(token, searchFetch(reply(payload)), 'is:to-do', false, true);
+  assert.deepEqual(raw.rawResponse, JSON.parse(JSON.stringify(payload).replaceAll(token, '[REDACTED]')));
+  assert.equal(raw.rawResponse.messages.matches.length, 2);
+  assert.equal(raw.rawResponse.messages.matches[0].blocks[0].elements[0].elements[0].text, 'Deep nested text');
+  assert.doesNotMatch(JSON.stringify(raw), /xoxp-/);
 });

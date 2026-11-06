@@ -2,16 +2,18 @@ import { createInterface } from 'node:readline';
 import { Writable } from 'node:stream';
 import { parseArgs } from 'node:util';
 
-const HELP = `Usage: npm run probe:slack -- [--query "is:saved"] [--inspect]
+const HELP = `Usage: npm run probe:slack -- [--query "is:saved"] [--inspect] [--raw]
 
 Read-only Slack message-search probe (search.messages; defaults to is:saved).
 Use --query "is:to-do" to test To-do search, or add date/channel filters.
 Date filters refer to message dates, not the date a bookmark was added.
 --inspect adds response field names/types and boolean values, never raw text.
 Inspection samples the first element of arrays and limits depth/output size.
+--raw adds the complete first-page search response, including all message bodies,
+blocks and metadata, without inspection sampling. The supplied token is redacted.
 Requires a User OAuth Token with search:read. Paste it at the hidden prompt.
 No token arguments, environment files, or saved credentials are used.
-Outputs account IDs and up to 100 message permalinks, without message bodies.
+By default, outputs account IDs and up to 100 message permalinks, without bodies.
 This is a source-checkout diagnostic, not a Portal integration or a To-do API.
 See README.md: Slack saved-message probe.
 `;
@@ -69,11 +71,11 @@ function validateQuery(value) {
 export function parseProbeOptions(args) {
   let values;
   try {
-    ({ values } = parseArgs({ args, options: { query: { type: 'string' }, help: { type: 'boolean' }, inspect: { type: 'boolean' } }, allowPositionals: false, strict: true }));
+    ({ values } = parseArgs({ args, options: { query: { type: 'string' }, help: { type: 'boolean' }, inspect: { type: 'boolean' }, raw: { type: 'boolean' } }, allowPositionals: false, strict: true }));
   } catch {
     throw new ProbeError('Unsupported arguments. Use --help; never pass a token as an argument.');
   }
-  return { help: values.help ?? false, inspect: values.inspect ?? false, query: validateQuery(values.query ?? 'is:saved') };
+  return { help: values.help ?? false, inspect: values.inspect ?? false, raw: values.raw ?? false, query: validateQuery(values.query ?? 'is:saved') };
 }
 
 // Show structure rather than raw messages; boolean flags can be compared across states.
@@ -101,7 +103,7 @@ function inspectFields(data) {
   return { fields, truncated, note: 'Field names/types and boolean values only. Arrays show their first element; depth and output size are bounded. Missing fields in this sample do not prove the API never exposes them.' };
 }
 
-export async function probeMessages(token, fetchImpl = fetch, query = 'is:saved', inspect = false) {
+export async function probeMessages(token, fetchImpl = fetch, query = 'is:saved', inspect = false, raw = false) {
   query = validateQuery(query);
   token = token.trim();
   if (!/^xoxp-[A-Za-z0-9-]+$/.test(token)) throw new ProbeError('Enter a User OAuth Token beginning with xoxp-.');
@@ -135,6 +137,8 @@ export async function probeMessages(token, fetchImpl = fetch, query = 'is:saved'
       permalink: message.permalink ?? null,
     })),
     ...(inspect ? { inspection: inspectFields(data) } : {}),
+    // Opt-in raw diagnostics retain every returned item and nested field, but not this credential.
+    ...(raw ? { rawResponse: JSON.parse(JSON.stringify(data).replaceAll(token, '[REDACTED]')) } : {}),
     note: 'First page only. Search results are not a verified To-do list or task count. Compare links with Slack Saved and To-dos; message grouping, indexing and search preferences can affect results.',
   };
 }
@@ -164,7 +168,7 @@ if (import.meta.main) {
       console.log(HELP);
     } else {
       const token = await readHiddenToken();
-      const result = await probeMessages(token, fetch, options.query, options.inspect);
+      const result = await probeMessages(token, fetch, options.query, options.inspect, options.raw);
       // Defense in depth: never echo the token even if an upstream field contains it.
       console.log(JSON.stringify(result, null, 2).replaceAll(token.trim(), '[REDACTED]'));
     }
