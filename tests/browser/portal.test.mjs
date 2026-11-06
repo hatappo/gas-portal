@@ -230,3 +230,37 @@ test('Tools and Actions share counter, timestamp, filter and refresh styling', a
     for (const key of ['counter', 'refresh', 'filter', 'row', 'toolbar', 'summary']) assert.deepEqual(controls.tools[key], controls.actions[key], `${key} at ${width}px`);
   }
 });
+
+test('Filter chips reserve borders for selection and retain visible keyboard focus without resizing', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  for (const theme of ['lofi', 'dracula']) {
+    await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+    for (const tab of ['tools', 'actions']) {
+      await page.locator('#tab-' + tab).click();
+      if (tab === 'actions') await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
+      const host = tab === 'tools' ? '#tags' : '#action-filters';
+      const chip = page.locator(host + ' .tag-button[aria-pressed="false"]').first();
+      const read = el => {
+        const style = getComputedStyle(el), bounds = el.getBoundingClientRect();
+        return { border: style.borderColor, shadow: style.boxShadow, width: bounds.width, height: bounds.height, outline: style.outlineStyle, outlineWidth: style.outlineWidth };
+      };
+      const initial = await chip.evaluate(read);
+      assert.equal(initial.border, 'rgba(0, 0, 0, 0)');
+      assert.equal(initial.shadow, 'none');
+      await page.keyboard.press('Tab');
+      await chip.focus();
+      const focused = await chip.evaluate(read);
+      assert.equal(focused.outline, 'solid');
+      assert.equal(focused.outlineWidth, '2px');
+      // Keep a stable locator after aria-pressed changes.
+      const label = await chip.textContent();
+      await page.keyboard.press('Space');
+      const selected = await page.getByRole('button', { name: label, exact: true }).evaluate(read);
+      assert.notEqual(selected.border, 'rgba(0, 0, 0, 0)');
+      assert.notEqual(selected.shadow, 'none');
+      assert.equal(selected.width, initial.width);
+      assert.equal(selected.height, initial.height);
+      await page.locator(host + ' button').filter({ hasText: /^All$/ }).click();
+    }
+  }
+});
