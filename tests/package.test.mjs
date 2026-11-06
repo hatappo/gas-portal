@@ -15,5 +15,5 @@ test("Packages contain compiled assets and CLI without source, configuration, or
   for (const name of GAS_FILES) assert.ok(files.includes(`assets/gas/${name}`));
   for (const name of ['bin/portal.mjs', 'assets/preview/index.html', 'LICENSE', 'NOTICE']) assert.ok(files.includes(name));
   assert.ok(!files.some((name) => /^(src|tests|scripts|node_modules|\.git|\.portal)\//.test(name)));
-  assert.ok(!files.some((name) => /(?:portal.config|\.clasp|client_secret|\.env)/.test(name)));
+  assert.ok(!files.some((name) => /(?:\.clasp|client_secret|\.env)/.test(name)));
 });

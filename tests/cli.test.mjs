@@ -49,6 +49,30 @@ test("Pin the dependency on init and preserve scripts, configuration, and ignore
   assert.equal(JSON.parse(readFileSync(path.join(root, 'package.json'))).scripts.browse, 'custom-browse');
 });
 
+test("Store configuration under the gas-portal key and keep other package.json fields and indentation", (t) => {
+  const root = fixture(t);
+  const file = path.join(root, 'package.json');
+  assert.deepEqual(JSON.parse(readFileSync(file, 'utf8'))['gas-portal'], { scriptId: 'work-a-script', authProfile: 'work-a' });
+  for (const indent of ['    ', '\t']) {
+    const pkg = { name: 'consumer', custom: { keep: true }, 'gas-portal': { scriptId: 'one' }, scripts: { test: 'node --test' } };
+    writeFileSync(file, JSON.stringify(pkg, null, indent) + '\n');
+    saveConfig(root, { scriptId: 'two', authProfile: 'work-a' });
+    assert.equal(readFileSync(file, 'utf8'), JSON.stringify({ ...pkg, 'gas-portal': { scriptId: 'two', authProfile: 'work-a' } }, null, indent) + '\n');
+    init(root, { scriptId: 'ignored' });
+    const text = readFileSync(file, 'utf8');
+    assert.ok(text.startsWith('{\n' + indent + '"name"'), 'init keeps the indentation');
+    assert.equal(JSON.parse(text)['gas-portal'].scriptId, 'two', 'init keeps the existing configuration');
+  }
+  writeFileSync(file, JSON.stringify({ name: 'consumer' }));
+  assert.throws(() => readConfig(root), /"gas-portal" is missing in package\.json/);
+  for (const value of [null, [], 'text']) {
+    writeFileSync(file, JSON.stringify({ 'gas-portal': value }));
+    assert.throws(() => readConfig(root), /must be a JSON object/);
+  }
+  rmSync(file);
+  assert.throws(() => readConfig(root), /package\.json is missing/);
+});
+
 test("Preserve existing Release URLs and directory dependencies in either dependency section", (t) => {
   const root = fixture(t);
   for (const key of ['dependencies', 'devDependencies']) {
@@ -82,14 +106,16 @@ test("Reject unknown keys, paths, HTML, and invalid profile names", () => {
 
 test("Protect malformed package.json files and symbolic links during init", (t) => {
   const root = fixture(t);
-  const config = readFileSync(path.join(root, 'portal.config.json'), 'utf8');
   writeFileSync(path.join(root, 'package.json'), '{bad json');
   assert.throws(() => init(root));
-  assert.equal(readFileSync(path.join(root, 'portal.config.json'), 'utf8'), config);
+  assert.equal(readFileSync(path.join(root, 'package.json'), 'utf8'), '{bad json');
   const other = fixture(t, 'outside');
-  rmSync(path.join(root, 'portal.config.json'));
-  symlinkSync(path.join(other, 'portal.config.json'), path.join(root, 'portal.config.json'));
+  const outside = readFileSync(path.join(other, 'package.json'), 'utf8');
+  rmSync(path.join(root, 'package.json'));
+  symlinkSync(path.join(other, 'package.json'), path.join(root, 'package.json'));
   assert.throws(() => init(root), /non-regular file/);
+  assert.throws(() => saveConfig(root, { scriptId: 'changed' }), /non-regular file/);
+  assert.equal(readFileSync(path.join(other, 'package.json'), 'utf8'), outside);
 });
 
 test("Generate only seven files and inject the consumer GitHub link", (t) => {
@@ -252,12 +278,12 @@ test('Add ship to existing consumers and stop before deployment if push fails', 
 
 test('Browse selects the configured or sole versioned deployment without pushing, deploying, or saving config', (t) => {
   const root = fixture(t);
-  const initialConfig = readFileSync(path.join(root, 'portal.config.json'), 'utf8');
+  const initialConfig = readFileSync(path.join(root, 'package.json'), 'utf8');
   const single = stub();
   assert.equal(browse(root, {}, single.run), 'web');
   assert.deepEqual(single.calls.map((call) => call.args), [['--json', 'list-deployments'], ['open-web-app', 'web']]);
   assert.equal(single.calls[1].config.authProfile, 'work-a');
-  assert.equal(readFileSync(path.join(root, 'portal.config.json'), 'utf8'), initialConfig);
+  assert.equal(readFileSync(path.join(root, 'package.json'), 'utf8'), initialConfig);
   const list = [{ deploymentId: 'head' }, { deploymentId: 'one', versionNumber: 1 }, { deploymentId: 'two', versionNumber: 2 }];
   saveConfig(root, { ...readConfig(root), deploymentId: 'two' });
   const configured = stub(list);
