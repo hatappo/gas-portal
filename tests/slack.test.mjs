@@ -60,7 +60,7 @@ test('Slack keeps credentials on failed edits and reports bounded API errors wit
 });
 
 test('Slack paginates with cursors, deduplicates, filters unsafe records and bounds requests', () => {
-  const app = fixture(), connection = app.connect();
+  const app = fixture({ SLACK_BOOKMARK_LIMIT: '200' }), connection = app.connect();
   app.respond((url) => ({ body: new URL(url).searchParams.get('cursor') === '*' ? search([message()], 3, 'next=/&?') : search([message(), message(2), message(3, { channel: { id: '../evil' } })], 3) }));
   const result = app.context.getSlackActionItems(connection.id);
   assert.equal(result.items.length, 2);
@@ -74,7 +74,7 @@ test('Slack paginates with cursors, deduplicates, filters unsafe records and bou
 });
 
 test('Slack preserves first-page results after a second-page failure and never caches failed searches', () => {
-  const app = fixture(), connection = app.connect();
+  const app = fixture({ SLACK_BOOKMARK_LIMIT: '200' }), connection = app.connect();
   app.respond((url) => new URL(url).searchParams.get('cursor') === '*' ? { body: search([message()], 2, 'next') } : { status: 429 });
   const result = app.context.getSlackActionItems(connection.id);
   assert.equal(result.items.length, 1);
@@ -84,7 +84,7 @@ test('Slack preserves first-page results after a second-page failure and never c
 });
 
 test('Slack supports legacy page pagination and flags incomplete search coverage', () => {
-  const app = fixture(), connection = app.connect();
+  const app = fixture({ SLACK_BOOKMARK_LIMIT: '200' }), connection = app.connect();
   app.respond((url) => ({ body: { ok: true, messages: { total: 101, matches: new URL(url).searchParams.has('page') ? [message(101)] : Array.from({ length: 100 }, (_, i) => message(i)) } } }));
   const result = app.context.getSlackActionItems(connection.id);
   assert.equal(result.items.length, 101);
@@ -152,4 +152,57 @@ test('Slack rejects malformed search payloads and unsafe authenticated workspace
     app.respond(() => ({ body: { ...identity, url } }));
     assert.equal(app.context.saveSlackConnection({ id: connection.id, token: '' }).error, 'UNAUTHORIZED');
   }
+});
+
+test('Slack defaults to 20 and distinguishes a full page from additional search results without another call', () => {
+  for (const [total, hasMore] of [[19, false], [20, false], [21, true]]) {
+    const app = fixture(), connection = app.connect();
+    app.respond(url => {
+      assert.equal(new URL(url).searchParams.get('count'), '20');
+      return { body: search(Array.from({ length: Math.min(total, 20) }, (_, i) => message(i)), total, hasMore ? 'next' : '') };
+    });
+    const result = app.context.getSlackActionItems(connection.id);
+    assert.equal(result.items.length, Math.min(total, 20));
+    assert.equal(result.hasMore, hasMore);
+    assert.equal(result.partial, false, 'Reaching the chosen limit is not a retrieval failure');
+    assert.equal(app.requests.length, 1);
+  }
+});
+
+test('Slack request sizes, pagination and cache entries follow the saved limit', () => {
+  const app = fixture(), connection = app.connect();
+  app.respond(url => {
+    const count = Number(new URL(url).searchParams.get('count'));
+    const page = new URL(url).searchParams.get('cursor') === '*' ? 1 : 2;
+    return { body: search(Array.from({ length: count }, (_, i) => message(i + (page - 1) * count)), 205, 'next') };
+  });
+  for (const limit of [10, 20, 50, 100, 200]) {
+    assert.equal(app.context.saveSlackBookmarkLimit(limit).ok, true);
+    const before = app.requests.length;
+    const result = app.context.getSlackActionItems(connection.id);
+    assert.equal(result.items.length, limit);
+    assert.equal(result.hasMore, true);
+    assert.equal(result.partial, false);
+    assert.equal(result.cached, false);
+    assert.equal(app.requests.length - before, limit <= 100 ? 1 : 2);
+    assert.equal(app.context.getSlackActionItems(connection.id).cached, true);
+  }
+  assert.equal(app.cache.size, 5);
+  app.context.disconnectSlack(connection.id);
+  assert.equal(app.cache.size, 0);
+});
+
+test('Slack limit settings validate input, preserve other properties and initialize missing defaults', () => {
+  const app = fixture({ KEEP: 'value' });
+  assert.equal(app.context.getPortalContent_(app.userProperties).slackBookmarkLimit, '20');
+  for (const limit of ['20', 0, -1, 21, 1000, null, NaN]) assert.equal(app.context.saveSlackBookmarkLimit(limit).ok, false);
+  assert.deepEqual(app.userProperties, { KEEP: 'value' });
+  app.context.initializeProperties();
+  assert.equal(app.userProperties.SLACK_BOOKMARK_LIMIT, '20');
+  app.context.saveSlackBookmarkLimit(50);
+  app.context.initializeProperties();
+  assert.equal(app.userProperties.SLACK_BOOKMARK_LIMIT, '50');
+  assert.equal(app.context.getPortalContent_(app.userProperties).slackBookmarkLimit, '50');
+  app.context.PropertiesService.getUserProperties = () => { throw new Error('private failure'); };
+  assert.deepEqual(plain(app.context.saveSlackBookmarkLimit(20)), { ok: false });
 });

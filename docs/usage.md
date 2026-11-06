@@ -128,6 +128,7 @@ The gear tab lets you edit the portal name, icon, headline, and description. The
 | PORTAL_LANGUAGE | auto (browser preference; English fallback) |
 | CATALOG_CACHE_SECONDS | 21600 (6 hours) |
 | ACTIONS_CACHE_SECONDS | 300 (5 minutes) |
+| SLACK_BOOKMARK_LIMIT | 20 (per Slack connection) |
 | SPREADSHEET_ID | Empty (configure in Settings) |
 | SHEET_NAME | Empty (first sheet) |
 | UNBLOCKED_URL_SCHEMES | Empty (all optional schemes blocked) |
@@ -231,14 +232,14 @@ Credentials live only in the executing user's `SLACK_CONNECTION_<id>` User Prope
 ### Search coverage and caching
 
 - These are **saved-message search results**, not a verified list of outstanding tasks. The dedicated Saved/Later view can contain entries that search does not return. User search preferences, message grouping, visibility and indexing can affect results. Saved files and manual To-dos are not included; message-backed To-do completion state is unavailable. A successful empty response means the search returned no messages.
-- Each refresh fetches at most two pages of 100 messages per connection. Truncation, rejected records or a failed later page produce a partial-result notice. Successful earlier pages remain visible. Counts describe displayed items, never a guaranteed bookmark total. Rate limits produce an error without automatic retries.
+- **Settings → Action Items → Slack → Bookmarks per connection** offers 10, 20 (default), 50, 100, or 200. This automatically saved `SLACK_BOOKMARK_LIMIT` User Property applies to every Slack connection, and the next visit to Action Items reads the new limit. Requests use the selected count (up to 100 per page), so the default fetches one page of 20; 200 needs at most two pages. Search totals and next-page metadata indicate additional results without a separate request. Reaching the limit shows an informational message beneath the list, separately from failures; it does not mean the search failed. Rejected records, inconsistent pages and failed requests still produce a partial-result warning. Counts describe displayed items, not a guaranteed Saved-view total. Rate limits produce an error without automatic retries.
 - Titles are plain-text excerpts, up to 500 characters; Slack rich text, attachments and mentions are not fully rendered or resolved. Each row links to the original message and shows its workspace, channel and **posting time**, not when it was saved. The unified queue sorts GitHub updates and Slack posting times together.
 - No Slack calls run during `doGet`. Connection metadata comes from User Properties; reads call search directly without repeating `auth.test`. All connections start asynchronously after provider metadata settles. A failed provider does not hide results from another.
-- The shared **Action Items cache duration** applies (five minutes by default). Cache keys include a credential revision; editing or disconnecting invalidates the connection cache. Cached excerpts are private to the executing user. Failed requests are not cached, and **Fetch latest** bypasses cached results. The list is a snapshot, with no background polling.
+- The shared **Action Items cache duration** applies (five minutes by default). Cache keys include the selected limit and a credential revision, so a smaller cached result never satisfies a larger request. Editing or disconnecting invalidates every limit variant for that connection. Cached excerpts are private to the executing user. Failed requests are not cached, and **Fetch latest** bypasses cached results. The list is a snapshot, with no background polling.
 
 ### Offline preview
 
-Preview includes a fictional Slack connection and two saved messages. It never contacts Slack or retains a token. Use only `demo` in the token field; mock connections reset on reload. Query parameters support `slack=disconnected`, `empty`, `partial`, `unauthorized`, `rate-limit`, `scope`, and `error`, independently of `github=…`. For example, `/?github=empty&slack=partial#actions` shows Slack results with a partial failure. To inspect a fully empty or disconnected queue, set the same scenario for both services.
+Preview includes a fictional Slack connection and two saved messages. It never contacts Slack or retains a token. Use only `demo` in the token field; mock connections reset on reload. Query parameters support `slack=disconnected`, `empty`, `more` (55 search matches), `partial`, `unauthorized`, `rate-limit`, `scope`, and `error`, independently of `github=…`. For example, `/?github=empty&slack=partial#actions` shows Slack results with a partial failure. To inspect a fully empty or disconnected queue, set the same scenario for both services.
 
 ## Settings navigation
 

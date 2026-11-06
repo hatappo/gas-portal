@@ -1,7 +1,7 @@
 /** Saved-message search using app-issued user tokens. Never expose credentials or raw API bodies. */
 /** @typedef {{id: string, token: string, revision: string, workspaceId: string, userId: string, workspace: string, user: string, url: string}} SlackConnection */
 /** @typedef {{id: string, title: string, url: string, context: string, postedAt: string}} SlackItem */
-/** @typedef {{items: SlackItem[], partial: boolean, error: string}} SlackSearch */
+/** @typedef {{items: SlackItem[], partial: boolean, error: string, hasMore: boolean}} SlackSearch */
 
 /** @param {string} id */
 function slackPropertyKey_(id) {
@@ -64,11 +64,14 @@ function withSlackLock_(action) {
   lock.waitLock(10000);
   try { return action(); } finally { lock.releaseLock(); }
 }
-/** @param {SlackConnection} connection */
-function slackCacheKey_(connection) { return 'slack-saved-v1:' + connection.id + ':' + connection.revision; }
+/** @param {SlackConnection} connection @param {number} limit */
+function slackCacheKey_(connection, limit) { return 'slack-saved-v2:' + connection.id + ':' + connection.revision + ':' + limit; }
 /** @param {SlackConnection} connection */
 function clearSlackCache_(connection) {
-  try { CacheService.getUserCache().remove(slackCacheKey_(connection)); } catch { /* Cache is optional. */ }
+  try {
+    const cache = CacheService.getUserCache();
+    for (const limit of PortalSlackSettings.choices) cache.remove(slackCacheKey_(connection, limit));
+  } catch { /* Cache is optional. */ }
 }
 /** @param {unknown} input */
 function saveSlackConnection(input) {
@@ -121,31 +124,49 @@ function slackItem_(value, connection) {
     context: connection.workspace + ' · ' + (typeof value.channel.name === 'string' ? value.channel.name.slice(0, 80) : channel),
     postedAt: new Date(Number(value.ts) * 1000).toISOString() };
 }
-/** Search semantics, not a complete Later inventory or a To-do count. At most two pages per refresh.
- * @param {SlackConnection} connection @returns {SlackSearch}
+/** Per-user setting shared by Slack connections. Existing result snapshots update on the next read.
+ * @param {unknown} limit
  */
-function slackSearch_(connection) {
-  /** @type {SlackSearch} */
-  const result = { items: [], partial: false, error: '' };
-  const seen = new Set();
-  let cursor = '*';
+function saveSlackBookmarkLimit(limit) {
+  if (!PortalSlackSettings.isChoice(limit)) return { ok: false };
   try {
-    for (let page = 1; page <= 2; page++) {
-      const data = slackRequest_(connection.token, 'search.messages', '?query=is%3Asaved&count=100&sort=timestamp&sort_dir=desc&' + (cursor ? 'cursor=' + encodeURIComponent(cursor) : 'page=' + page));
+    withSlackLock_(() => PropertiesService.getUserProperties().setProperty('SLACK_BOOKMARK_LIMIT', String(limit)));
+    return { ok: true, limit };
+  } catch { return { ok: false }; }
+}
+
+/** Search semantics, not a complete Later inventory or a To-do count. At most two pages per refresh.
+ * @param {SlackConnection} connection @param {number} limit @returns {SlackSearch}
+ */
+function slackSearch_(connection, limit) {
+  /** @type {SlackSearch} */
+  const result = { items: [], partial: false, error: '', hasMore: false };
+  const seen = new Set();
+  const count = Math.min(limit, 100);
+  const pages = Math.ceil(limit / count);
+  let cursor = '*';
+  let total = -1;
+  try {
+    for (let page = 1; page <= pages; page++) {
+      const data = slackRequest_(connection.token, 'search.messages', '?query=is%3Asaved&count=' + count + '&sort=timestamp&sort_dir=desc&' + (cursor ? 'cursor=' + encodeURIComponent(cursor) : 'page=' + page));
       const messages = data.messages;
-      if (!messages || !Array.isArray(messages.matches) || messages.matches.length > 100 || !Number.isSafeInteger(messages.total) || messages.total < 0) throw new Error('REQUEST_FAILED');
+      if (!messages || !Array.isArray(messages.matches) || messages.matches.length > count || !Number.isSafeInteger(messages.total) || messages.total < 0) throw new Error('REQUEST_FAILED');
+      if (total >= 0 && total !== messages.total) result.partial = true;
+      total = messages.total;
+      result.hasMore = total > limit;
       for (const raw of messages.matches) {
         const item = slackItem_(raw, connection);
-        if (!item) { result.partial = true; continue; }
-        if (seen.has(item.id)) continue;
+        if (!item || seen.has(item.id)) { result.partial = true; continue; }
         seen.add(item.id); result.items.push(item);
       }
       const next = messages.pagination?.next_cursor ?? messages.paging?.next_cursor ?? data.response_metadata?.next_cursor;
       if (next !== undefined && (typeof next !== 'string' || next.length > 4096)) throw new Error('REQUEST_FAILED');
-      const more = next !== undefined ? Boolean(next) : page * 100 < messages.total;
-      result.partial = result.partial || !more && result.items.length < messages.total;
-      if (!more) break;
-      if (page === 2) result.partial = true;
+      const more = next !== undefined ? Boolean(next) : page * count < total;
+      if (!more || page === pages) {
+        result.hasMore = result.hasMore || more;
+        result.partial = result.partial || result.items.length < Math.min(limit, total);
+        break;
+      }
       cursor = next || '';
     }
   } catch (error) { result.error = slackErrorCode_(error); result.partial = true; }
@@ -158,21 +179,22 @@ function getSlackActionItems(id, forceRefresh = false) {
     const connection = slackConnections_().find((item) => item.id === id);
     if (!connection) throw new Error('INVALID_CONNECTION');
     const ttl = normalizeActionsCacheTtl_(PropertiesService.getUserProperties().getProperty('ACTIONS_CACHE_SECONDS'));
-    const key = slackCacheKey_(connection);
+    const limit = PortalSlackSettings.normalize(PropertiesService.getUserProperties().getProperty('SLACK_BOOKMARK_LIMIT'));
+    const key = slackCacheKey_(connection, limit);
     if (forceRefresh === true || ttl === 0) clearSlackCache_(connection);
     else {
       try {
         const cached = JSON.parse(CacheService.getUserCache().get(key) || 'null');
-        if (cached?.connectionId === id && cached.revision === connection.revision && Array.isArray(cached.result?.items) && Date.now() - cached.fetchedAt >= 0 && Date.now() - cached.fetchedAt < ttl * 1000) return { ok: true, ...cached.result, fetchedAt: cached.fetchedAt, cached: true };
+        if (cached?.connectionId === id && cached.revision === connection.revision && cached.limit === limit && Array.isArray(cached.result?.items) && Date.now() - cached.fetchedAt >= 0 && Date.now() - cached.fetchedAt < ttl * 1000) return { ok: true, ...cached.result, fetchedAt: cached.fetchedAt, cached: true };
       } catch { /* A cache failure must not prevent live reads. */ }
     }
-    const result = slackSearch_(connection);
+    const result = slackSearch_(connection, limit);
     const fetchedAt = Date.now();
     return withSlackLock_(() => {
       if (slackConnections_().find((item) => item.id === id)?.revision !== connection.revision) throw new Error('CONNECTION_CHANGED');
       if (ttl > 0 && !result.error) {
         try {
-          const serialized = JSON.stringify({ connectionId: id, revision: connection.revision, result, fetchedAt });
+          const serialized = JSON.stringify({ connectionId: id, revision: connection.revision, limit, result, fetchedAt });
           if (Utilities.newBlob(serialized).getBytes().length < 95000) CacheService.getUserCache().put(key, serialized, ttl);
         } catch { /* Large results and unavailable cache fall back to live reads. */ }
       }

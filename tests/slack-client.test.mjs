@@ -122,3 +122,39 @@ test('Refresh preserves force intent while failed provider metadata is retried',
   app.slackRequests[2].success(response());
   assert.equal(app.get('refresh-actions').disabled, false);
 });
+
+test('Slack limit autosaves, rolls back failures, and invalidates the old snapshot for the next tab visit', t => {
+  const app = fixture(t); app.click('tab-actions'); connect(app);
+  app.slackRequests[1].success(response());
+  app.click('tab-settings'); app.click('settings-tab-actions');
+  const limit = app.get('slack-bookmark-limit');
+  assert.equal(limit.value, '20');
+  assert.deepEqual([...limit.options].map(option => option.value), ['10', '20', '50', '100', '200']);
+  limit.value = '50'; limit.dispatchEvent(new app.dom.window.Event('change'));
+  assert.equal(app.slackRequests[2].kind, 'limit');
+  assert.equal(app.slackRequests[2].limit, 50);
+  assert.equal(limit.disabled, true);
+  app.slackRequests[2].success({ ok: false });
+  assert.equal(limit.value, '20'); assert.equal(limit.disabled, false);
+  limit.value = '50'; limit.dispatchEvent(new app.dom.window.Event('change'));
+  app.slackRequests[3].success({ ok: true, limit: 50 });
+  assert.equal(limit.dataset.savedValue, '50');
+  assert.equal(app.slackRequests.length, 4, 'Do not fetch messages from Settings');
+  app.click('tab-actions');
+  assert.equal(app.slackRequests[4].kind, 'actions');
+  app.slackRequests[4].success(response());
+});
+
+test('More Slack results are informational, separate from errors, and survive refresh and language changes', t => {
+  const app = fixture(t); app.click('tab-actions'); connect(app);
+  app.slackRequests[1].success(response([item], { hasMore: true }));
+  assert.equal(app.get('actions-status').hidden, true);
+  assert.match(app.get('action-items').querySelector('.action-more-results').textContent, /Demo@alex.*このほかにも検索結果/);
+  app.document.documentElement.lang = 'en';
+  app.document.dispatchEvent(new app.dom.window.Event('portal:languagechange'));
+  assert.match(app.get('action-items').querySelector('.action-more-results').textContent, /More search results/);
+  app.click('refresh-actions');
+  assert.ok(app.get('action-items').querySelector('.action-more-results'));
+  app.slackRequests[2].success(response([item], { hasMore: false }));
+  assert.equal(app.get('action-items').querySelector('.action-more-results'), null);
+});

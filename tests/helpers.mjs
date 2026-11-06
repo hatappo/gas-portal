@@ -92,6 +92,7 @@ export function browser(setupWindow = () => {}, client = browserClient, source =
   const slackRequests = [];
   const urlSchemeRequests = [];
   const runner = {
+    saveSlackBookmarkLimit(limit) { slackRequests.push({ kind: 'limit', limit, success: this.success, failure: this.failure }); },
     getSlackConnections() { slackRequests.push({ kind: 'connections', success: this.success, failure: this.failure }); },
     saveSlackConnection(input) { slackRequests.push({ kind: 'save', input, success: this.success, failure: this.failure }); },
     disconnectSlack(id) { slackRequests.push({ kind: 'disconnect', id, success: this.success, failure: this.failure }); },

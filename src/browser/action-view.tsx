@@ -6,6 +6,7 @@ import { Disclosure } from './disclosure';
 interface ActionView {
   items: ActionItem[];
   notices: { label: string; notice: ActionNotice }[];
+  moreSources: string[];
   pending: boolean;
   connected: boolean;
   language: string;
@@ -33,7 +34,7 @@ function ActionRow(props: { item: ActionItem; language: string }) {
   </li>;
 }
 export function mountActionView() {
-  const [state, setState] = createStore<ActionView>({ items: [], notices: [], pending: true, connected: false, language: 'en' });
+  const [state, setState] = createStore<ActionView>({ items: [], notices: [], moreSources: [], pending: true, connected: false, language: 'en' });
   render(() => <Show when={state.notices.length}>
     <Disclosure autoOpen={!state.items.length} title={t('Some results could not be retrieved.', state.language)}><ul>
       <For each={state.notices}>{(entry) => <li>
@@ -42,9 +43,11 @@ export function mountActionView() {
       </li>}</For>
     </ul></Disclosure>
   </Show>, document.getElementById('actions-status')!);
-  render(() => <Show when={state.items.length} fallback={
+  render(() => <><Show when={state.items.length} fallback={
     <Show when={!state.pending && !state.notices.length}><div class="status" role="status"><h3>{t('No items to display', state.language)}</h3><p>{t(state.connected ? 'No action items right now.' : 'Connect a service in Settings to see your action items.', state.language)}</p></div></Show>
-  }><ul class="action-item-list"><For each={state.items}>{(item) => <ActionRow item={item} language={state.language} />}</For></ul></Show>, document.getElementById('action-items')!);
+  }><ul class="action-item-list"><For each={state.items}>{(item) => <ActionRow item={item} language={state.language} />}</For></ul></Show>
+    <For each={state.moreSources}>{(source) => <p class="settings-help action-more-results">{source + ' · ' + t('More search results are available. Increase the limit in Settings to show more.', state.language)}</p>}</For>
+  </>, document.getElementById('action-items')!);
   // Keep row identity through refreshes and language changes, including IDs shared by services.
   return (snapshot: ActionView) => setState(reconcile({ ...snapshot, items: snapshot.items.map((item) => ({ ...item, key: item.service + ':' + item.id })) }, { key: 'key' }));
 }

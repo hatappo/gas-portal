@@ -31,3 +31,10 @@ declare var PortalCatalogRules: {
   isValidIcon(value: unknown): boolean;
   isIconUrl(icon: string): boolean;
 };
+
+declare var PortalSlackSettings: {
+  choices: readonly number[];
+  defaultLimit: number;
+  normalize(value: unknown): number;
+  isChoice(value: unknown): boolean;
+};

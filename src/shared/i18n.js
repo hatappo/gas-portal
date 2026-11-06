@@ -2,8 +2,13 @@
 globalThis.PortalI18n = (() => {
   /** @type {Record<string, string>} */
   const messages = {
+  "Search results may differ from Slack’s Saved view. Messages are ordered by posting time.": "Slack のブックマーク専用画面とは結果が異なる場合があります。投稿日時順に表示します。",
+  "Bookmarks per connection": "接続ごとのブックマーク取得件数",
+  "20 by default. Saved automatically; applies to every Slack connection on the next load.": "初期値は20件です。自動保存し、次回取得からすべての Slack 接続に適用します。",
+  "Could not save the bookmark limit. Please try again.": "ブックマーク取得件数を保存できませんでした。再試行してください。",
+  "More search results are available. Increase the limit in Settings to show more.": "このほかにも検索結果があります。設定で取得件数を増やすと、さらに表示できます。",
+
   "Show saved messages found by Slack search. To-do completion status is not available.": "Slack の検索で見つかるブックマークを表示します。To-do の完了状態は取得できません。",
-  "Search results may differ from Slack’s Saved view. Up to 200 messages per connection are shown, ordered by posting time.": "Slack のブックマーク専用画面とは結果が異なる場合があります。接続ごとに最大200件を投稿日時順で表示します。",
   "Slack app setup and permissions": "Slack App の作成と必要な権限",
   "Create a Slack app in the workspace you want to connect.": "接続するワークスペースに Slack App を作成。",
   "OAuth & Permissions → User Token Scopes: add search:read, then install or reinstall the app.": "OAuth & Permissions → User Token Scopes：search:read を追加し、アプリをインストールまたは再インストール。",

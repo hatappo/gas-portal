@@ -93,7 +93,7 @@ function initializeUserProperties_() {
   return initializePropertyStore_(PropertiesService.getUserProperties(), {
     ...getPortalPropertyDefaults_(),
     PORTAL_THEME: 'auto', PORTAL_LANGUAGE: 'auto', CATALOG_CACHE_SECONDS: String(PortalCacheDurations.catalog.defaultSeconds), ACTIONS_CACHE_SECONDS: String(PortalCacheDurations.actions.defaultSeconds),
-    SPREADSHEET_ID: '', SHEET_NAME: '', UNBLOCKED_URL_SCHEMES: '',
+    SPREADSHEET_ID: '', SHEET_NAME: '', UNBLOCKED_URL_SCHEMES: '', SLACK_BOOKMARK_LIMIT: String(PortalSlackSettings.defaultLimit),
   });
 }
 

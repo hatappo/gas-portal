@@ -137,3 +137,23 @@ test('GitHub and Slack share one refresh control; Slack settings work on a narro
   await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
   assert.equal(await page.locator('.action-service', { hasText: 'Slack' }).count(), 2);
 });
+
+test('Slack limit changes update results and show more-results information without an error', async t => {
+  const page = await pageFor(t, { viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await page.goto(base + '/?github=empty&slack=more#actions');
+  await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
+  assert.equal(await page.locator('.action-item-list > li').count(), 20);
+  assert.equal(await page.locator('.action-more-results').count(), 1);
+  assert.equal(await page.locator('#actions-status').isVisible(), false);
+  await page.locator('#actions-settings').click();
+  await page.locator('#slack-bookmark-limit').selectOption('100');
+  await page.waitForFunction(() => document.getElementById('slack-bookmark-limit').dataset.savedValue === '100');
+  await page.locator('#tab-actions').click();
+  await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
+  assert.equal(await page.locator('.action-item-list > li').count(), 55);
+  assert.equal(await page.locator('.action-more-results').count(), 0);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  await page.reload();
+  await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
+  assert.equal(await page.locator('.action-item-list > li').count(), 55);
+});

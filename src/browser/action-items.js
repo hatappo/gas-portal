@@ -28,10 +28,12 @@ export function initializeActions() {
     /** @type {Array<{label: string, notice: ActionNotice}>} */
     const notices = [];
     const timestamps = [];
+    const moreSources = [];
     for (const provider of providers.values()) if (provider.error) notices.push({ label: '', notice: { message: provider.error } });
     for (const [key, source] of sources) {
       const result = results.get(key);
       if (!result) continue;
+      if (result.hasMore) moreSources.push(source.serviceLabel + ' · ' + source.label);
       if (result.fetchedAt !== undefined) timestamps.push(result.fetchedAt);
       result.notices.forEach((notice) => notices.push({ label: source.serviceLabel + ' · ' + source.label, notice }));
       for (const item of result.items) {
@@ -47,7 +49,7 @@ export function initializeActions() {
     freshness.hidden = timestamps.length === 0;
     freshness.textContent = timestamps.length ? new Intl.DateTimeFormat(document.documentElement.lang, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(Math.min(...timestamps)) : '';
     el('actions-status').hidden = !notices.length;
-    updateView({ items, notices, pending, connected: sources.size > 0, language: document.documentElement.lang });
+    updateView({ items, notices, moreSources, pending, connected: sources.size > 0, language: document.documentElement.lang });
   }
 
   function cancelBatch() {

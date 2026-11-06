@@ -218,7 +218,10 @@
           </section>
           <section class="display-settings slack-settings" aria-labelledby="slack-settings-title">
             <div class="settings-heading"><h2 id="slack-settings-title">Slack</h2><p data-i18n="Show saved messages found by Slack search. To-do completion status is not available.">Show saved messages found by Slack search. To-do completion status is not available.</p></div>
-            <p class="settings-help" data-i18n="Search results may differ from Slack’s Saved view. Up to 200 messages per connection are shown, ordered by posting time.">Search results may differ from Slack’s Saved view. Up to 200 messages per connection are shown, ordered by posting time.</p>
+            <p class="settings-help" data-i18n="Search results may differ from Slack’s Saved view. Messages are ordered by posting time.">Search results may differ from Slack’s Saved view. Messages are ordered by posting time.</p>
+            <label class="settings-field"><span data-i18n="Bookmarks per connection">Bookmarks per connection</span><select id="slack-bookmark-limit" class="select" data-saved-value="<?= portal.slackBookmarkLimit ?>" aria-describedby="slack-limit-help slack-limit-status"></select></label>
+            <p id="slack-limit-help" class="settings-help" data-i18n="20 by default. Saved automatically; applies to every Slack connection on the next load.">20 by default. Saved automatically; applies to every Slack connection on the next load.</p>
+            <p id="slack-limit-status" class="settings-form-status" role="status" aria-live="polite"></p>
             <div data-disclosure class="slack-token-help settings-help">
               <span data-disclosure-title data-i18n="Slack app setup and permissions">Slack app setup and permissions</span>
               <div data-disclosure-content>

@@ -35,10 +35,11 @@ type GitHubSaveResponse = { ok: true; connection: GitHubConnectionInfo } | { ok:
 interface SlackConnectionInfo { id: string; label: string }
 interface SlackConnectionInput { id: string; token: string }
 interface SlackActionItem { id: string; title: string; url: string; context: string; postedAt: string }
-type SlackActionsResponse = { ok: true; items: SlackActionItem[]; error: string; partial: boolean; fetchedAt: number; cached: boolean } | { ok: false; error: string };
+type SlackActionsResponse = { ok: true; items: SlackActionItem[]; hasMore?: boolean; error: string; partial: boolean; fetchedAt: number; cached: boolean } | { ok: false; error: string };
 type SlackConnectionsResponse = { ok: true; connections: SlackConnectionInfo[] } | { ok: false; error: string };
 type SlackSaveResponse = { ok: true; connection: SlackConnectionInfo } | { ok: false; error: string };
 interface GasRunner {
+  saveSlackBookmarkLimit(limit: number): void;
   getSlackConnections(): void;
   saveSlackConnection(input: SlackConnectionInput): void;
   disconnectSlack(id: string): void;
@@ -84,5 +85,5 @@ interface ActionItem {
   context: string; updatedAt: string; dateLabel?: string; reasons: string[];
 }
 interface ActionNotice { message: string; reason?: string; url?: string }
-interface ActionResult { items: ActionItem[]; notices: ActionNotice[]; fetchedAt?: number; cached?: boolean }
+interface ActionResult { hasMore?: boolean; items: ActionItem[]; notices: ActionNotice[]; fetchedAt?: number; cached?: boolean }
 interface ActionSource { id: string; label: string; serviceLabel: string; load(force: boolean, done: (result: ActionResult) => void): void }

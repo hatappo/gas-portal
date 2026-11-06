@@ -38,3 +38,20 @@ test('Slack preview shares the Actions duration and supports empty, partial and 
     } else { assert.equal(response.ok, false); assert.ok(response.error); }
   }
 });
+
+test('Slack preview persists the limit and shows whether more than the selected number exists', t => {
+  const storage = {}, dom = previewPage(t);
+  const { call } = runPreviewMock(dom, { storage, search: '?slack=more' });
+  assert.equal(call('getSlackActionItems', id).items.length, 20);
+  assert.equal(call('getSlackActionItems', id).hasMore, true);
+  assert.equal(call('saveSlackBookmarkLimit', 50).ok, true);
+  const response = call('getSlackActionItems', id);
+  assert.equal(response.cached, false); assert.equal(response.items.length, 50); assert.equal(response.hasMore, true);
+  assert.equal(call('saveSlackBookmarkLimit', 100).ok, true);
+  assert.equal(call('getSlackActionItems', id).hasMore, false);
+  assert.equal(call('getSlackActionItems', id).items.length, 55);
+  assert.equal(call('saveSlackBookmarkLimit', 0).ok, false);
+  const reloaded = runPreviewMock(previewPage(t), { storage, search: '?slack=more' });
+  assert.equal(reloaded.document.querySelector('#slack-bookmark-limit').dataset.savedValue, '100');
+  assert.equal(reloaded.call('getSlackActionItems', id).items.length, 55);
+});

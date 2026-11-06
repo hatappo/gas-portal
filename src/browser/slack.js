@@ -1,9 +1,35 @@
+import { createSaver } from './save-control.js';
 /** @param {ReturnType<typeof import('./action-items.js').initializeActions>} actions */
 export function initializeSlack(actions) {
   /** @param {string} id */
   const el = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
   /** @param {string} key @param {Record<string, string | number>} [values] */
   const t = (key, values = {}) => PortalI18n.t(key, document.documentElement.lang, values);
+  const limit = /** @type {HTMLSelectElement} */ (el('slack-bookmark-limit'));
+  let savedLimit = String(PortalSlackSettings.normalize(limit.dataset.savedValue));
+  limit.replaceChildren(...PortalSlackSettings.choices.map((value) => {
+    const option = document.createElement('option');
+    option.value = String(value); option.textContent = String(value);
+    return option;
+  }));
+  limit.value = savedLimit;
+  const saveLimit = createSaver({ status: el('slack-limit-status'), t, setBusy: (busy) => { limit.disabled = busy; } });
+  limit.addEventListener('change', () => {
+    const value = limit.value;
+    if (limit.disabled || value === savedLimit) return;
+    saveLimit({
+      send: (runner) => runner.saveSlackBookmarkLimit(Number(value)),
+      confirm: (/** @type {{ok: boolean, limit?: number}} */ response) => {
+        if (!response?.ok || response.limit !== Number(value)) return false;
+        savedLimit = value; limit.dataset.savedValue = value;
+        // Invalidate only Slack snapshots. The next visit to Actions reads the new limit.
+        sources.clear(); if (initialized) publishSources();
+        return t('Saved');
+      },
+      restore: () => { limit.value = savedLimit; },
+      failureMessage: 'Could not save the bookmark limit. Please try again.',
+    });
+  });
   const form = /** @type {HTMLFormElement} */ (el('slack-settings-form'));
   const fields = /** @type {HTMLFieldSetElement} */ (el('slack-settings-fields'));
   const token = /** @type {HTMLInputElement} */ (el('slack-token'));
@@ -93,7 +119,7 @@ export function initializeSlack(actions) {
   function normalizeActions(response) {
     if (!response.ok) return { items: [], notices: [{ message: errorMessage(response.error) }] };
     return {
-      fetchedAt: response.fetchedAt, cached: response.cached,
+      fetchedAt: response.fetchedAt, cached: response.cached, hasMore: response.hasMore === true,
       items: response.items.map((item) => ({
         service: 'slack', serviceLabel: 'Slack', id: item.id, title: item.title || t('Saved message'),
         url: safeSlackUrl(item.url), context: item.context, updatedAt: item.postedAt, dateLabel: 'Posted', reasons: ['Bookmark'],
