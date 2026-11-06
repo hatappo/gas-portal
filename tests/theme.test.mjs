@@ -158,6 +158,7 @@ test('Every theme is grouped by its own color scheme and keeps 4.5:1 contrast wh
       'base-content/base-100': [colors['base-content'], colors['base-100']],
       'base-content/base-200': [colors['base-content'], colors['base-200']],
       'base-content/base-300': [colors['base-content'], colors['base-300']],
+      'base-content/tool-tag': [colors['base-content'], mix(colors.primary, colors['base-100'], 0.12)],
       'muted/base-100': [muted('base-100'), colors['base-100']],
       'muted/base-200': [muted('base-200'), colors['base-200']],
       'primary-content/primary': [colors['primary-content'], colors.primary],
