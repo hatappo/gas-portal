@@ -185,7 +185,7 @@ test('Action type selection survives refresh, language and tab changes, with a c
   app.calls[1].done(result([{ ...item, id: 'issue', reasons: ['Assigned issue'] }]));
   assert.equal(app.rows().length, 0);
   assert.equal(button.getAttribute('aria-pressed'), 'true', 'Keep absent selected types so the filter remains explainable');
-  assert.match(app.document.getElementById('action-items').textContent, /No items match the selected types/);
+  assert.match(app.document.getElementById('action-items').textContent, /No items match your filters/);
   app.document.querySelector('#action-items .reset-button').click();
   assert.equal(app.rows().length, 1);
 });
@@ -215,4 +215,43 @@ test('Tools and Actions share count and retrieval copy in both languages while k
     assert.match(app.document.getElementById('catalog-freshness').title, /Cached|キャッシュ/);
     for (const kind of ['catalog', 'actions']) assert.ok(app.document.getElementById('refresh-' + kind).getAttribute('aria-describedby').includes(kind + '-freshness'));
   }
+});
+
+test('Action search matches loaded titles and messages, combines with type filters, and survives refresh', t => {
+  const app = fixture(t);
+  const bookmark = { ...item, service: 'slack', serviceLabel: 'Slack', id: 'saved', title: 'REVIEW 資料の確認', reasons: ['Bookmark'] };
+  app.api.setSources('demo', [app.source('all')]); app.start();
+  app.calls[0].done({ ...result([item, bookmark]), hasMore: true });
+  const search = app.document.getElementById('actions-search');
+  const enter = value => { search.value = value; search.dispatchEvent(new app.dom.window.Event('input')); };
+  enter('  ｒｅｖｉｅｗ  ');
+  assert.equal(app.rows().length, 2, 'Normalize case and full-width input');
+  const filter = [...app.document.querySelectorAll('.action-type-button')].find(node => node.textContent === 'Slack ブックマーク');
+  filter.click();
+  assert.equal(app.rows().length, 1, 'Text AND selected types');
+  enter('資料');
+  assert.equal(app.rows().length, 1, 'Slack message excerpt is searchable');
+  assert.equal(app.calls.length, 1, 'Typing and filtering do not send requests');
+  assert.ok(app.document.querySelector('.action-more-results'), 'Search keeps the additional-results notice visible');
+  app.document.querySelector('#action-filters .tag-button').click();
+  assert.equal(search.value, '資料', 'All clears types only');
+  assert.equal(app.rows().length, 1);
+  filter.click();
+  app.document.getElementById('tab-tools').click(); app.start();
+  app.document.documentElement.lang = 'en';
+  app.document.dispatchEvent(new app.dom.window.Event('portal:languagechange'));
+  assert.equal(search.value, '資料');
+  app.refresh.click();
+  app.calls[1].done(result([item, { ...bookmark, title: 'Different message' }]));
+  assert.equal(app.rows().length, 0);
+  assert.equal(app.document.getElementById('actions-count').textContent, '0 / 2 items');
+  assert.match(app.document.getElementById('action-items').textContent, /No items match your filters/);
+  app.document.querySelector('#action-items .reset-button').click();
+  assert.equal(search.value, '');
+  assert.equal(app.document.activeElement, search);
+  assert.equal(app.rows().length, 2);
+  enter('acme/portal');
+  assert.equal(app.rows().length, 0, 'Do not match metadata outside titles or messages');
+  enter('   ');
+  assert.equal(app.rows().length, 2);
 });

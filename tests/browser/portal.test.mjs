@@ -264,3 +264,24 @@ test('Filter chips reserve borders for selection and retain visible keyboard foc
     }
   }
 });
+
+test('Action search filters locally and remains usable at narrow widths', async t => {
+  const page = await pageFor(t);
+  await page.locator('#tab-actions').click();
+  await page.locator('.action-item-list > li').first().waitFor();
+  const titles = await page.locator('.action-item-title').allTextContents();
+  const search = page.getByRole('searchbox', { name: 'Search by title or message' });
+  await search.fill(titles[0]);
+  assert.ok((await page.locator('.action-item-title').allTextContents()).every(title => title.toLowerCase().includes(titles[0].toLowerCase())));
+  assert.equal(await search.evaluate(node => node === document.activeElement), true);
+  for (const width of [1280, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    const bounds = await search.boundingBox();
+    assert.ok(bounds.width > 150, 'Search remains usable');
+  }
+  await search.fill('no matching title xyz');
+  await page.locator('#action-items').getByRole('button', { name: 'Clear filters' }).click();
+  assert.equal(await search.inputValue(), '');
+  assert.equal(await page.locator('.action-item-title').count(), titles.length);
+});

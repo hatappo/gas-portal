@@ -1,6 +1,7 @@
 import { For, Show, createMemo, createSignal, createEffect, type JSX } from 'solid-js';
 import { createStore, reconcile } from 'solid-js/store';
 import { render } from 'solid-js/web';
+import { tagPalette } from './tag-palette.js';
 import { formatListCount } from './list-presentation.js';
 import { Disclosure } from './disclosure';
 import { ToggleGroup } from '@kobalte/core/toggle-group';
@@ -22,10 +23,10 @@ const typeLabel = (service: string, reason: string, language: string) => service
 // Stable category hues are blended into the current theme by the shared tag styles.
 function typeColor(service: string, reason: string) {
   const colors: Record<string, string> = {
-    'Assigned issue': '#1d4ed8', 'Direct review': '#0f766e',
-    'Team review': '#6d28d9', 'Changes requested': '#92400e',
+    'Assigned issue': tagPalette[0], 'Direct review': tagPalette[1],
+    'Team review': tagPalette[2], 'Changes requested': tagPalette[3],
   };
-  return service === 'github' ? colors[reason] || '#475569' : service === 'slack' ? '#9d174d' : '#475569';
+  return service === 'github' ? colors[reason] || tagPalette[5] : service === 'slack' ? tagPalette[4] : tagPalette[5];
 }
 
 function SourceLink(props: { url: string; class?: string; children: JSX.Element }) {
@@ -52,6 +53,12 @@ export function mountActionView() {
   const [state, setState] = createStore<ActionView>({ items: [], notices: [], moreSources: [], pending: true, hasResults: false, connected: false, language: 'en' });
   // Keep selected types available even if a refresh removes their last matching item.
   const [selected, setSelected] = createSignal<ActionType[]>([]);
+  const search = document.getElementById('actions-search') as HTMLInputElement;
+  const [query, setQuery] = createSignal('');
+  const normalize = (text: string) => text.normalize('NFKC').toLocaleLowerCase('ja').trim();
+  search.addEventListener('input', () => setQuery(normalize(search.value)));
+  const clearFilters = () => { setSelected([]); search.value = ''; setQuery(''); search.focus(); };
+  const hasFilters = () => selected().length > 0 || query().length > 0;
   const types = createMemo(() => {
     const choices = new Map<string, ActionType>();
     for (const item of state.items) for (const reason of item.reasons) {
@@ -63,7 +70,8 @@ export function mountActionView() {
   });
   const filtered = createMemo(() => {
     const ids = new Set(selected().map(choice => choice.id));
-    return ids.size ? state.items.filter(item => item.reasons.some(reason => ids.has(typeId(item.service, reason)))) : state.items;
+    return state.items.filter(item => normalize(item.title).includes(query()) &&
+      (!ids.size || item.reasons.some(reason => ids.has(typeId(item.service, reason)))));
   });
   render(() => <Show when={types().length}><div class="tag-filter action-type-filter">
     <div class="tag-heading" title={t('Filter by type (match any)', state.language)}>Types</div>
@@ -93,7 +101,7 @@ export function mountActionView() {
     </ul></Disclosure>
   </Show>, document.getElementById('actions-status')!);
   render(() => <><Show when={filtered().length} fallback={
-    <Show when={!state.pending && !state.notices.length}><div class="status" role="status"><h3>{t('No items to display', state.language)}</h3><p>{t(selected().length ? 'No items match the selected types.' : state.connected ? 'No action items right now.' : 'Connect a service in Settings to see your action items.', state.language)}</p><Show when={selected().length}><button type="button" class="reset-button btn btn-sm" onClick={() => setSelected([])}>{t('Clear filters', state.language)}</button></Show></div></Show>
+    <Show when={!state.pending && !state.notices.length}><div class="status" role="status"><h3>{t('No items to display', state.language)}</h3><p>{t(hasFilters() ? 'No items match your filters.' : state.connected ? 'No action items right now.' : 'Connect a service in Settings to see your action items.', state.language)}</p><Show when={hasFilters()}><button type="button" class="reset-button btn btn-sm" onClick={clearFilters}>{t('Clear filters', state.language)}</button></Show></div></Show>
   }><ul class="action-item-list"><For each={filtered()}>{(item) => <ActionRow item={item} language={state.language} />}</For></ul></Show>
     <For each={state.moreSources}>{(source) => <p class="settings-help action-more-results">{source + ' · ' + t('More search results are available. Increase the limit in Settings to show more.', state.language)}</p>}</For>
   </>, document.getElementById('action-items')!);

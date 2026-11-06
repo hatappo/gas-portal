@@ -4,7 +4,8 @@ globalThis.PortalI18n = (() => {
   const messages = {
   "Filter by tags (match all)": "タグで絞り込み（すべてに一致）",
   "Filter by type (match any)": "種類で絞り込み（いずれかに一致）",
-  "No items match the selected types.": "選択した種類に一致する項目はありません。",
+  "No items match your filters.": "絞り込み条件に一致する項目はありません。",
+  "Search by title or message": "タイトル・メッセージで検索",
 
   "Search results may differ from Slack’s Saved view. Messages are ordered by posting time.": "Slack のブックマーク専用画面とは結果が異なる場合があります。投稿日時順に表示します。",
   "Bookmarks per connection": "接続ごとのブックマーク取得件数",

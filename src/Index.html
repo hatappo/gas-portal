@@ -75,6 +75,13 @@
       </section>
       <section class="action-items" role="tabpanel" aria-labelledby="tab-actions" id="actions-panel" tabindex="0" hidden>
         <div class="actions-toolbar">
+          <div class="search-controls">
+            <div class="search-box input">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
+              <label class="visually-hidden" for="actions-search" data-i18n="Search by title or message">Search by title or message</label>
+              <input type="search" id="actions-search" placeholder="Search by title or message" data-i18n-placeholder="Search by title or message" autocomplete="off">
+            </div>
+          </div>
           <button type="button" id="actions-settings" class="action-text-button btn btn-ghost btn-sm" data-i18n="Manage connections">Manage connections</button>
           <div class="actions-summary">
             <span id="actions-count" class="count" role="status" aria-live="polite" aria-atomic="true">—</span>
