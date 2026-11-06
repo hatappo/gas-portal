@@ -1,12 +1,12 @@
-(() => {
-  'use strict';
+import { createSaver } from './save-control.js';
+export function initializeLanguage() {
   const root = document.documentElement;
   const select = /** @type {HTMLSelectElement} */ (document.getElementById('portal-language'));
   const status = /** @type {HTMLElement} */ (document.getElementById('language-status'));
   let savedPreference = PortalI18n.preference(root.dataset.languagePreference);
   const browserLanguages = () => navigator.languages?.length ? navigator.languages : [navigator.language];
   const resolvedLanguage = () => PortalI18n.resolve(savedPreference, browserLanguages());
-  const save = PortalSave.createSaver({
+  const save = createSaver({
     status, t: (key) => PortalI18n.t(key, root.lang), setBusy: (busy) => { select.disabled = busy; },
   });
 
@@ -51,4 +51,4 @@
       failureMessage: 'Could not save the language. Please try again.',
     });
   });
-})();
+}

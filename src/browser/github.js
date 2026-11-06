@@ -1,5 +1,5 @@
-(() => {
-  'use strict';
+/** @param {ReturnType<typeof import('./action-items.js').initializeActions>} actions */
+export function initializeGitHub(actions) {
   /** @param {string} id */
   const el = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
   /** @param {string} key @param {Record<string, string | number>} [values] */
@@ -10,7 +10,6 @@
   const owner = /** @type {HTMLInputElement} */ (el('github-owner'));
   const add = /** @type {HTMLButtonElement} */ (el('add-github'));
   const settingsStatus = el('github-settings-status');
-  const actions = window.PortalActions;
   actions.setProviderState('github', { ready: false, loading: false, error: '' });
   /** @type {GitHubConnectionInfo[]} */
   let connections = [];
@@ -216,4 +215,4 @@
   });
   document.addEventListener('portal:languagechange', renderConnections);
   if (!el('actions-panel').hidden || !el('settings-panel').hidden) initialize();
-})();
+}

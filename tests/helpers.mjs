@@ -7,20 +7,25 @@ import solid from 'vite-plugin-solid';
 import path from 'node:path';
 import { withPreviewContent } from '../scripts/preview-project.mjs';
 import { renderPreview } from '../scripts/preview.mjs';
-import { sharedSources } from '../scripts/gas-sources.mjs';
+import { sharedSources, serverSources } from '../scripts/gas-sources.mjs';
 
-// The browser modules, in the order src/browser/main.js imports them.
-export const browserModules = [...readFileSync('src/browser/main.js', 'utf8').matchAll(/^import '\.\/([\w-]+)\.js';$/gm)].map((match) => match[1]);
-
-// Exercise the same JSX transform and browser runtime as the production bundle.
-export async function bundleBrowser(modules = browserModules) {
+// Compile explicit startup with the production JSX transform. Individual services can be
+// replaced at the composition boundary without exposing production globals.
+export async function bundleModule(source) {
   const entryId = path.resolve('tests/browser-entry.js');
   const result = await build({ configFile: false, logLevel: 'silent', plugins: [solid(), {
     name: 'browser-test-entry',
     resolveId(id) { if (id === entryId) return id; },
-    load(id) { if (id === entryId) return modules.map((name) => `import ${JSON.stringify(path.resolve(`src/browser/${name}.js`))};`).join('\n'); },
+    load(id) { if (id === entryId) return source; },
   }], build: { write: false, minify: false, lib: { entry: entryId, name: 'PortalTest', formats: ['iife'] } } });
   return (Array.isArray(result) ? result : [result]).flatMap((bundle) => bundle.output).find((file) => file.type === 'chunk').code;
+}
+export async function bundleBrowser({ connectGitHub = true, start = true } = {}) {
+  const imports = sharedSources.map(file => `import ${JSON.stringify(path.resolve(file))};`).join('\n');
+  const init = `initializePortal(${connectGitHub ? '' : '{ connectGitHub: () => {} }'})`;
+  return bundleModule(`${imports}
+    import { initializePortal } from ${JSON.stringify(path.resolve('src/browser/bootstrap.js'))};
+    ${start ? `window.testPortal = ${init};` : `window.startPortal = () => ${init};`}`);
 }
 const browserClient = await bundleBrowser();
 
@@ -66,9 +71,7 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
     ...overrides,
   });
   for (const file of sharedSources) vm.runInContext(readFileSync(file, 'utf8'), context);
-  for (const name of ['Catalog', 'SheetCatalog', 'Code', 'GitHub']) {
-    vm.runInContext(readFileSync(`src/server/${name}.js`, 'utf8'), context);
-  }
+  for (const file of serverSources) vm.runInContext(readFileSync(file, 'utf8'), context);
   return { context, logs, calls };
 }
 

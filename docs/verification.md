@@ -137,6 +137,14 @@ Historical record of manual verification for the 0.1.x releases. It is not updat
 - Lint, type checks, the seven-file build, and all 286 tests passed, including the packaged preview. Chromium verified intermediate opening/closing heights, Enter/Space, rapid reversals, reduced motion, inert content, and 390px/320px layouts without page errors.
 - No production push/deploy was performed.
 
+## Explicit startup, server boundaries, and settings form / 2026-11-06
+
+- Split page/catalog responses, user settings, and spreadsheet setup into separate server sources. Build, preview, and test fixtures share one source manifest while retaining seven GAS output files and every public RPC.
+- Replaced browser import-time initialization with one composition root. Motion and Action Items dependencies are passed explicitly; save helpers are ordinary imports. Added coverage proving that imports alone do not mount controls, send RPCs, or create the former browser globals.
+- Moved the portal-content form fields to Solid, retaining the server-rendered bootstrap values, localized defaults, IME-safe icon input, draft retention, save timeouts, and reset-without-saving semantics.
+- Added four Chromium smoke tests and a CI step covering tab/history/draft behavior, settings save/reset, disclosure keyboard/inert/reduced-motion behavior, and natural card heights/responsive layout in Lofi and Dracula. Tests use local fixtures and block external requests.
+- Lint, browser/GAS type checks, build, all 287 existing/unit regression tests, and four Chromium tests passed. No production deployment or new OAuth scopes were introduced.
+
 ## Before publishing
 
 - Configure the Git remote and verify package.json's repository / homepage / bugs fields. Distribute tarballs through GitHub Releases; do not publish to the npm registry.

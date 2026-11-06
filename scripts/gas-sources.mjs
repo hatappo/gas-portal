@@ -9,3 +9,11 @@ export const sharedSources = [
   'src/shared/catalog-rules.js',
   'src/shared/cache-durations.js',
 ];
+
+// Source boundaries do not change the public seven-file GAS project layout.
+export const serverGroups = {
+  'Code.js': ['Settings', 'SpreadsheetSetup', 'GitHub', 'Code'],
+  'Catalog.js': ['Catalog'],
+  'SheetCatalog.js': ['SheetCatalog'],
+};
+export const serverSources = Object.values(serverGroups).flat().map((name) => `src/server/${name}.js`);

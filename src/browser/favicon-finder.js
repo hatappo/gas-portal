@@ -1,5 +1,4 @@
-(() => {
-  'use strict';
+export function initializeFaviconFinder() {
   // Settings offers a bookmarklet that shows a page's icon URL for the icon column.
   // It runs in the user's own tab, so it sees icons declared in HTML on signed-in pages.
   if (!document.getElementById('favicon-finder-link')) return;
@@ -63,4 +62,4 @@
       navigator.clipboard.writeText(code.value).then(() => { status.textContent = t('Copied'); }, manual);
     } catch { manual(); }
   });
-})();
+}

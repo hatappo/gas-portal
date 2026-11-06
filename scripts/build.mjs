@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import { build } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 import solid from 'vite-plugin-solid';
-import { sharedSources } from './gas-sources.mjs';
+import { sharedSources, serverGroups } from './gas-sources.mjs';
 import { checkGasSyntax } from './gas-syntax.mjs';
 import { withPortalAssets } from './portal-html.mjs';
 
@@ -17,12 +17,14 @@ const shared = sharedSources.map((file) => {
   checkGasSyntax(code, path.basename(file));
   return code;
 });
-const serverFiles = ['Code.js', 'Catalog.js', 'SheetCatalog.js'];
-const github = readFileSync(path.join(root, 'src/server/GitHub.js'), 'utf8');
-checkGasSyntax(github, 'GitHub.js');
-for (const file of serverFiles) {
-  checkGasSyntax(readFileSync(path.join(root, 'src/server', file), 'utf8'), file);
-}
+const serverOutputs = Object.fromEntries(Object.entries(serverGroups).map(([output, names]) => {
+  const sources = names.map((name) => {
+    const code = readFileSync(path.join(root, 'src/server', name + '.js'), 'utf8');
+    checkGasSyntax(code, name + '.js');
+    return code;
+  });
+  return [output, [...(output === 'Code.js' ? shared : []), ...sources].join('\n')];
+}));
 // GAS embeds JS/CSS as HTML. Keep Vite output in memory and update dist only after success.
 const bundle = await build({
   configFile: false,
@@ -59,9 +61,7 @@ for (const file of ['appsscript.json']) {
   copyFileSync(path.join(root, 'src', file), path.join(dist, file));
 }
 writeFileSync(path.join(dist, 'Index.html'), index);
-for (const file of serverFiles) {
-  writeFileSync(path.join(dist, file), (file === 'Code.js' ? [...shared, github, ''].join('\n') : '') + readFileSync(path.join(root, 'src/server', file), 'utf8'));
-}
+for (const [file, source] of Object.entries(serverOutputs)) writeFileSync(path.join(dist, file), source);
 writeFileSync(path.join(dist, 'Styles.html'), `<style>\n${css}\n</style>\n`);
 writeFileSync(path.join(dist, 'Client.html'), `<script>\n${client}\n</script>\n`);
 console.log('Generated seven GAS files in dist/.');

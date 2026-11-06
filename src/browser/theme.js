@@ -1,7 +1,7 @@
+import { createSaver } from './save-control.js';
 import { mountThemePicker } from './theme-view';
 
-(() => {
-  'use strict';
+export function initializeTheme() {
   /** @param {string} key @param {Record<string, string | number>} [values] */
   const t = (key, values = {}) => PortalI18n.t(key, document.documentElement.lang, values);
 
@@ -19,7 +19,7 @@ import { mountThemePicker } from './theme-view';
   }
 
   const picker = mountThemePicker(savedTheme, choose);
-  const save = PortalSave.createSaver({ status, t, setBusy: picker.setBusy });
+  const save = createSaver({ status, t, setBusy: picker.setBusy });
 
   apply(savedTheme);
   /** @param {string} theme */
@@ -38,4 +38,4 @@ import { mountThemePicker } from './theme-view';
       failureMessage: "Could not save. Please select a theme again.",
     });
   }
-})();
+}

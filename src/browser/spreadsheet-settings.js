@@ -1,5 +1,5 @@
-(() => {
-  'use strict';
+import { createSaver, serverError } from './save-control.js';
+export function initializeSpreadsheetSettings() {
   const form = /** @type {HTMLFormElement} */ (document.getElementById('spreadsheet-settings-form'));
   const fields = /** @type {HTMLFieldSetElement} */ (document.getElementById('spreadsheet-settings-fields'));
   const id = /** @type {HTMLInputElement} */ (document.getElementById('setting-spreadsheet'));
@@ -29,7 +29,7 @@
     id.readOnly = name.readOnly = uncertain;
   }
   updateControls();
-  const saveSource = PortalSave.createSaver({
+  const saveSource = createSaver({
     status, t, setBusy: (busy) => { fields.disabled = busy; if (!busy) updateControls(); },
   });
   id.addEventListener('input', updateControls);
@@ -50,7 +50,7 @@
           if (typeof createdId !== 'string' || !/^[\w-]+$/.test(createdId)) {
             // A definite failure before anything was created: keep the form usable for a retry.
             if (response && !response.ok && response.notCreated === true) return PortalI18n.translate(String(response.error), document.documentElement.lang);
-            return PortalSave.serverError(response);
+            return serverError(response);
           }
           id.value = createdId;
           const connected = response.ok || response.connected === true;
@@ -70,7 +70,7 @@
       saveSource({
         send: (runner) => runner.saveSpreadsheetSettings({ SPREADSHEET_ID: id.value, SHEET_NAME: name.value }),
         confirm: (/** @type {SpreadsheetSettingsResponse} */ response) => {
-          if (!response?.ok) return PortalSave.serverError(response);
+          if (!response?.ok) return serverError(response);
           if (typeof response.settings?.SPREADSHEET_ID !== 'string' || typeof response.settings?.SHEET_NAME !== 'string') return false;
           id.value = savedId = response.settings.SPREADSHEET_ID;
           showLink(savedId);
@@ -85,4 +85,4 @@
   }
   form.addEventListener('submit', (event) => { event.preventDefault(); run(false); });
   create.addEventListener('click', () => run(true));
-})();
+}

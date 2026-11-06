@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { JSDOM } from 'jsdom';
+import { bundleModule } from './helpers.mjs';
+const saveModule = await bundleModule("import * as save from '../src/browser/save-control.js'; window.testSave = save;");
 
 function setup() {
   const dom = new JSDOM('<p id="status"></p>', { runScripts: 'outside-only' });
@@ -17,10 +18,10 @@ function setup() {
   };
   window.google = { script: { run: runner } };
   window.PortalI18n = { translate: (message) => `translated:${message}` };
-  window.eval(readFileSync('src/browser/save-control.js', 'utf8'));
+  window.eval(saveModule);
   const status = window.document.getElementById('status');
   const busy = [];
-  const save = window.PortalSave.createSaver({ status, t: (key) => `t:${key}`, setBusy: (value) => busy.push(value) });
+  const save = window.testSave.createSaver({ status, t: (key) => `t:${key}`, setBusy: (value) => busy.push(value) });
   return { window, status, save, calls, timers, busy };
 }
 
@@ -79,8 +80,8 @@ test('Ignore replies to a timed-out or superseded request', () => {
 
 test('Translate only failure replies that carry a server message', () => {
   const { window } = setup();
-  assert.deepEqual({ ...window.PortalSave.serverError({ ok: false, error: 'x' }) }, { error: 'translated:x' });
+  assert.deepEqual({ ...window.testSave.serverError({ ok: false, error: 'x' }) }, { error: 'translated:x' });
   for (const response of [null, undefined, { ok: false }, { ok: true, error: 'x' }, { ok: false, error: 3 }]) {
-    assert.equal(window.PortalSave.serverError(response), false);
+    assert.equal(window.testSave.serverError(response), false);
   }
 });

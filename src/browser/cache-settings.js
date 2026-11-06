@@ -1,5 +1,5 @@
-(() => {
-  'use strict';
+import { createSaver } from './save-control.js';
+export function initializeCacheSettings() {
   /** @type {Array<[string, string, 'catalog' | 'actions', 'saveCatalogCacheTtl' | 'saveActionsCacheTtl']>} */
   const preferences = [
     ['catalog-cache-seconds', 'cache-settings-status', 'catalog', 'saveCatalogCacheTtl'],
@@ -21,7 +21,7 @@
     }));
     let saved = String(PortalCacheDurations.normalize(kind, select.dataset.savedValue || undefined));
     select.value = saved;
-    const saveChoice = PortalSave.createSaver({ status, t, setBusy: (busy) => { select.disabled = busy; } });
+    const saveChoice = createSaver({ status, t, setBusy: (busy) => { select.disabled = busy; } });
     select.addEventListener('change', () => {
       const value = select.value;
       if (select.disabled || value === saved) return;
@@ -38,4 +38,4 @@
       });
     });
   }
-})();
+}

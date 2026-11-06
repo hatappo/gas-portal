@@ -212,7 +212,7 @@ test('Reject icons that are not https images or short text', () => {
 test('Every sentence the server code returns has a Japanese translation for the browser', () => {
   const context = vm.createContext({});
   vm.runInContext(readFileSync('src/shared/i18n.js', 'utf8'), context);
-  const sentences = ['src/server/Catalog.js', 'src/server/Code.js'].flatMap((file) =>
+  const sentences = ['Catalog', 'Code', 'Settings', 'SpreadsheetSetup'].map(name => `src/server/${name}.js`).flatMap((file) =>
     [...readFileSync(file, 'utf8').matchAll(/(["'])([A-Z{][^"'\n]* [^"'\n]*\.)\1/g)].map((match) => match[2]));
   assert.ok(sentences.length > 30, `Found only ${sentences.length} sentences`);
   const missing = sentences.filter((sentence) => context.PortalI18n.translate(sentence, 'ja') === sentence);

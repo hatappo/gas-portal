@@ -103,7 +103,7 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   assert.equal(app.document.title, 'Built Portal');
   assert.equal(app.document.querySelector('#page-title').textContent, 'Built headline');
   // Node accepts these operators, but GAS rejects them. Fail before replacing output.
-  for (const relative of ['src/server/GitHub.js', 'src/shared/i18n.js']) {
+  for (const relative of ['src/server/GitHub.js', 'src/server/Settings.js', 'src/server/SpreadsheetSetup.js', 'src/shared/i18n.js']) {
     const sourcePath = path.join(root, relative);
     const original = readFileSync(sourcePath, 'utf8');
     for (const operator of ['||=', '&&=', '??=']) {

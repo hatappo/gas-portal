@@ -1,10 +1,9 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import { createGitHubPreview } from './github-preview.mjs';
 import { withPreviewProject, withPreviewContent } from './preview-project.mjs';
-import { sharedSources } from './gas-sources.mjs';
+import { sharedSources, serverSources } from './gas-sources.mjs';
 import { withPortalAssets } from './portal-html.mjs';
 // Re-exported so a consumer previewing a linked checkout resolves Tailwind from this package.
 export { default as solid } from 'vite-plugin-solid';
@@ -28,14 +27,11 @@ const demo = {
   issues: [],
 };
 export function renderPreview(html, root, options = {}) {
-  const url = pathToFileURL(path.join(root, 'src/server/'));
   const context = vm.createContext({ console });
   const i18n = readFileSync(path.join(root, 'src/shared/i18n.js'), 'utf8');
   const urlSchemes = readFileSync(path.join(root, 'src/shared/url-schemes.js'), 'utf8');
   for (const file of sharedSources) vm.runInContext(readFileSync(path.join(root, file), 'utf8'), context);
-  for (const name of ['Catalog', 'Code']) {
-    vm.runInContext(readFileSync(new URL(`${name}.js`, url), 'utf8'), context);
-  }
+  for (const file of serverSources) vm.runInContext(readFileSync(path.join(root, file), 'utf8'), context);
   const catalog = { ok: true, ...context.parseCatalog_(demo.tools) };
   // Prevent embedded data from closing the script element.
   const serialize = (value) => JSON.stringify(value).replace(/</g, '\\u003c');
