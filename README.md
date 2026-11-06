@@ -27,12 +27,11 @@ Replace `VERSION` with a [published release](https://github.com/hatappo/gas-port
 
 To test a local package, run `npm ci`, `npm run check`, and `npm run pack:local` in this repository, then install `releases/gas-portal-VERSION.tgz`. The packaging command refuses to overwrite an existing package with different contents at the same version.
 
-When `portal init` adds a dependency, it uses the GitHub Release URL for the running CLI's version. Existing configuration, dependency specifications, and npm scripts with matching names are preserved. The command also adds generated files and credentials to `.gitignore`. You can initialize before creating a GAS project and fill in `portal.config.json` later. Initialize the consumer's Git repository yourself if needed.
+When `portal init` adds a dependency, it uses the GitHub Release URL for the running CLI's version. Existing configuration, dependency specifications, and npm scripts with matching names are preserved. The command also adds generated files and credentials to `.gitignore`. You can initialize before creating a GAS project and fill in the configuration in package.json later. Initialize the consumer's Git repository yourself if needed.
 
 ```text
 my-work-portal/
-├── portal.config.json
-├── package.json
+├── package.json          # Includes the "gas-portal" configuration
 ├── package-lock.json
 ├── .gitignore
 └── .portal/               # Not tracked by Git
@@ -45,11 +44,17 @@ my-work-portal/
 
 ## Environment configuration
 
+The configuration lives under the `"gas-portal"` key in the consumer's package.json. `portal deploy` rewrites only this key and keeps the other fields and the indentation.
+
 ```json
 {
-  "scriptId": "YOUR_SCRIPT_ID",
-  "authProfile": "work-a",
-  "deploymentId": "YOUR_WEB_APP_DEPLOYMENT_ID"
+  "name": "my-work-portal",
+  "private": true,
+  "gas-portal": {
+    "scriptId": "YOUR_SCRIPT_ID",
+    "authProfile": "work-a",
+    "deploymentId": "YOUR_WEB_APP_DEPLOYMENT_ID"
+  }
 }
 ```
 
