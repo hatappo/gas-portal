@@ -157,3 +157,36 @@ test('Slack limit changes update results and show more-results information witho
   await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
   assert.equal(await page.locator('.action-item-list > li').count(), 55);
 });
+
+test('Action type chips filter with OR, retain keyboard focus and show readable colors across light and dark themes', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  await page.locator('#tab-actions').click();
+  await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
+  const assigned = page.getByRole('button', { name: 'GitHub Assigned issue', exact: true });
+  await assigned.focus(); await page.keyboard.press('Space');
+  assert.equal(await assigned.getAttribute('aria-pressed'), 'true');
+  assert.equal(await assigned.evaluate(el => el === document.activeElement), true);
+  assert.equal(await page.locator('.action-item-list > li').count(), 2);
+  await page.getByRole('button', { name: 'Slack Bookmark', exact: true }).click();
+  assert.equal(await page.locator('.action-item-list > li').count(), 4);
+  assert.equal(await page.locator('#actions-count').textContent(), '4 / 7 shown');
+  await page.locator('#refresh-actions').click();
+  await page.waitForSelector('#refresh-actions[aria-busy="false"]');
+  assert.equal(await page.locator('.action-item-list > li').count(), 4);
+  for (const theme of ['lofi', 'dracula']) {
+    await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+    for (const width of [1280, 390, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    }
+    const colors = await page.locator('.action-item-kind').evaluateAll(nodes => nodes.map(node => ({ bg: getComputedStyle(node).backgroundColor, fg: getComputedStyle(node).color })));
+    assert.ok(new Set(colors.map(color => color.bg)).size >= 2);
+    for (const { bg, fg } of colors) {
+      const luminance = rgb => rgb.match(/[\d.]+/g).slice(0, 3).map(Number).map(value => value / 255).map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
+      const values = [luminance(bg), luminance(fg)].sort((a, b) => b - a);
+      assert.ok((values[0] + .05) / (values[1] + .05) >= 4.5, 'Badges must retain readable contrast');
+    }
+  }
+  await page.locator('#action-filters button').filter({ hasText: /^All$/ }).click();
+  assert.equal(await page.locator('.action-item-list > li').count(), 7);
+});

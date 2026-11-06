@@ -229,8 +229,8 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 :is(.github-connection, .slack-connection) strong { font-size: 14px; overflow-wrap: anywhere; }
 :is(.github-connection, .slack-connection) p { margin: 4px 0; }
 :is(.github-connection-controls, .slack-connection-controls) { display: flex; flex-shrink: 0; flex-wrap: wrap; gap: 4px 12px; }
-.actions-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-.actions-summary { display: flex; align-items: center; gap: 8px; }
+.actions-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.actions-summary { margin-inline-start: auto; display: flex; align-items: center; gap: 8px; }
 .actions-summary .count { min-width: 8ch; }
 #refresh-actions:disabled:not([aria-busy="true"]) { cursor: default; }
 .action-item-list { list-style: none; padding: 0; margin: 0; }
@@ -242,7 +242,12 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .action-item-meta { grid-column: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; color: var(--portal-muted); font-size: 11px; overflow-wrap: anywhere; }
 .action-service { color: var(--color-base-content); font-weight: 600; }
 .action-item-reasons { grid-column: 2; grid-row: 1 / 3; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; max-width: 280px; }
-.action-item-kind { height: auto; }
+.action-item-kind { height: auto; max-width: 100%; white-space: normal; overflow-wrap: anywhere; background: var(--action-color); color: #fff; border-color: transparent; }
+.action-type-button { --btn-color: color-mix(in srgb, var(--action-color) 12%, var(--color-base-100)); --btn-fg: var(--color-base-content); }
+.action-type-button[aria-pressed="true"] { --btn-color: var(--action-color); --btn-fg: #fff; --btn-border: var(--action-color); }
+.action-type-filter { flex-wrap: wrap; gap: 6px 8px; padding-bottom: 16px; }
+.action-type-filter .tags { display: contents; }
+.action-type-filter .btn { height: auto; min-height: 32px; white-space: normal; }
 /* DaisyUI .alert is a grid; let notices flow as a block. */
 .action-notice { display: block; margin: 0 0 16px; font-size: 12px; line-height: 1.7; }
 .action-notice ul { padding-inline-start: 18px; margin: 8px 0 0; list-style: disc; }

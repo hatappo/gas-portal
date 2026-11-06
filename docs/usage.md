@@ -215,6 +215,12 @@ Use `/?github=multiple#actions` for overlapping connections with one extra perso
 
 References: [GitHub Search API](https://docs.github.com/en/rest/search/search#search-issues-and-pull-requests), [review search qualifiers](https://docs.github.com/en/search-github/searching-on-github/searching-issues-and-pull-requests#search-by-pull-request-review-status-and-reviewer), [authenticated user](https://docs.github.com/en/rest/users/users#get-the-authenticated-user), and [fine-grained PAT setup and limitations](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
 
+## Action type filters
+
+The shared Action Items toolbar provides colored type chips, using the same colors and service-qualified names as row badges: **GitHub Assigned issue**, **GitHub Direct review**, **GitHub Team review**, **GitHub Changes requested**, and **Slack Bookmark**. Choose any number of chips to show items matching **at least one** selected type (OR). **All**, or deselecting every chip, shows the full loaded list. Tools tag filtering continues to use AND.
+
+Filtering is local and does not call APIs or change the server search limits. The counter always shows **visible / loaded** items, after cross-connection deduplication. A PR with multiple matching types is still shown once. Filters survive tab changes, refreshes and language changes within the page; reloading resets them. A selected type remains available if its last matching item disappears, with a clearable empty state. Retrieval errors and additional-result notices remain visible regardless of filtering, so hidden rows do not conceal incomplete data.
+
 ## Slack bookmarks
 
 Slack bookmarks appear in the shared **Action Items** list alongside GitHub, with a **Slack** service label and **Bookmark** badge. The portal uses the documented legacy [`search.messages`](https://docs.slack.dev/reference/methods/search.messages/) method with `is:saved`; it does not use browser sessions or the undocumented `saved.list` endpoint.

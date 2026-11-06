@@ -3,8 +3,6 @@ import { mountActionView } from './action-view';
 export function initializeActions() {
   /** @param {string} id */
   const el = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
-  /** @param {string} key @param {Record<string, string | number>} [values] */
-  const t = (key, values = {}) => PortalI18n.t(key, document.documentElement.lang, values);
   const refresh = /** @type {HTMLButtonElement} */ (el('refresh-actions'));
   /** @type {Map<string, {ready: boolean, loading: boolean, error: string}>} */
   const providers = new Map();
@@ -44,12 +42,11 @@ export function initializeActions() {
       }
     }
     const items = [...unique.values()].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt) || (a.service + ':' + a.id).localeCompare(b.service + ':' + b.id));
-    el('actions-count').textContent = results.size || !pending ? t('{count} shown', { count: items.length }) : '—';
     const freshness = el('actions-freshness');
     freshness.hidden = timestamps.length === 0;
     freshness.textContent = timestamps.length ? new Intl.DateTimeFormat(document.documentElement.lang, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(Math.min(...timestamps)) : '';
     el('actions-status').hidden = !notices.length;
-    updateView({ items, notices, moreSources, pending, connected: sources.size > 0, language: document.documentElement.lang });
+    updateView({ items, notices, moreSources, pending, hasResults: results.size > 0, connected: sources.size > 0, language: document.documentElement.lang });
   }
 
   function cancelBatch() {

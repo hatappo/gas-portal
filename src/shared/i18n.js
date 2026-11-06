@@ -2,6 +2,11 @@
 globalThis.PortalI18n = (() => {
   /** @type {Record<string, string>} */
   const messages = {
+  "Types (match any)": "種類（いずれか）",
+  "Filter by type (match any)": "種類で絞り込み（いずれかに一致）",
+  "{count} / {total} shown": "{count} / {total} 件を表示",
+  "No items match the selected types.": "選択した種類に一致する項目はありません。",
+
   "Search results may differ from Slack’s Saved view. Messages are ordered by posting time.": "Slack のブックマーク専用画面とは結果が異なる場合があります。投稿日時順に表示します。",
   "Bookmarks per connection": "接続ごとのブックマーク取得件数",
   "20 by default. Saved automatically; applies to every Slack connection on the next load.": "初期値は20件です。自動保存し、次回取得からすべての Slack 接続に適用します。",
