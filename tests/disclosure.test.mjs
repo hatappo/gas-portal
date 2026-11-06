@@ -1,0 +1,50 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { browser, catalog } from './helpers.mjs';
+
+test('Disclosure panels retain controller nodes and exclude closed content from interaction', (t) => {
+  const app = browser();
+  t.after(() => app.dom.window.close());
+  const doc = app.document;
+  assert.equal(doc.querySelectorAll('details').length, 0);
+  assert.equal(doc.querySelectorAll('.portal-disclosure').length, 3);
+  const code = doc.getElementById('favicon-finder-code');
+  const panel = code.closest('.disclosure-content');
+  const trigger = code.closest('.portal-disclosure').querySelector('button');
+  assert.equal(trigger.getAttribute('aria-expanded'), 'false');
+  assert.equal(panel.getAttribute('aria-hidden'), 'true');
+  assert.equal(panel.inert, true);
+  const value = code.value;
+  trigger.click();
+  assert.equal(trigger.getAttribute('aria-expanded'), 'true');
+  assert.equal(trigger.getAttribute('aria-controls'), panel.id);
+  assert.equal(panel.getAttribute('aria-hidden'), 'false');
+  assert.equal(panel.inert, false);
+  trigger.click(); trigger.click();
+  assert.equal(doc.getElementById('favicon-finder-code'), code);
+  assert.equal(code.value, value);
+});
+
+test('Warnings update while closed and translated help preserves the open state and trigger focus', (t) => {
+  const app = browser();
+  t.after(() => app.dom.window.close());
+  const doc = app.document;
+  const warningList = doc.getElementById('warning-list');
+  app.requests[0].success({ ...catalog, issues: [{ row: 2, message: 'Enter a valid URL.' }] });
+  assert.equal(doc.getElementById('warning-list'), warningList);
+  assert.match(warningList.textContent, /2/);
+  const warningTrigger = doc.querySelector('#warnings .disclosure-trigger');
+  assert.equal(warningTrigger.getAttribute('aria-expanded'), 'false');
+  warningTrigger.click();
+  assert.equal(warningTrigger.getAttribute('aria-expanded'), 'true');
+  doc.getElementById('tab-settings').click();
+  doc.getElementById('settings-tab-actions').click();
+  const help = doc.querySelector('.github-pat-help .disclosure-trigger');
+  help.click(); help.focus();
+  const language = doc.getElementById('portal-language');
+  language.value = 'en'; language.dispatchEvent(new app.dom.window.Event('change'));
+  app.languageRequests[0].success({ ok: true, language: 'en' });
+  assert.equal(help.textContent, 'PAT setup and permissions');
+  assert.equal(help.getAttribute('aria-expanded'), 'true');
+  assert.equal(doc.activeElement, help);
+});

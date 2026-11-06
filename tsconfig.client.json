@@ -11,12 +11,17 @@
       "DOM.Iterable"
     ],
     "types": [],
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "module": "ESNext",
+    "moduleResolution": "bundler"
   },
   "include": [
     "src/browser/*.js",
     "types/browser.d.ts",
     "src/shared/*.js",
-    "types/i18n.d.ts"
+    "types/i18n.d.ts",
+    "src/browser/*.tsx"
   ]
 }

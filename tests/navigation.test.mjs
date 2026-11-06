@@ -119,6 +119,7 @@ test('Settings keyboard navigation and history preserve drafts and keep parent t
   t.after(() => app.dom.window.close());
   const { document: doc, dom: { window } } = app;
   doc.getElementById('setting-name').value = 'Draft title';
+  doc.getElementById('settings-tab-appearance').focus();
   doc.getElementById('settings-tab-appearance').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
   assert.equal(window.location.hash, '#settings/tools');
   assert.equal(doc.activeElement.id, 'settings-tab-tools');
@@ -138,6 +139,7 @@ test('Settings keyboard navigation and history preserve drafts and keep parent t
   assert.equal(window.location.hash, '#settings/tools');
   doc.getElementById('settings-tab-tools').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
   assert.equal(window.location.hash, '#settings/appearance');
+  doc.getElementById('settings-tab-appearance').focus();
   doc.getElementById('settings-tab-appearance').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
   assert.equal(window.location.hash, '#settings/actions');
 });

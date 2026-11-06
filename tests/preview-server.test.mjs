@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -23,7 +23,10 @@ test('Consumer previews use live source when linked and refresh consumer config 
     if (source) {
       assert.match(first, /src="\/browser\/main.js"/);
       const client = await (await fetch(base + '/browser/client.js')).text();
-      assert.ok(client.includes(readFileSync('src/browser/client.js', 'utf8').trim()), 'Serve current source instead of packaged output');
+      assert.match(client, /mountCatalogView/, 'Serve current source instead of packaged output');
+      const view = await (await fetch(base + '/browser/catalog-view.tsx')).text();
+      assert.match(view, /createComponent/, 'Compile Solid components for linked consumer previews');
+      assert.doesNotMatch(view, /<ToolCard/);
       const events = [];
       const send = server.ws.send.bind(server.ws);
       server.ws.send = (event) => { events.push(event); send(event); };

@@ -185,7 +185,7 @@ test('Keep filters and List view during forced refresh, prevent duplicate reques
   assert.equal(requests[1].forceRefresh, true);
   requests[1].success({ ...catalog, cache: { hit: false, fetchedAt: 1700000010000 } });
   assert.equal(document.querySelector('#search').value, 'guide');
-  assert.equal(document.querySelector('#view-list').getAttribute('aria-pressed'), 'true');
+  assert.equal(document.querySelector('#view-list').checked, true);
   assert.equal(document.querySelectorAll('#tool-rows tr').length, 1);
   assert.doesNotMatch(document.querySelector('#catalog-freshness').textContent, /キャッシュ/);
   assert.equal(refresh.style.minWidth, '174px');

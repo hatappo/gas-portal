@@ -35,9 +35,9 @@
             </div>
           </div>
           <div class="filter-toolbar">
-            <div class="segmented-control view-switch join" role="group" aria-label="View mode" data-i18n-aria-label="View mode">
-              <button id="view-cards" class="btn btn-square join-item" type="button" aria-label="Cards" title="Cards" aria-pressed="true" disabled><!-- layout-grid-icon --></button>
-              <button id="view-list" class="btn btn-square join-item" type="button" aria-label="List" title="List" aria-pressed="false" disabled><!-- list-icon --></button>
+            <div class="view-switch">
+              <template id="view-cards-icon"><!-- layout-grid-icon --></template>
+              <template id="view-list-icon"><!-- list-icon --></template>
             </div>
             <span id="count" class="count" role="status" aria-live="polite" aria-atomic="true"></span>
             <button type="button" id="refresh-catalog" class="refresh-catalog btn btn-ghost" aria-label="Fetch latest" data-i18n-aria-label="Fetch latest" aria-describedby="catalog-freshness" title="Fetch latest" data-i18n-title="Fetch latest" aria-busy="true" disabled>
@@ -51,7 +51,10 @@
           <div id="tags" class="tags" role="group" aria-label="Filter by tags" data-i18n-aria-label="Filter by tags"></div>
         </div>
         <aside id="warnings" class="warnings alert alert-warning" aria-label="Data issues" data-i18n-aria-label="Data issues" hidden>
-          <details><summary id="warning-summary"></summary><ul id="warning-list"></ul></details>
+          <div data-disclosure>
+            <span data-disclosure-title id="warning-summary"></span>
+            <div data-disclosure-content><ul id="warning-list"></ul></div>
+          </div>
         </aside>
         <div id="results">
           <ul id="tools" class="tools" aria-label="Tools" data-i18n-aria-label="Tools"></ul>
@@ -112,15 +115,8 @@
           <section class="theme-settings" aria-labelledby="theme-settings-title">
             <div class="settings-heading"><div><h2 id="theme-settings-title"><span data-i18n="Color theme">Color theme</span></h2><p><span data-i18n="Choose a color theme. Your selection is saved automatically.">Choose a color theme. Your selection is saved automatically.</span></p></div></div>
             <div class="theme-save-status" role="status" aria-live="polite" id="theme-status"></div>
-            <label class="theme-choice theme-auto">
-              <input class="visually-hidden" type="radio" name="portal-theme" value="auto" aria-label="Automatic theme" data-i18n-aria-label="Automatic theme">
-              <span class="theme-auto-swatches" aria-hidden="true"><i data-theme="lofi"></i><i data-theme="dracula"></i></span>
-              <span class="theme-auto-copy"><strong data-i18n="Automatic theme">Automatic theme</strong><span data-i18n="Follow your device: Lofi in light mode, Dracula in dark mode.">Follow your device: Lofi in light mode, Dracula in dark mode.</span></span>
-              <span class="theme-check" aria-hidden="true">✓</span>
-            </label>
-            <!-- Theme choices are generated from src/shared/themes.js. -->
-            <fieldset class="theme-group" data-scheme="light"><legend data-i18n="Light">Light</legend><div class="theme-grid"></div></fieldset>
-            <fieldset class="theme-group" data-scheme="dark"><legend data-i18n="Dark">Dark</legend><div class="theme-grid"></div></fieldset>
+            <!-- Solid renders choices from src/shared/themes.js. -->
+            <div id="theme-picker"></div>
           </section>
           <section class="language-settings" aria-labelledby="language-settings-title">
             <div class="settings-heading"><h2 id="language-settings-title" data-i18n="Language">Language</h2></div>
@@ -166,12 +162,14 @@
               <div class="settings-heading"><h2 id="favicon-finder-title" data-i18n="Favicon finder">Favicon finder</h2><p data-i18n="When a tool shows the 🌐 fallback, find the icon URL to put in its icon column.">When a tool shows the 🌐 fallback, find the icon URL to put in its icon column.</p></div>
               <p><a id="favicon-finder-link" class="bookmarklet-link btn btn-outline" draggable="true"><span aria-hidden="true">🔍</span> <span data-i18n="Find favicon">Find favicon</span></a></p>
               <p class="settings-help" data-i18n="Drag the link above to your bookmarks bar. Then open the page whose icon you need and click the bookmark to show its icon URL.">Drag the link above to your bookmarks bar. Then open the page whose icon you need and click the bookmark to show its icon URL.</p>
-              <details class="settings-help">
-                <summary data-i18n="If dragging does not work">If dragging does not work</summary>
-                <p data-i18n="Create a bookmark manually and paste this code as its URL.">Create a bookmark manually and paste this code as its URL.</p>
-                <textarea id="favicon-finder-code" class="bookmarklet-code textarea textarea-sm w-full" rows="3" readonly spellcheck="false" aria-label="Bookmarklet code" data-i18n-aria-label="Bookmarklet code"></textarea>
-                <div class="settings-form-actions"><button type="button" id="favicon-finder-copy" class="settings-reset btn" data-i18n="Copy code">Copy code</button></div>
-              </details>
+              <div data-disclosure class="settings-help">
+                <span data-disclosure-title data-i18n="If dragging does not work">If dragging does not work</span>
+                <div data-disclosure-content>
+                  <p data-i18n="Create a bookmark manually and paste this code as its URL.">Create a bookmark manually and paste this code as its URL.</p>
+                  <textarea id="favicon-finder-code" class="bookmarklet-code textarea textarea-sm w-full" rows="3" readonly spellcheck="false" aria-label="Bookmarklet code" data-i18n-aria-label="Bookmarklet code"></textarea>
+                  <div class="settings-form-actions"><button type="button" id="favicon-finder-copy" class="settings-reset btn" data-i18n="Copy code">Copy code</button></div>
+                </div>
+              </div>
               <p id="favicon-finder-status" class="settings-form-status" role="status" aria-live="polite"></p>
             </section>
         </div>
@@ -188,18 +186,20 @@
           <section class="display-settings github-settings" aria-labelledby="github-settings-title">
             <div class="settings-heading"><h2 id="github-settings-title">GitHub</h2><p data-i18n="Connect GitHub.com accounts to show assigned issues, review requests, and changes requested on your PRs.">Connect GitHub.com accounts to show assigned issues, review requests, and changes requested on your PRs.</p></div>
             <p class="settings-help" data-i18n="Use a fine-grained personal access token restricted to the repositories you need. Tokens are saved in GAS User Properties and are never shown again.">Use a fine-grained personal access token restricted to the repositories you need. Tokens are saved in GAS User Properties and are never shown again.</p>
-            <details class="github-pat-help settings-help">
-              <summary data-i18n="PAT setup and permissions">PAT setup and permissions</summary>
-              <ul>
-                <li data-i18n="Token name: any recognizable name (e.g. My Portal).">Token name: any recognizable name (e.g. My Portal).</li>
-                <li data-i18n="Resource owner: your account for personal use; the company organization for work.">Resource owner: your account for personal use; the company organization for work.</li>
-                <li data-i18n="Expiration: choose an expiration date.">Expiration: choose an expiration date.</li>
-                <li data-i18n="Repository access: Only select repositories → select the repositories you need.">Repository access: Only select repositories → select the repositories you need.</li>
-                <li id="github-pat-permissions" data-i18n="Permissions: Issues and Pull requests — Read-only. Metadata is included automatically.">Permissions: Issues and Pull requests — Read-only. Metadata is included automatically.</li>
-              </ul>
-              <p data-i18n="Organization approval may be required. The portal’s owner field is only a search filter.">Organization approval may be required. The portal’s owner field is only a search filter.</p>
-              <div class="github-connection-controls"><a class="link footer-link" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer"><span data-i18n="Create a fine-grained PAT">Create a fine-grained PAT</span> <!-- external-link-icon --></a><a class="link footer-link" href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens" target="_blank" rel="noopener noreferrer"><span data-i18n="GitHub token documentation">GitHub token documentation</span> <!-- external-link-icon --></a></div>
-            </details>
+            <div data-disclosure class="github-pat-help settings-help">
+              <span data-disclosure-title data-i18n="PAT setup and permissions">PAT setup and permissions</span>
+              <div data-disclosure-content>
+                <ul>
+                  <li data-i18n="Token name: any recognizable name (e.g. My Portal).">Token name: any recognizable name (e.g. My Portal).</li>
+                  <li data-i18n="Resource owner: your account for personal use; the company organization for work.">Resource owner: your account for personal use; the company organization for work.</li>
+                  <li data-i18n="Expiration: choose an expiration date.">Expiration: choose an expiration date.</li>
+                  <li data-i18n="Repository access: Only select repositories → select the repositories you need.">Repository access: Only select repositories → select the repositories you need.</li>
+                  <li id="github-pat-permissions" data-i18n="Permissions: Issues and Pull requests — Read-only. Metadata is included automatically.">Permissions: Issues and Pull requests — Read-only. Metadata is included automatically.</li>
+                </ul>
+                <p data-i18n="Organization approval may be required. The portal’s owner field is only a search filter.">Organization approval may be required. The portal’s owner field is only a search filter.</p>
+                <div class="github-connection-controls"><a class="link footer-link" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer"><span data-i18n="Create a fine-grained PAT">Create a fine-grained PAT</span> <!-- external-link-icon --></a><a class="link footer-link" href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens" target="_blank" rel="noopener noreferrer"><span data-i18n="GitHub token documentation">GitHub token documentation</span> <!-- external-link-icon --></a></div>
+              </div>
+            </div>
             <div id="github-settings-loading" class="refresh-catalog actions-loading" role="status" aria-label="Loading…" data-i18n-aria-label="Loading…" aria-busy="true" hidden><!-- refresh-cw-icon --></div>
             <ul id="github-connections" class="github-connections"></ul>
             <button type="button" id="add-github" class="action-text-button btn btn-outline btn-sm" data-i18n="Add connection" disabled>Add connection</button>

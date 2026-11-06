@@ -107,6 +107,36 @@ Historical record of manual verification for the 0.1.x releases. It is not updat
 - Added a regression test for timestamp clicks, forced refresh, duplicate-click prevention while loading, and successful timestamp restoration.
 - Lint, type checks, build, and all 133 tests passed; consumer build passed. Browser verification confirmed timestamp-triggered refresh, the combined hover background, and the updated time. No production push/deploy was performed.
 
+## Solid and Kobalte migration / 2026-11-06
+
+- Added Solid 1.9.18, Kobalte 0.13.14, and the Solid Vite plugin. Source development, linked consumer previews, and production builds compile the same components.
+- Moved catalog cards, rows, related links, tags, warnings, and Action Items lists into Solid components. Keyed rendering retains matching cards and loaded icons; reconciled action results retain rows and focus through refresh and language changes.
+- Replaced handwritten tab keyboard handling with Kobalte tabs. Existing server-rendered panels stay mounted to preserve settings drafts; GAS history routing and local Back/Forward remain intact.
+- Kept existing RPC controllers and settings forms. OAuth scopes, server APIs, cache semantics, and the seven-file GAS output contract are unchanged.
+- Lint, browser/GAS type checks, build, and all 279 tests passed. Added DOM identity and focus regression coverage; browser tests now compile source with the production JSX transform.
+- Chromium checks passed for keyboard navigation, history, drafts, Japanese switching, refresh, empty intro spacing, and 1280px/390px/320px layouts. Reviewed light/dark screenshots of cards, lists, Action Items, and Appearance at 1280px and 390px. No page errors were observed.
+- Client.html grew from 64,415 to 127,945 bytes before compression; the new file is 42,872 bytes with local gzip compression. This measures bundle size, not GAS transfer size or live startup latency. Framework code is bundled locally without CDN requests.
+- No production push/deploy was performed. Restart an already-running preview after this Vite plugin change.
+
+## Kobalte selection controls and tooltips / 2026-11-06
+
+- Added a shared Tooltip component for refresh buttons, Settings, Cards/List, and related-link descriptions. It supports pointer hover, keyboard focus, Escape, live translation, and rendering outside scrolling tables. Related-link hints can fall back above or below the trigger when there is insufficient space on the left.
+- Migrated Cards/List to an exclusive Segmented Control, theme cards to a Radio Group, and selected tags to a multiple Toggle Group. The All button remains a separate clear-selection action. Native radio inputs retain accessible labels, and refresh disables view changes.
+- Preserved theme persistence, optimistic preview, rollback after failure/timeouts, catalog filtering, external-link validation, timestamp descriptions, and the seven-file GAS output. Removed duplicated theme markup from the HTML shell.
+- Kept simple buttons, text inputs, selects, and disclosure elements native. Shared behavior is extracted where needed rather than adding wrappers without a concrete benefit.
+- Lint, browser/GAS type checks, build, and all 283 tests passed. Added selection, tooltip keyboard dismissal/localization, accessible group names, and loading-failure language coverage.
+- Chromium verification covered pointer/focus tooltips, Escape, radio arrow keys, tag keyboard selection, persisted themes, Japanese labels, and 1280px/390px/320px layouts. Light/dark screenshot checks covered cards, lists, Action Items, and Appearance.
+- Client.html is 180,966 bytes before compression and 59,303 bytes with local gzip compression (previous migration: 127,945 / 42,872 bytes). Most additional runtime comes from the new interaction and floating-positioning primitives. These measurements are not live GAS transfer or latency measurements.
+- No production push/deploy was performed.
+
+## Animated Kobalte disclosures / 2026-11-06
+
+- Replaced native details in catalog warnings, Action Items errors, PAT instructions, and favicon-copy help with one Collapsible component. Kept static content nodes mounted for existing controllers and code-field selection.
+- Added a 240ms intrinsic-height transition, opacity easing, chevron rotation, and a quiet hover surface. Reduced-motion preferences disable transitions; closed content is inert and hidden from assistive technology.
+- Preserved default-collapsed supplementary help and partial errors, automatic expansion for total Action Items failure, user toggles during ordinary updates, localization, and manual clipboard fallback.
+- Lint, type checks, the seven-file build, and all 286 tests passed, including the packaged preview. Chromium verified intermediate opening/closing heights, Enter/Space, rapid reversals, reduced motion, inert content, and 390px/320px layouts without page errors.
+- No production push/deploy was performed.
+
 ## Before publishing
 
 - Configure the Git remote and verify package.json's repository / homepage / bugs fields. Distribute tarballs through GitHub Releases; do not publish to the npm registry.

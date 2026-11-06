@@ -90,12 +90,12 @@ test('Switch labels, accessibility text, warnings, and default content without l
   assert.equal(doc.documentElement.lang, 'en');
   assert.equal(doc.getElementById('tab-settings').getAttribute('aria-label'), 'Settings');
   assert.equal(doc.getElementById('refresh-catalog').getAttribute('aria-label'), 'Fetch latest');
-  assert.equal(doc.getElementById('refresh-catalog').title, 'Fetch latest');
-  assert.equal(doc.getElementById('refresh-actions').title, 'Fetch latest');
+  assert.equal(doc.getElementById('refresh-catalog').title, '', 'Kobalte supplies the tooltip without a duplicate native title');
+  assert.equal(doc.getElementById('refresh-actions').title, '', 'Kobalte supplies the tooltip without a duplicate native title');
   assert.equal(doc.getElementById('refresh-actions').getAttribute('aria-label'), 'Fetch latest');
   assert.equal(doc.getElementById('search').placeholder, 'Search by name, description, or tags');
   assert.equal(doc.getElementById('search').value, 'Guide');
-  assert.equal(doc.getElementById('view-list').getAttribute('aria-pressed'), 'true');
+  assert.equal(doc.getElementById('view-list').checked, true);
   assert.equal(doc.getElementById('tab-settings').getAttribute('aria-selected'), 'true');
   assert.equal(doc.getElementById('setting-headline').value, 'Unsaved custom headline');
   assert.equal(doc.getElementById('page-title').textContent, 'One place to start your workday.');
@@ -108,8 +108,8 @@ test('Switch labels, accessibility text, warnings, and default content without l
   app.languageRequests[1].success({ ok: true, language: 'ja' });
   assert.equal(doc.getElementById('tab-settings').getAttribute('aria-label'), '設定');
   assert.equal(doc.getElementById('refresh-catalog').getAttribute('aria-label'), '最新データを取得');
-  assert.equal(doc.getElementById('refresh-catalog').title, '最新データを取得');
-  assert.equal(doc.getElementById('refresh-actions').title, '最新データを取得');
+  assert.equal(doc.getElementById('refresh-catalog').title, '', 'Kobalte supplies the tooltip without a duplicate native title');
+  assert.equal(doc.getElementById('refresh-actions').title, '', 'Kobalte supplies the tooltip without a duplicate native title');
   assert.equal(doc.getElementById('refresh-actions').getAttribute('aria-label'), '最新データを取得');
   assert.equal(doc.getElementById('setting-headline').value, 'Unsaved custom headline');
   assert.match(doc.querySelector('#table-view thead').textContent, /ツール.*説明.*Tags.*関連リンク/);

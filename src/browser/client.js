@@ -1,4 +1,6 @@
-// Loads, validates, filters, and renders the tool catalog. Cards and rows come from tool-view.js.
+import { mountCatalogView } from './catalog-view';
+
+// Coordinates catalog RPCs and validation; Solid owns the dynamic lists.
 (() => {
   'use strict';
   /** @param {string} key @param {Record<string, string | number>} [values] */
@@ -51,46 +53,23 @@
     reset.hidden = !canReset;
   }
 
-  function renderTags() {
-    const container = element('tags');
-    container.replaceChildren();
+  const updateView = mountCatalogView((values) => {
+    selectedTags = new Set(values);
+    renderTools();
+  }, (mode) => {
+    view = mode;
+    renderTools();
+  });
+
+  /** @param {CatalogTool[]} visible */
+  function updateLists(visible) {
     const tags = [...new Set(tools.flatMap((tool) => tool.tags))];
     element('tag-filter').hidden = tags.length === 0;
-    /** @param {string} label @param {string | null} value */
-    const addButton = (label, value) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'tag-button btn btn-sm';
-      button.textContent = label;
-      button.setAttribute('aria-pressed', String(value === null ? selectedTags.size === 0 : selectedTags.has(value)));
-      button.addEventListener('click', () => {
-        if (value === null) selectedTags.clear();
-        else if (selectedTags.has(value)) selectedTags.delete(value);
-        else selectedTags.add(value);
-        // Keep the clicked button in place to preserve keyboard focus.
-        container.querySelectorAll('button').forEach((item, index) => {
-          item.setAttribute('aria-pressed', String(index === 0 ? selectedTags.size === 0 : selectedTags.has(tags[index - 1])));
-        });
-        renderTools();
-      });
-      container.append(button);
-    };
-    addButton(t("All"), null);
-    tags.forEach((tag) => addButton(tag, tag));
-  }
-
-  function renderWarnings() {
     element('warnings').hidden = issues.length === 0;
     element('warning-summary').textContent = t('Entries not displayed: {count}. Check the spreadsheet.', { count: issues.length });
-    const list = element('warning-list');
-    list.replaceChildren();
-    issues.forEach((issue) => {
-      const item = document.createElement('li');
-      const message = PortalI18n.translate(issue.message, document.documentElement.lang);
-      // Row 0 marks entries the browser skipped; they have no spreadsheet row number.
-      item.textContent = issue.row > 0 ? t('Row {row}: {message}', { row: issue.row, message }) : message;
-      list.append(item);
-    });
+    updateView({ disabled: search.disabled, tools: visible, tags, selected: new Set(selectedTags), issues, view,
+      language: document.documentElement.lang,
+      unblocked: PortalUrlSchemes.normalizeUnblocked(element('url-scheme-settings').dataset.savedValue) });
   }
 
   function renderTools() {
@@ -99,15 +78,12 @@
       [...selectedTags].every((tag) => tool.tags.includes(tag)) &&
       normalize([tool.name, tool.description, ...tool.tags, ...(tool.children || []).map((child) => child.name)].join(' ')).includes(query));
     const list = element('tools');
-    list.replaceChildren();
-    const rows = element('tool-rows');
-    rows.replaceChildren();
     list.hidden = view !== 'cards' || visible.length === 0;
     element('table-view').hidden = view !== 'list' || visible.length === 0;
     const count = element('count');
     count.style.setProperty('--count-digits', String(String(tools.length).length));
     count.textContent = t('{visible} / {total} items', { visible: visible.length, total: tools.length });
-    visible.forEach((tool) => view === 'cards' ? list.append(PortalToolView.card(tool)) : rows.append(PortalToolView.tableRow(tool)));
+    updateLists(visible);
     element('status').hidden = visible.length > 0;
     if (tools.length === 0) {
       showStatus(issues.length ? t("No tools can be displayed") : t('No items to display'),
@@ -129,20 +105,16 @@
   /** @param {boolean} value */
   function setControlsDisabled(value) {
     search.disabled = value;
-    document.querySelectorAll('.view-switch button').forEach((button) => {
-      /** @type {HTMLButtonElement} */ (button).disabled = value;
-    });
+    updateView((previous) => ({ ...previous, disabled: value }));
   }
 
   /** @param {boolean} [preserveCount] */
   function clearResults(preserveCount = false) {
     resultAnimation?.cancel();
     resultSignature = '';
-    element('tools').replaceChildren();
-    element('tool-rows').replaceChildren();
+    updateView((previous) => ({ ...previous, tools: [], tags: [], issues: [] }));
     element('tools').hidden = true;
     element('table-view').hidden = true;
-    element('tags').replaceChildren();
     element('tag-filter').hidden = true;
     element('warnings').hidden = true;
     if (!preserveCount) element('count').textContent = '';
@@ -230,8 +202,6 @@
     const availableTags = new Set(tools.flatMap((tool) => tool.tags));
     selectedTags = new Set([...selectedTags].filter((tag) => availableTags.has(tag)));
     setLoading(false);
-    renderTags();
-    renderWarnings();
     renderTools();
   }
 
@@ -270,17 +240,9 @@
 
   refresh.addEventListener('click', () => { if (!refresh.disabled) loadCatalog(true); });
   search.addEventListener('input', renderTools);
-  /** @type {('cards' | 'list')[]} */
-  const views = ['cards', 'list'];
-  views.forEach((mode) => element('view-' + mode).addEventListener('click', () => {
-    view = mode;
-    views.forEach((item) => element('view-' + item).setAttribute('aria-pressed', String(item === view)));
-    renderTools();
-  }));
   reset.addEventListener('click', () => {
     search.value = '';
     selectedTags.clear();
-    renderTags();
     renderTools();
     search.focus();
   });
@@ -289,9 +251,10 @@
   });
   document.addEventListener('portal:languagechange', () => {
     renderFreshness();
-    if (!catalogReady) return;
-    renderTags();
-    renderWarnings();
+    if (!catalogReady) {
+      updateView((previous) => ({ ...previous, language: document.documentElement.lang }));
+      return;
+    }
     renderTools();
   });
   const initial = document.getElementById('initial-catalog')?.textContent?.trim();

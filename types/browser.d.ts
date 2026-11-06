@@ -66,10 +66,6 @@ declare var PortalMotion: {
   appear(target: HTMLElement): Animation | undefined;
   onReduce(callback: () => void): void;
 };
-declare var PortalToolView: {
-  card(tool: CatalogTool): HTMLLIElement;
-  tableRow(tool: CatalogTool): HTMLTableRowElement;
-};
 interface GasLocation { hash: string }
 interface GasHistory {
   push(state: null, params: null, hash: string): void;

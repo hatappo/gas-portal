@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { browser } from './helpers.mjs';
+import { browser, bundleBrowser } from './helpers.mjs';
 
-const client = ['save-control', 'language', 'motion', 'navigation', 'tool-view', 'client', 'action-items'].map((name) => readFileSync(`src/browser/${name}.js`, 'utf8')).join('\n');
+const client = await bundleBrowser(['save-control', 'language', 'motion', 'navigation', 'client', 'action-items']);
 const item = { service: 'github', serviceLabel: 'GitHub', id: 'acme/portal#1', title: 'Review changes', url: 'https://github.com/acme/portal/pull/1', context: 'acme/portal #1', updatedAt: '2026-11-04T12:00:00Z', reasons: ['Direct review'] };
 const result = (items = [item], fetchedAt = 1700000000000) => ({ items, notices: [], fetchedAt });
 function fixture(t, setup = () => {}) {
@@ -92,4 +91,57 @@ test('Changing sources cancels old batches and removed credentials cannot restor
   assert.equal(app.rows().length, 0);
   assert.match(app.document.getElementById('action-items').textContent, /サービスを接続/);
   assert.equal(app.refresh.disabled, true);
+});
+
+test('Solid retains focused rows through loading, language changes and refreshed data', (t) => {
+  const app = fixture(t);
+  app.api.setSources('github', [app.source('a')]); app.start();
+  app.calls[0].done(result());
+  const row = app.rows()[0];
+  const link = row.querySelector('a');
+  link.focus();
+  app.refresh.click();
+  assert.equal(app.rows()[0], row);
+  app.document.documentElement.lang = 'en';
+  app.document.dispatchEvent(new app.dom.window.Event('portal:languagechange'));
+  assert.equal(app.rows()[0], row);
+  assert.equal(app.document.activeElement, link);
+  app.calls[1].done(result([{ ...item, title: 'New title', reasons: ['Changes requested'] }]));
+  assert.equal(app.rows()[0], row);
+  assert.equal(app.document.activeElement, link);
+  assert.match(link.textContent, /New title/);
+  assert.equal(row.querySelector('.action-item-kind').textContent, 'Changes requested');
+});
+
+test('Reconciled notices update their source label and error text after a connection changes', (t) => {
+  const app = fixture(t);
+  app.api.setSources('github', [app.source('a')]); app.start();
+  app.calls[0].done({ items: [], notices: [{ message: 'First failure' }] });
+  const changed = { ...app.source('a'), label: 'new-owner@octocat' };
+  app.api.setSources('github', [changed]);
+  app.calls[1].done({ items: [], notices: [{ message: 'Second failure' }] });
+  const text = app.document.getElementById('actions-status').textContent;
+  assert.match(text, /new-owner@octocat/);
+  assert.match(text, /Second failure/);
+  assert.doesNotMatch(text, /a@octocat|First failure/);
+});
+
+test('Error disclosure preserves user toggles and expands when all results become unavailable', (t) => {
+  const app = fixture(t);
+  app.api.setSources('github', [app.source('a')]); app.start();
+  const notice = { message: 'Could not retrieve data from this connection. Try again.' };
+  app.calls[0].done({ ...result(), notices: [notice] });
+  const trigger = app.document.querySelector('#actions-status .disclosure-trigger');
+  assert.equal(trigger.getAttribute('aria-expanded'), 'false', 'Partial results start collapsed');
+  trigger.click();
+  app.document.documentElement.lang = 'en';
+  app.document.dispatchEvent(new app.dom.window.Event('portal:languagechange'));
+  assert.equal(trigger.getAttribute('aria-expanded'), 'true');
+  trigger.click();
+  app.refresh.click();
+  app.calls[1].done({ items: [], notices: [notice] });
+  assert.equal(trigger.getAttribute('aria-expanded'), 'true', 'Total failure reveals its explanation');
+  app.refresh.click();
+  app.calls[2].done(result());
+  assert.equal(app.document.querySelector('#actions-status .portal-disclosure'), null);
 });

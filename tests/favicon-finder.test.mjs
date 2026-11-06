@@ -80,10 +80,10 @@ test('Copy the code, or select it for manual copying when the clipboard is unava
     // The button is only reachable with Settings → Tools & Links open.
     for (const id of ['settings-panel', 'settings-tools-panel']) app.document.getElementById(id).hidden = false;
     const code = app.document.getElementById('favicon-finder-code');
-    assert.equal(code.closest('details').open, false);
+    assert.equal(code.closest('.disclosure-content').getAttribute('aria-hidden'), 'true');
     app.document.getElementById('favicon-finder-copy').click();
     await new Promise((resolve) => setImmediate(resolve));
-    assert.equal(code.closest('details').open, true, 'Open the collapsed section to show the selection');
+    assert.equal(code.closest('.disclosure-content').getAttribute('aria-hidden'), 'false', 'Open the collapsed section to show the selection');
     assert.equal(app.document.activeElement, code);
     assert.deepEqual([code.selectionStart, code.selectionEnd], [0, code.value.length]);
     assert.match(app.document.getElementById('favicon-finder-status').textContent, /⌘C/);
