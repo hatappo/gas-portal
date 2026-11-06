@@ -1,9 +1,12 @@
 import { createInterface } from 'node:readline';
 import { Writable } from 'node:stream';
+import { parseArgs } from 'node:util';
 
-const HELP = `Usage: npm run probe:slack
+const HELP = `Usage: npm run probe:slack -- [--query "is:saved"]
 
-Read-only discovery probe for Slack saved messages (search.messages, is:saved).
+Read-only Slack message-search probe (search.messages; defaults to is:saved).
+Use --query "is:to-do" to test To-do search, or add date/channel filters.
+Date filters refer to message dates, not the date a bookmark was added.
 Requires a User OAuth Token with search:read. Paste it at the hidden prompt.
 No token arguments, environment files, or saved credentials are used.
 Outputs account IDs and up to 100 message permalinks, without message bodies.
@@ -54,13 +57,31 @@ async function request(method, token, params, fetchImpl) {
   return data;
 }
 
-export async function probeSavedMessages(token, fetchImpl = fetch) {
+function validateQuery(value) {
+  if (typeof value !== 'string' || !value.trim() || value.length > 1000 || /[\r\n\0]/.test(value)) {
+    throw new ProbeError('Provide a non-empty, single-line query of at most 1000 characters.');
+  }
+  return value.trim();
+}
+
+export function parseProbeOptions(args) {
+  let values;
+  try {
+    ({ values } = parseArgs({ args, options: { query: { type: 'string' }, help: { type: 'boolean' } }, allowPositionals: false, strict: true }));
+  } catch {
+    throw new ProbeError('Unsupported arguments. Use --help; never pass a token as an argument.');
+  }
+  return { help: values.help ?? false, query: validateQuery(values.query ?? 'is:saved') };
+}
+
+export async function probeMessages(token, fetchImpl = fetch, query = 'is:saved') {
+  query = validateQuery(query);
   token = token.trim();
   if (!/^xoxp-[A-Za-z0-9-]+$/.test(token)) throw new ProbeError('Enter a User OAuth Token beginning with xoxp-.');
   const identity = await request('auth.test', token, {}, fetchImpl);
   if (identity.bot_id || !identity.user_id || !identity.team_id) throw new ProbeError('The token did not identify a workspace user.');
   const data = await request('search.messages', token, {
-    query: 'is:saved', count: '100', cursor: '*', sort: 'timestamp', sort_dir: 'desc', highlight: 'false',
+    query, count: '100', cursor: '*', sort: 'timestamp', sort_dir: 'desc', highlight: 'false',
   }, fetchImpl);
   const messages = data.messages;
   if (!Array.isArray(messages?.matches)) throw new ProbeError('search.messages: unexpected response; no message list was returned.');
@@ -75,7 +96,8 @@ export async function probeSavedMessages(token, fetchImpl = fetch) {
     workspaceId: identity.team_id,
     userId: identity.user_id,
     method: 'search.messages',
-    query: 'is:saved',
+    query,
+    echoedQuery: typeof data.query === 'string' ? data.query : null,
     fetchedAt: new Date().toISOString(),
     returnedCount: messages.matches.length,
     reportedSearchTotal: reportedTotal,
@@ -109,14 +131,13 @@ export async function readHiddenToken(input = process.stdin, output = process.st
 
 if (import.meta.main) {
   try {
-    const args = process.argv.slice(2);
-    if (args.length === 1 && args[0] === '--help') {
+    const options = parseProbeOptions(process.argv.slice(2));
+    if (options.help) {
       console.log(HELP);
-    } else if (args.length) {
-      throw new ProbeError('Unsupported arguments. Use --help; never pass a token as an argument.');
+
     } else {
       const token = await readHiddenToken();
-      const result = await probeSavedMessages(token);
+      const result = await probeMessages(token, fetch, options.query);
       // Defense in depth: never echo the token even if an upstream field contains it.
       console.log(JSON.stringify(result, null, 2).replaceAll(token.trim(), '[REDACTED]'));
     }

@@ -145,11 +145,20 @@ Before implementing [Slack Action Items (#6)](https://github.com/hatappo/gas-por
 4. In this repository, run `npm run probe:slack` and paste the token at the hidden prompt. Do not put it in command arguments, files, chat, issues, or screenshots. Ctrl+C cancels. Each run prompts again; the token is not persisted.
 5. Compare the returned permalinks with your own Saved/To-dos in Slack. The script reports workspace/user IDs so you can confirm the account. It omits message bodies, but output still contains private message links; keep it local.
 
-The probe calls `auth.test`, then `search.messages` with `is:saved`. It fetches at most 100 results without automatic pagination or retries. `reportedSearchTotal` is Slack's search count, not a task count; `hasMore: true` means this page is incomplete, and `null` means completion cannot be determined. Zero results do not establish that your To-do list is empty. On `missing_scope`, add the **user** scope and reinstall; on rate limiting, wait for the reported delay.
+The probe calls `auth.test`, then `search.messages` with `is:saved` by default. It fetches at most 100 results without automatic pagination or retries. `reportedSearchTotal` is Slack's search count, not a task count; `hasMore: true` means this page is incomplete, and `null` means completion cannot be determined. Zero results do not establish that your To-do list is empty. On `missing_scope`, add the **user** scope and reinstall; on rate limiting, wait for the reported delay.
 
 Test a known saved public-channel message, a private-channel message/DM, and an unsaved control message. Save/unsave the same message and rerun after allowing for indexing delay. Separately test message-backed To-dos, completed To-dos, manual To-dos, and saved files. Record which appear: message search is not guaranteed to cover To-do lifecycle fields, manual tasks or file-only saves.
 
-This probe deliberately tests the documented [legacy search.messages endpoint](https://docs.slack.dev/reference/methods/search.messages/); support for `is:saved` still needs live verification. The newer [Real-time Search API](https://docs.slack.dev/apis/web-api/real-time-search-api/) explicitly supports saved-message search but has AI-app and distribution requirements that remain unresolved for this portal. Do not treat a successful legacy search as confirmation of eligibility for that API.
+To compare search modes or investigate a missing bookmark, pass a query:
+
+```sh
+npm run probe:slack -- --query 'is:to-do'
+npm run probe:slack -- --query 'is:saved before:2026-10-10'
+```
+
+Use exactly the same query in the Slack UI and compare the resulting message links, not only counts. Date filters apply to the message date, not when it was bookmarked. If a known old message is still missing, search for a distinctive phrase from it in its channel **without** `is:saved`, in both the UI and the probe. This distinguishes a general API visibility/search mismatch from one specific to saved-item filtering. `echoedQuery` records Slack's returned query when present; an echo or a successful response does not prove every modifier was applied. Verify `is:to-do` with a known To-do and an ordinary message as a negative control, then compare after marking the To-do complete. This remains message search; it cannot establish coverage of manually entered To-dos.
+
+This probe deliberately tests the documented [legacy search.messages endpoint](https://docs.slack.dev/reference/methods/search.messages/); a user-run probe has returned two newly saved messages, while the same UI search showed a third older bookmark that was absent from the API result. Complete coverage and `is:to-do` support remain unverified. The newer [Real-time Search API](https://docs.slack.dev/apis/web-api/real-time-search-api/) explicitly supports saved-message search but has AI-app and distribution requirements that remain unresolved for this portal. Do not treat a successful legacy search as confirmation of eligibility for that API.
 
 ## Workflow dependencies
 
