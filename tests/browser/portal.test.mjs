@@ -169,7 +169,7 @@ test('Action type chips filter with OR, retain keyboard focus and show readable 
   assert.equal(await page.locator('.action-item-list > li').count(), 2);
   await page.getByRole('button', { name: 'Slack Bookmark', exact: true }).click();
   assert.equal(await page.locator('.action-item-list > li').count(), 4);
-  assert.equal(await page.locator('#actions-count').textContent(), '4 / 7 shown');
+  assert.equal(await page.locator('#actions-count').textContent(), '4 / 7 items');
   await page.locator('#refresh-actions').click();
   await page.waitForSelector('#refresh-actions[aria-busy="false"]');
   assert.equal(await page.locator('.action-item-list > li').count(), 4);
@@ -179,14 +179,54 @@ test('Action type chips filter with OR, retain keyboard focus and show readable 
       await page.setViewportSize({ width, height: 900 });
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     }
-    const colors = await page.locator('.action-item-kind').evaluateAll(nodes => nodes.map(node => ({ bg: getComputedStyle(node).backgroundColor, fg: getComputedStyle(node).color })));
-    assert.ok(new Set(colors.map(color => color.bg)).size >= 2);
+    const colors = await page.locator('.action-item-kind').evaluateAll(nodes => {
+      const canvas = document.createElement('canvas'); canvas.width = canvas.height = 1;
+      const ctx = canvas.getContext('2d');
+      const rgb = value => { ctx.clearRect(0, 0, 1, 1); ctx.fillStyle = value; ctx.fillRect(0, 0, 1, 1); return [...ctx.getImageData(0, 0, 1, 1).data].slice(0, 3); };
+      return nodes.map(node => ({ bg: rgb(getComputedStyle(node).backgroundColor), fg: rgb(getComputedStyle(node).color) }));
+    });
+    assert.ok(new Set(colors.map(color => color.bg.join())).size >= 2);
     for (const { bg, fg } of colors) {
-      const luminance = rgb => rgb.match(/[\d.]+/g).slice(0, 3).map(Number).map(value => value / 255).map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
+      const luminance = rgb => rgb.map(value => value / 255).map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
       const values = [luminance(bg), luminance(fg)].sort((a, b) => b - a);
       assert.ok((values[0] + .05) / (values[1] + .05) >= 4.5, 'Badges must retain readable contrast');
     }
   }
   await page.locator('#action-filters button').filter({ hasText: /^All$/ }).click();
   assert.equal(await page.locator('.action-item-list > li').count(), 7);
+});
+
+test('Tools and Actions share counter, timestamp, filter and refresh styling', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  const selectors = {
+    tools: ['#count', '#catalog-freshness', '#refresh-catalog', '#tags .tag-button[aria-pressed="true"]', '#tag-filter', '.directory-toolbar', '.filter-toolbar'],
+    actions: ['#actions-count', '#actions-freshness', '#refresh-actions', '#action-filters .tag-button[aria-pressed="true"]', '.action-type-filter', '.actions-toolbar', '.actions-summary'],
+  };
+  for (const width of [1280, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    const controls = {};
+    for (const tab of ['tools', 'actions']) {
+      await page.locator('#tab-' + tab).click();
+      if (tab === 'actions') await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
+      controls[tab] = await page.evaluate(selectors => {
+        const style = (selector, keys) => {
+          const value = getComputedStyle(document.querySelector(selector));
+          return Object.fromEntries(keys.map(key => [key, value[key]]));
+        };
+        const button = ['fontSize', 'fontWeight', 'borderRadius', 'minHeight', 'paddingInlineStart', 'paddingInlineEnd'];
+        return {
+          counter: style(selectors[0], ['fontSize', 'fontFamily', 'fontVariantNumeric', 'minWidth']),
+          time: document.querySelector(selectors[1]).textContent,
+          refresh: style(selectors[2], button),
+          filter: style(selectors[3], [...button, 'backgroundColor', 'color', 'boxShadow']),
+          row: style(selectors[4], ['gap', 'flexWrap', 'paddingBottom']),
+          toolbar: style(selectors[5], ['gap', 'marginBottom']),
+          summary: style(selectors[6], ['gap']),
+        };
+      }, selectors[tab]);
+      assert.match(controls[tab].time, /^Retrieved \d{2}:\d{2}$/);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${tab} at ${width}px`);
+    }
+    for (const key of ['counter', 'refresh', 'filter', 'row', 'toolbar', 'summary']) assert.deepEqual(controls.tools[key], controls.actions[key], `${key} at ${width}px`);
+  }
 });

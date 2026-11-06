@@ -166,7 +166,7 @@ test('Keep filters and List view during forced refresh, prevent duplicate reques
   assert.equal(refresh.disabled, true);
   assert.equal(requests[0].forceRefresh, false);
   requests[0].success({ ...catalog, cache: { hit: true, fetchedAt: 1700000000000 } });
-  assert.match(document.querySelector('#catalog-freshness').textContent, /キャッシュ/);
+  assert.match(document.querySelector('#catalog-freshness').title, /キャッシュ/);
   document.querySelector('#search').value = 'guide';
   document.querySelector('#search').dispatchEvent(new dom.window.Event('input'));
   document.querySelector('#view-list').click();
@@ -187,7 +187,7 @@ test('Keep filters and List view during forced refresh, prevent duplicate reques
   assert.equal(document.querySelector('#search').value, 'guide');
   assert.equal(document.querySelector('#view-list').checked, true);
   assert.equal(document.querySelectorAll('#tool-rows tr').length, 1);
-  assert.doesNotMatch(document.querySelector('#catalog-freshness').textContent, /キャッシュ/);
+  assert.doesNotMatch(document.querySelector('#catalog-freshness').title, /キャッシュ/);
   assert.equal(refresh.style.minWidth, '174px');
   assert.equal(refresh.getAttribute('aria-busy'), 'false');
   refresh.click();

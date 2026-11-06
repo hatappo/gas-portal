@@ -2,9 +2,8 @@
 globalThis.PortalI18n = (() => {
   /** @type {Record<string, string>} */
   const messages = {
-  "Types (match any)": "種類（いずれか）",
+  "Filter by tags (match all)": "タグで絞り込み（すべてに一致）",
   "Filter by type (match any)": "種類で絞り込み（いずれかに一致）",
-  "{count} / {total} shown": "{count} / {total} 件を表示",
   "No items match the selected types.": "選択した種類に一致する項目はありません。",
 
   "Search results may differ from Slack’s Saved view. Messages are ordered by posting time.": "Slack のブックマーク専用画面とは結果が異なる場合があります。投稿日時順に表示します。",
@@ -86,7 +85,6 @@ globalThis.PortalI18n = (() => {
   "6 hours": "6時間",
   "Only part of the results could be retrieved.": "取得上限や検索の制限により、一部の結果のみ表示しています。",
   "{visible} / {total} items": "{visible} / {total} 件",
-  "{count} shown": "{count} 件を表示",
   "Some results could not be retrieved.": "一部の結果を取得できませんでした。",
   "Could not retrieve data from this connection. Try again.": "この接続からデータを取得できませんでした。再試行してください。",
   "No action items right now.": "現在、対応が必要な項目はありません。",

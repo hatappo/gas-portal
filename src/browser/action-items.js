@@ -1,3 +1,4 @@
+import { renderListFreshness } from './list-presentation.js';
 import { mountActionView } from './action-view';
 
 export function initializeActions() {
@@ -42,9 +43,11 @@ export function initializeActions() {
       }
     }
     const items = [...unique.values()].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt) || (a.service + ':' + a.id).localeCompare(b.service + ':' + b.id));
-    const freshness = el('actions-freshness');
-    freshness.hidden = timestamps.length === 0;
-    freshness.textContent = timestamps.length ? new Intl.DateTimeFormat(document.documentElement.lang, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(Math.min(...timestamps)) : '';
+    renderListFreshness(el('actions-freshness'), {
+      fetchedAt: timestamps.length ? Math.min(...timestamps) : undefined,
+      cached: timestamps.length > 0 && [...results.values()].filter(result => result.fetchedAt !== undefined).every(result => result.cached === true),
+      oldest: sources.size > 1,
+    }, document.documentElement.lang);
     el('actions-status').hidden = !notices.length;
     updateView({ items, notices, moreSources, pending, hasResults: results.size > 0, connected: sources.size > 0, language: document.documentElement.lang });
   }

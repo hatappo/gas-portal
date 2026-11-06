@@ -27,7 +27,7 @@ test('Fetch all connections in parallel, commit once, and deduplicate across con
   app.calls[0].done(result());
   assert.equal(app.rows().length, 1);
   assert.equal(app.rows()[0].querySelectorAll('.action-item-kind').length, 2);
-  assert.equal(app.document.getElementById('actions-count').textContent, '1 / 1 件を表示');
+  assert.equal(app.document.getElementById('actions-count').textContent, '1 / 1 件');
   assert.equal(app.refresh.disabled, false);
   const snapshot = app.document.getElementById('action-items').innerHTML;
   app.refresh.click(); app.refresh.click();
@@ -48,7 +48,7 @@ test('Combine services without ID collisions, sort by update time, and show the 
   assert.equal(app.rows().length, 2);
   assert.match(app.rows()[0].textContent, /Meeting/);
   assert.equal(app.rows()[0].querySelector('.action-service').textContent, 'Google Calendar');
-  assert.equal(app.document.getElementById('actions-freshness').textContent, new Intl.DateTimeFormat('ja', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(1700000000000));
+  assert.equal(app.document.getElementById('actions-freshness').textContent, new Intl.DateTimeFormat('ja', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(1700000000000) + ' 取得');
   app.refresh.click();
   assert.equal(app.calls.length, 4);
   assert.ok(app.calls.slice(2).every((call) => call.force));
@@ -157,7 +157,7 @@ test('Action type filters use OR across services and reasons without requests or
   assert.deepEqual([...app.document.querySelectorAll('.action-item-kind')].map(node => node.textContent), ['GitHub 担当 Issue', 'GitHub 直接のレビュー依頼', 'GitHub チームへのレビュー依頼', 'Slack ブックマーク']);
   filter('GitHub 担当 Issue').click();
   assert.equal(app.rows().length, 1);
-  assert.equal(app.document.getElementById('actions-count').textContent, '1 / 3 件を表示');
+  assert.equal(app.document.getElementById('actions-count').textContent, '1 / 3 件');
   filter('Slack ブックマーク').click();
   assert.equal(app.rows().length, 2, 'Either selected type matches');
   filter('GitHub 直接のレビュー依頼').click(); filter('GitHub チームへのレビュー依頼').click();
@@ -197,4 +197,22 @@ test('Action type identity includes the service even when reason names match', t
   app.document.querySelector('.action-type-button').click();
   assert.equal(app.rows().length, 1);
   assert.match(app.rows()[0].textContent, /GitHub/);
+});
+
+test('Tools and Actions share count and retrieval copy in both languages while keeping source details in tooltips', t => {
+  const app = fixture(t);
+  const fetchedAt = 1700000000000;
+  app.requests[0].success({ ok: true, tools: [{ id: 'one', name: 'One', url: 'https://example.com', description: '', tags: [] }], issues: [], cache: { hit: true, fetchedAt } });
+  app.api.setSources('github', [app.source('a')]); app.start();
+  app.calls[0].done({ ...result([item], fetchedAt), cached: true });
+  for (const language of ['ja', 'en']) {
+    app.document.documentElement.lang = language;
+    app.document.dispatchEvent(new app.dom.window.Event('portal:languagechange'));
+    assert.equal(app.document.getElementById('count').textContent, app.document.getElementById('actions-count').textContent);
+    assert.equal(app.document.getElementById('catalog-freshness').textContent, app.document.getElementById('actions-freshness').textContent);
+    assert.equal(app.document.getElementById('catalog-freshness').title, app.document.getElementById('actions-freshness').title);
+    assert.doesNotMatch(app.document.getElementById('catalog-freshness').textContent, /Cached|キャッシュ/);
+    assert.match(app.document.getElementById('catalog-freshness').title, /Cached|キャッシュ/);
+    for (const kind of ['catalog', 'actions']) assert.ok(app.document.getElementById('refresh-' + kind).getAttribute('aria-describedby').includes(kind + '-freshness'));
+  }
 });

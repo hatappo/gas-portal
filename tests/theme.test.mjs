@@ -174,3 +174,15 @@ test('Every theme is grouped by its own color scheme and keeps 4.5:1 contrast wh
     }
   }
 });
+
+test('Muted action badges and selected chips retain readable text in every theme', () => {
+  const accents = [...new Set(readFileSync('src/browser/action-view.tsx', 'utf8').match(/#[0-9a-f]{6}/g))];
+  assert.equal(accents.length, 6);
+  const linear = hex => hex.slice(1).match(/../g).map(part => parseInt(part, 16) / 255).map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4);
+  for (const name of themes.all) {
+    const { colors } = themeColors(name);
+    for (const accent of [colors.primary, ...accents.map(linear)]) for (const amount of [.12, .2]) {
+      assert.ok(contrast(colors['base-content'], mix(accent, colors['base-100'], amount)) >= 4.5, `${name} at ${amount}`);
+    }
+  }
+});

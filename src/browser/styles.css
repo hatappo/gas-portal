@@ -52,25 +52,28 @@ h1 { margin: 0; font-size: clamp(25px, 3.5vw, 36px); line-height: 1.6; font-weig
 h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 600; margin: 0; }
 .count, .tool-description, .status p, .table-view td, .intro-copy, .settings-help { color: var(--portal-muted); }
 .count { flex-shrink: 0; min-width: calc(var(--count-digits, 1) * 2ch + 9ch); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-family: "Avenir Next", Avenir, sans-serif; font-size: 12px; font-weight: 400; }
-.directory-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.directory-toolbar, .actions-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 .search-controls { display: flex; flex: 1; min-width: 0; align-items: center; gap: 12px; }
 /* DaisyUI .input on the wrapper styles the icon and field together, including focus-within. */
 .search-box { flex: 1; width: auto; min-width: 0; }
 .search-box svg { width: 21px; height: 21px; opacity: .7; flex-shrink: 0; }
 .search-box input { font-size: 16px; }
 .search-box input::placeholder { font-size: 13px; }
-.filter-toolbar { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px; }
-/* Pressed buttons (view, tags) look like btn-primary. DaisyUI reads the same aria-pressed state. */
-.segmented-control .btn:has(input:checked), .tag-button[aria-pressed="true"] { --btn-color: var(--color-primary); --btn-fg: var(--color-primary-content); --btn-border: var(--color-primary); }
+.filter-toolbar, .actions-summary { display: flex; align-items: center; gap: 12px; }
+.filter-toolbar { flex-shrink: 0; justify-content: space-between; }
+/* View switches retain their filled selection; tag filters share a quieter tint and inset outline. */
+.segmented-control .btn:has(input:checked) { --btn-color: var(--color-primary); --btn-fg: var(--color-primary-content); --btn-border: var(--color-primary); }
 .segmented-control .btn { font-size: 12px; font-weight: 500; }
 /* Unselected toggle buttons (view, tags) differ from the page by background alone (about 1.1:1 in DaisyUI themes).
    A base-content border at 60% keeps their outline at 3:1 or more in every theme; the theme test checks this. */
 .segmented-control .btn:not(:has(input:checked)), .tag-button:not([aria-pressed="true"]) { --btn-border: color-mix(in srgb, var(--color-base-content) 60%, var(--color-base-100)); }
 .view-switch svg { width: 18px; height: 18px; }
-.tag-filter { display: flex; align-items: flex-start; gap: 12px; padding: 0 0 22px; }
+.tag-filter { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 8px; padding: 0 0 16px; }
+.tag-filter .tags { display: contents; }
 .tag-heading { flex-shrink: 0; display: flex; align-items: center; min-height: 32px; font-size: 12px; font-weight: 600; }
 .tags { display: flex; flex: 1; min-width: 0; flex-wrap: wrap; gap: 6px; }
-.tag-button { border-radius: 999px; font-weight: 400; overflow-wrap: anywhere; }
+.tag-button { --btn-color: color-mix(in srgb, var(--tag-accent, var(--color-primary)) 12%, var(--color-base-100)); --btn-fg: var(--color-base-content); border-radius: 999px; font-weight: 400; overflow-wrap: anywhere; height: auto; min-height: 32px; white-space: normal; }
+.tag-button[aria-pressed="true"] { --btn-color: color-mix(in srgb, var(--tag-accent, var(--color-primary)) 20%, var(--color-base-100)); --btn-border: var(--color-base-content); box-shadow: inset 0 0 0 1px var(--color-base-content); }
 .tools { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 16px; padding: 0; margin: 0; }
 /* Grid rows reserve space for their tallest card while each card keeps its natural height.
    card-border uses base-200, which is too faint on a base-100 page in several themes. */
@@ -82,7 +85,7 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .tool-description { font-size: 12px; line-height: 1.9; margin: 0; overflow-wrap: anywhere; }
 .tool-tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .tool-card .tool-tags { margin-top: 16px; }
-.tool-tag { --badge-color: color-mix(in srgb, var(--color-primary) 12%, var(--color-base-100)); height: auto; max-width: 100%; font-weight: 400; overflow-wrap: anywhere; }
+.tool-tag, .action-item-kind { --badge-color: color-mix(in srgb, var(--tag-accent, var(--color-primary)) 12%, var(--color-base-100)); --badge-fg: var(--color-base-content); height: auto; max-width: 100%; white-space: normal; font-weight: 400; overflow-wrap: anywhere; }
 .related-links { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0 16px; }
 .tool-card > .related-links { margin: 0 24px; padding: 8px 0 12px; border-top: 1px solid var(--color-base-300); }
 .related-links li { min-width: 0; max-width: 100%; }
@@ -114,7 +117,7 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .skip-link:focus { display: block; padding: 12px; background: var(--color-base-100); }
 @media (max-width: 900px) { .tools { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) {
-  .directory-toolbar { flex-wrap: wrap; gap: 8px; }
+  .directory-toolbar, .actions-toolbar { flex-wrap: wrap; gap: 8px; }
   .search-controls { flex-basis: 100%; }
   .filter-toolbar { width: 100%; flex-wrap: wrap; }
 }
@@ -129,7 +132,7 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
   .tools { grid-template-columns: 1fr; gap: 12px; }
   .tool-main { padding: 22px; }
   .tool-card > .related-links { margin-right: 22px; margin-left: 22px; }
-  .filter-toolbar { gap: 8px; }
+  .filter-toolbar, .actions-summary { gap: 8px; }
   .segmented-control .btn:not(.btn-square) { padding-inline: 10px; }
   .table-view th, .table-view td { padding-left: 14px; padding-right: 14px; }
 }
@@ -211,7 +214,8 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 
 /* btn-ghost supplies hover and focus; the spinner signals loading, so keep the icon fully visible. */
 .refresh-catalog { flex-shrink: 0; gap: 6px; min-width: 44px; margin-inline-start: auto; padding-inline: 10px; font-size: 12px; font-weight: 400; white-space: nowrap; }
-.refresh-catalog:disabled { cursor: wait; }
+.refresh-catalog:disabled { cursor: default; }
+.refresh-catalog[aria-busy="true"] { cursor: wait; }
 .refresh-catalog svg { width: 18px; height: 18px; }
 .catalog-freshness { color: inherit; font-size: 11px; }
 @media (max-width: 1100px) { .directory-toolbar { flex-wrap: wrap; } .search-controls { flex-basis: 100%; } .filter-toolbar { width: 100%; justify-content: flex-start; } }
@@ -229,10 +233,8 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 :is(.github-connection, .slack-connection) strong { font-size: 14px; overflow-wrap: anywhere; }
 :is(.github-connection, .slack-connection) p { margin: 4px 0; }
 :is(.github-connection-controls, .slack-connection-controls) { display: flex; flex-shrink: 0; flex-wrap: wrap; gap: 4px 12px; }
-.actions-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-.actions-summary { margin-inline-start: auto; display: flex; align-items: center; gap: 8px; }
-.actions-summary .count { min-width: 8ch; }
-#refresh-actions:disabled:not([aria-busy="true"]) { cursor: default; }
+.actions-toolbar { flex-wrap: wrap; justify-content: space-between; }
+.actions-summary { margin-inline-start: auto; }
 .action-item-list { list-style: none; padding: 0; margin: 0; }
 .action-item-list > li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px 20px; border-bottom: 1px solid var(--color-base-300); padding: 18px 0; }
 .action-item-list > li:first-child { border-top: 1px solid var(--color-base-300); }
@@ -242,12 +244,6 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .action-item-meta { grid-column: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; color: var(--portal-muted); font-size: 11px; overflow-wrap: anywhere; }
 .action-service { color: var(--color-base-content); font-weight: 600; }
 .action-item-reasons { grid-column: 2; grid-row: 1 / 3; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; max-width: 280px; }
-.action-item-kind { height: auto; max-width: 100%; white-space: normal; overflow-wrap: anywhere; background: var(--action-color); color: #fff; border-color: transparent; }
-.action-type-button { --btn-color: color-mix(in srgb, var(--action-color) 12%, var(--color-base-100)); --btn-fg: var(--color-base-content); }
-.action-type-button[aria-pressed="true"] { --btn-color: var(--action-color); --btn-fg: #fff; --btn-border: var(--action-color); }
-.action-type-filter { flex-wrap: wrap; gap: 6px 8px; padding-bottom: 16px; }
-.action-type-filter .tags { display: contents; }
-.action-type-filter .btn { height: auto; min-height: 32px; white-space: normal; }
 /* DaisyUI .alert is a grid; let notices flow as a block. */
 .action-notice { display: block; margin: 0 0 16px; font-size: 12px; line-height: 1.7; }
 .action-notice ul { padding-inline-start: 18px; margin: 8px 0 0; list-style: disc; }

@@ -47,7 +47,7 @@
           </div>
         </div>
         <div id="tag-filter" class="tag-filter" hidden>
-          <div class="tag-heading">Tags</div>
+          <div class="tag-heading" title="Filter by tags (match all)" data-i18n-title="Filter by tags (match all)">Tags</div>
           <div id="tags" class="tags" role="group" aria-label="Filter by tags" data-i18n-aria-label="Filter by tags"></div>
         </div>
         <aside id="warnings" class="warnings alert alert-warning" aria-label="Data issues" data-i18n-aria-label="Data issues" hidden>
@@ -77,10 +77,10 @@
         <div class="actions-toolbar">
           <button type="button" id="actions-settings" class="action-text-button btn btn-ghost btn-sm" data-i18n="Manage connections">Manage connections</button>
           <div class="actions-summary">
-            <span id="actions-count" class="count" role="status" aria-live="polite">—</span>
-            <button type="button" id="refresh-actions" class="refresh-catalog btn btn-ghost" aria-busy="true" disabled aria-label="Fetch latest" data-i18n-aria-label="Fetch latest" title="Fetch latest" data-i18n-title="Fetch latest">
+            <span id="actions-count" class="count" role="status" aria-live="polite" aria-atomic="true">—</span>
+            <button type="button" id="refresh-actions" class="refresh-catalog btn btn-ghost" aria-describedby="actions-freshness" aria-busy="true" disabled aria-label="Fetch latest" data-i18n-aria-label="Fetch latest" title="Fetch latest" data-i18n-title="Fetch latest">
               <!-- refresh-cw-icon -->
-              <span id="actions-freshness" class="catalog-freshness" title="Oldest retrieval time among successful connections" data-i18n-title="Oldest retrieval time among successful connections" hidden></span>
+              <span id="actions-freshness" class="catalog-freshness" role="status" aria-live="polite" hidden></span>
             </button>
           </div>
         </div>

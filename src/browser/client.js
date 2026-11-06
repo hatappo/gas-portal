@@ -1,3 +1,4 @@
+import { formatListCount, renderListFreshness } from './list-presentation.js';
 import { mountCatalogView } from './catalog-view';
 
 // Coordinates catalog RPCs and validation; Solid owns the dynamic lists.
@@ -82,7 +83,7 @@ export function initializeCatalog(motion) {
     element('table-view').hidden = view !== 'list' || visible.length === 0;
     const count = element('count');
     count.style.setProperty('--count-digits', String(String(tools.length).length));
-    count.textContent = t('{visible} / {total} items', { visible: visible.length, total: tools.length });
+    count.textContent = formatListCount(visible.length, tools.length, document.documentElement.lang);
     updateLists(visible);
     element('status').hidden = visible.length > 0;
     if (tools.length === 0) {
@@ -170,11 +171,7 @@ export function initializeCatalog(motion) {
   }
 
   function renderFreshness() {
-    const target = element('catalog-freshness');
-    target.hidden = !freshness;
-    if (!freshness) { target.textContent = ''; return; }
-    const time = new Date(freshness.fetchedAt).toLocaleTimeString(document.documentElement.lang, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-    target.textContent = t(freshness.hit ? 'Cached · Retrieved {time}' : 'Retrieved {time}', { time });
+    renderListFreshness(element('catalog-freshness'), { fetchedAt: freshness?.fetchedAt, cached: freshness?.hit }, document.documentElement.lang);
   }
 
   /** Use the same validation and rendering for embedded data and refresh responses. @param {CatalogResponse} response */
