@@ -8,7 +8,7 @@ import { configurePreviewHtml } from '../lib/build.mjs';
 test('Namespace every preview storage key per consumer directory', (t) => {
   const roots = [mkdtempSync(path.join(tmpdir(), 'portal-a-')), mkdtempSync(path.join(tmpdir(), 'portal-b-'))];
   t.after(() => roots.forEach((root) => rmSync(root, { recursive: true, force: true })));
-  roots.forEach((root) => writeFileSync(path.join(root, 'portal.config.json'), JSON.stringify({ repositoryUrl: '' })));
+  roots.forEach((root) => writeFileSync(path.join(root, 'package.json'), JSON.stringify({ 'gas-portal': { repositoryUrl: '' } })));
   const keys = ['portal-preview-source', 'portal-preview-catalog', 'portal-preview-theme', 'portal-preview-language', 'portal-preview-settings',
     'portal-preview-cache-seconds', 'portal-preview-actions-cache-seconds', 'portal-preview-unblocked-url-schemes'];
   const html = keys.map((key) => `localStorage.getItem('${key}');`).join('\n');

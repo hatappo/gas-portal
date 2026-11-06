@@ -41,7 +41,7 @@ export async function main(args = process.argv.slice(2), root = process.cwd()) {
   const { values } = parseArgs({ args: rest, options: definitions[command], allowPositionals: false });
   if (command === 'init') {
     init(root, { scriptId: values['script-id'], authProfile: values['auth-profile'], deploymentId: values['deployment-id'] });
-    console.log('Configuration is ready. Check scriptId and authProfile in portal.config.json, then run npm install. Existing values were preserved.');
+    console.log('Configuration is ready. Check scriptId and authProfile under "gas-portal" in package.json, then run npm install. Existing values were preserved.');
   } else if (command === 'build') {
     const result = build(root);
     console.log(`${result.output}: gas-portal ${result.version} / ${result.files.length} files`);

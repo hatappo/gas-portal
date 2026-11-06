@@ -4,7 +4,6 @@ dist/
 .portal/
 .clasp.json
 .clasprc.json
-portal.config.json
 client_secret*.json
 .env
 .env.*
