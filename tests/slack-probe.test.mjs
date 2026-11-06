@@ -127,8 +127,8 @@ test('Custom queries remain one encoded search parameter and report the query ec
 });
 
 test('Query arguments preserve the saved-message default and reject invalid options before authentication', async () => {
-  assert.deepEqual(parseProbeOptions([]), { help: false, query: 'is:saved' });
-  assert.deepEqual(parseProbeOptions(['--query', 'is:to-do']), { help: false, query: 'is:to-do' });
+  assert.deepEqual(parseProbeOptions([]), { help: false, inspect: false, query: 'is:saved' });
+  assert.deepEqual(parseProbeOptions(['--query', 'is:to-do']), { help: false, inspect: false, query: 'is:to-do' });
   assert.equal(parseProbeOptions(['--query=is:saved before:2026-10-10']).query, 'is:saved before:2026-10-10');
   for (const args of [['--query'], ['--query', ' '], ['--query', 'a'.repeat(1001)], ['--query', 'a\nb'], ['--token', token], [token]]) {
     assert.throws(() => parseProbeOptions(args), error => !error.message.includes(token));
@@ -136,4 +136,36 @@ test('Query arguments preserve the saved-message default and reject invalid opti
   let calls = 0;
   await assert.rejects(probeMessages(token, async () => { calls++; }, ''), /non-empty/);
   assert.equal(calls, 0);
+});
+
+
+test('Optional inspection reveals response structure and boolean flags without raw string or numeric values', async () => {
+  assert.equal(parseProbeOptions(['--inspect']).inspect, true);
+  const payload = { ok: true, messages: { total: 1, matches: [{
+    text: 'PRIVATE_MESSAGE_BODY', secret: token, timestamp: 123456789,
+    todo: { is_completed: true, status: 'PRIVATE_STATUS', title: 'PRIVATE_TASK_TITLE' },
+  }] } };
+  const plain = await probeMessages(token, searchFetch(reply(payload)));
+  assert.equal(Object.hasOwn(plain, 'inspection'), false);
+  const result = await probeMessages(token, searchFetch(reply(payload)), 'is:to-do', true);
+  assert.equal(result.inspection.truncated, false);
+  assert.deepEqual(result.inspection.fields.find(field => field.path.endsWith('.todo.is_completed')),
+    { path: '$.messages.matches[0].todo.is_completed', type: 'boolean', value: true });
+  assert.deepEqual(result.inspection.fields.find(field => field.path.endsWith('.todo.status')),
+    { path: '$.messages.matches[0].todo.status', type: 'string' });
+  assert.doesNotMatch(JSON.stringify(result), /PRIVATE_|xoxp-|123456789/);
+});
+
+test('Inspection reports sampling and depth/size limits instead of claiming exhaustive coverage', async () => {
+  const payloads = [
+    { ok: true, messages: { total: 2, matches: [{}, { text: 'PRIVATE_SECOND_MESSAGE' }] } },
+    { ok: true, messages: { matches: [{ todo: { nested: { secret: 'PRIVATE_DEEP_VALUE' } } }] } },
+    { ok: true, messages: { matches: [Object.fromEntries(Array.from({ length: 200 }, (_, n) => [`field${n}`, 'PRIVATE_VALUE']))] } },
+  ];
+  for (const payload of payloads) {
+    const result = await probeMessages(token, searchFetch(reply(payload)), 'is:to-do', true);
+    assert.equal(result.inspection.truncated, true);
+    assert.ok(result.inspection.fields.length <= 150);
+    assert.doesNotMatch(JSON.stringify(result), /PRIVATE_/);
+  }
 });

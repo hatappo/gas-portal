@@ -158,7 +158,15 @@ npm run probe:slack -- --query 'is:saved before:2026-10-10'
 
 Use exactly the same query in the Slack UI and compare the resulting message links, not only counts. Date filters apply to the message date, not when it was bookmarked. If a known old message is still missing, search for a distinctive phrase from it in its channel **without** `is:saved`, in both the UI and the probe. This distinguishes a general API visibility/search mismatch from one specific to saved-item filtering. `echoedQuery` records Slack's returned query when present; an echo or a successful response does not prove every modifier was applied. Verify `is:to-do` with a known To-do and an ordinary message as a negative control, then compare after marking the To-do complete. This remains message search; it cannot establish coverage of manually entered To-dos.
 
-This probe deliberately tests the documented [legacy search.messages endpoint](https://docs.slack.dev/reference/methods/search.messages/); a user-run probe has returned two newly saved messages, while the same UI search showed a third older bookmark that was absent from the API result. Complete coverage and `is:to-do` support remain unverified. The newer [Real-time Search API](https://docs.slack.dev/apis/web-api/real-time-search-api/) explicitly supports saved-message search but has AI-app and distribution requirements that remain unresolved for this portal. Do not treat a successful legacy search as confirmation of eligibility for that API.
+To inspect whether a search response contains completion metadata:
+
+```sh
+npm run probe:slack -- --query 'is:to-do' --inspect
+```
+
+The optional `inspection` output lists response field paths, types, and boolean values. It never prints raw string or numeric values, including message bodies. It samples only the first element of each array, with a maximum depth of five and 150 fields; `truncated` reports sampling or limits. Use a query selecting the test message if multiple results exist. A candidate status field can then be checked before/after completion; its absence from one sampled response is not proof that no API can expose completion state.
+
+This probe deliberately tests the documented [legacy search.messages endpoint](https://docs.slack.dev/reference/methods/search.messages/); a user-run probe has returned two newly saved messages, matching the Slack UI search. A third older bookmark appeared in the dedicated Saved view but in neither search result; that discrepancy is deferred. A message-backed To-do was also returned by `is:to-do` before and after completion, in both the API and UI search. Therefore that query alone does not establish an incomplete-task feed; full coverage and completion-state metadata remain unverified. The newer [Real-time Search API](https://docs.slack.dev/apis/web-api/real-time-search-api/) explicitly supports saved-message search but has AI-app and distribution requirements that remain unresolved for this portal. Do not treat a successful legacy search as confirmation of eligibility for that API.
 
 ## Workflow dependencies
 
