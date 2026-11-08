@@ -36,7 +36,7 @@ export function initializeGitHub(actions) {
       CONNECTION_CHANGED: 'The connection changed during this request. Reload the portal.',
       INVALID_INPUT: 'Check the fine-grained token and organization or owner filter.',
       CONNECTION_LIMIT: 'You can save up to 3 GitHub connections.',
-      AUTHORIZATION_REQUIRED: 'Additional authorization is required. Run initializeProperties in the GAS editor as the deploying account, grant the requested permissions, then reload the portal.',
+      AUTHORIZATION_REQUIRED: 'Additional authorization is required. Run authorizePortal in the GAS editor as the deploying account, grant the requested permissions, then reload the portal.',
     };
     return t(messages[code] || 'Could not load GitHub data. Check authorization and try again.');
   }

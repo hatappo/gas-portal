@@ -61,7 +61,7 @@ export function initializeSlack(actions) {
       INVALID_INPUT: 'Enter an app-issued Slack User OAuth Token (xoxp-).',
       DUPLICATE_CONNECTION: 'This Slack workspace and user are already connected. Edit the existing connection.',
       CONNECTION_LIMIT: 'You can save up to 3 Slack connections.',
-      AUTHORIZATION_REQUIRED: 'Additional authorization is required. Run initializeProperties in the GAS editor as the deploying account, grant the requested permissions, then reload the portal.',
+      AUTHORIZATION_REQUIRED: 'Additional authorization is required. Run authorizePortal in the GAS editor as the deploying account, grant the requested permissions, then reload the portal.',
     };
     return t(messages[code] || 'Could not load Slack data. Check authorization and try again.');
   }

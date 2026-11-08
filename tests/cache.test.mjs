@@ -84,11 +84,11 @@ test('Separate cache entries by source and executing user while reusing the late
 
 test('Validate settings, preserve existing values during initialization, and reject unsupported TTL values', () => {
   const { context, userProperties } = cachedServer();
-  context.initializeProperties();
+  context.getPortalUserProperties_();
   assert.equal(userProperties.CATALOG_CACHE_SECONDS, '21600');
   for (const seconds of [0, 300, 3600, 21600]) {
     assert.deepEqual(plain(context.saveCatalogCacheTtl(seconds)), { ok: true, seconds });
-    context.initializeProperties();
+    context.getPortalUserProperties_();
     assert.equal(userProperties.CATALOG_CACHE_SECONDS, String(seconds));
     assert.equal(context.getPortalContent_(userProperties).cacheSeconds, String(seconds));
   }
@@ -297,11 +297,11 @@ test('Discard pre-hidden caches and exclude hidden entries from RPC, HTML bootst
 test('Initialize and validate a five-minute Action Items preference independently of the catalog', () => {
   const userProperties = { CATALOG_CACHE_SECONDS: '21600' };
   const { context } = server({ userProperties });
-  context.initializeProperties();
+  context.getPortalUserProperties_();
   assert.equal(userProperties.ACTIONS_CACHE_SECONDS, '300');
   for (const seconds of [0, 60, 300, 900, 1800, 3600, 21600]) {
     assert.deepEqual(plain(context.saveActionsCacheTtl(seconds)), { ok: true, seconds });
-    context.initializeProperties();
+    context.getPortalUserProperties_();
     assert.equal(userProperties.ACTIONS_CACHE_SECONDS, String(seconds));
     assert.equal(context.getPortalContent_(userProperties).actionsCacheSeconds, String(seconds));
   }

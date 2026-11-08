@@ -24,7 +24,8 @@
     "PortalThemes": "readonly",
     "PortalCatalogRules": "readonly",
     "PortalSlackSettings": "readonly",
-    "PortalCacheDurations": "readonly"
+    "PortalCacheDurations": "readonly",
+    "PortalCalendar": "readonly"
   },
   "rules": {
     "no-undef": "error",
@@ -58,7 +59,7 @@
         "no-unused-vars": [
           "error",
           {
-            "varsIgnorePattern": "^(saveSlackBookmarkLimit|getSlackConnections|saveSlackConnection|disconnectSlack|getSlackActionItems|getGitHubConnections|saveGitHubConnection|disconnectGitHub|getGitHubActionItems|doGet|getCatalog|saveCatalogCacheTtl|saveActionsCacheTtl|normalizeCatalogCacheTtl_|readCachedSheetCatalog_|saveTheme|saveLanguage|include_|parseCatalog_|readSheetCatalog_|initializeScriptProperties|initializeProperties|savePortalSettings|saveSpreadsheetSettings|createPortalSpreadsheet|saveUnblockedUrlSchemes|doGet|getPortalLanguage_|getPortalPropertyDefaults_|getPortalTheme_|getPortalUserProperties_|initializeProperties|isPortalTheme_|normalizeActionsCacheTtl_|normalizeCatalogCacheTtl_|normalizePortalIcon_|normalizeSpreadsheetId_|parseCatalog_|readCachedSheetCatalog_|withPortalPropertiesLock_)$"
+            "varsIgnorePattern": "^(authorizePortal|getCalendarSettings|saveCalendarSettings|getCalendarChoices|getCalendarEvents|saveSlackBookmarkLimit|getSlackConnections|saveSlackConnection|disconnectSlack|getSlackActionItems|getGitHubConnections|saveGitHubConnection|disconnectGitHub|getGitHubActionItems|doGet|getCatalog|saveCatalogCacheTtl|saveActionsCacheTtl|normalizeCatalogCacheTtl_|readCachedSheetCatalog_|saveTheme|saveLanguage|include_|parseCatalog_|readSheetCatalog_|savePortalSettings|saveSpreadsheetSettings|createPortalSpreadsheet|saveUnblockedUrlSchemes|doGet|getPortalLanguage_|getPortalPropertyDefaults_|getPortalTheme_|getPortalUserProperties_|isPortalTheme_|normalizeActionsCacheTtl_|normalizeCatalogCacheTtl_|normalizePortalIcon_|normalizeSpreadsheetId_|parseCatalog_|readCachedSheetCatalog_|withPortalPropertiesLock_)$"
           }
         ]
       }
@@ -93,7 +94,8 @@
     },
     {
       "files": [
-        "src/server/GitHub.js", "src/server/Slack.js"
+        "src/server/GitHub.js",
+        "src/server/Slack.js"
       ],
       "globals": {
         "normalizeActionsCacheTtl_": "readonly"
@@ -117,7 +119,14 @@
       ],
       "globals": {
         "getPortalLanguage_": "readonly",
-        "initializeProperties": "readonly",
+        "withPortalPropertiesLock_": "readonly"
+      }
+    },
+    {
+      "files": [
+        "src/server/Calendar.js"
+      ],
+      "globals": {
         "withPortalPropertiesLock_": "readonly"
       }
     }

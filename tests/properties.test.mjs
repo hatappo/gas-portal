@@ -22,12 +22,13 @@ test("Initialize User Properties without accessing Script Properties or repeatin
     PropertiesService: { getScriptProperties: () => { assert.fail('Script Properties must not be read'); }, getUserProperties: () => store(userValues) },
     LockService: { getScriptLock: () => ({ waitLock() { locks++; }, releaseLock() { locks--; } }) },
   });
-  const result = plain(context.initializeProperties());
-  assert.deepEqual(result.script, { created: [], existing: [], migrated: [] });
-  assert.deepEqual(result.user, {
-    created: ['PORTAL_NAME', 'PORTAL_HEADLINE', 'PORTAL_DESCRIPTION', 'PORTAL_LANGUAGE', 'CATALOG_CACHE_SECONDS', 'ACTIONS_CACHE_SECONDS', 'SPREADSHEET_ID', 'SHEET_NAME', 'UNBLOCKED_URL_SCHEMES', 'SLACK_BOOKMARK_LIMIT'],
-    existing: ['PORTAL_ICON', 'PORTAL_THEME'], migrated: [],
-  });
+  const result = plain(context.getPortalUserProperties_());
+  assert.deepEqual(result, userValues);
+  assert.deepEqual(Object.keys(userValues).sort(), [
+    'PORTAL_NAME', 'PORTAL_ICON', 'PORTAL_HEADLINE', 'PORTAL_DESCRIPTION', 'PORTAL_THEME', 'PORTAL_LANGUAGE',
+    'CATALOG_CACHE_SECONDS', 'ACTIONS_CACHE_SECONDS', 'CALENDAR_SETTINGS', 'SPREADSHEET_ID', 'SHEET_NAME',
+    'UNBLOCKED_URL_SCHEMES', 'SLACK_BOOKMARK_LIMIT', 'OTHER',
+  ].sort());
   assert.equal(userValues.PORTAL_NAME, 'My Portal');
   assert.equal(userValues.PORTAL_ICON, '');
   assert.equal(userValues.PORTAL_THEME, 'forest');
@@ -37,19 +38,11 @@ test("Initialize User Properties without accessing Script Properties or repeatin
   assert.equal(scriptValues.PORTAL_ICON, undefined);
   assert.equal(scriptValues.SPREADSHEET_ID, 'private-id');
   assert.equal(scriptValues.OTHER, 'keep');
-  assert.doesNotMatch(JSON.stringify(result), /Legacy Portal|private-id|user-keep/);
-  const second = plain(context.initializeProperties());
-  assert.deepEqual(second.script.created, []);
-  assert.deepEqual(second.user.created, []);
+  assert.doesNotMatch(JSON.stringify(result), /Legacy Portal|private-id/);
+  const second = plain(context.getPortalUserProperties_());
+  assert.deepEqual(second, result);
   assert.equal(writes, 1);
   assert.equal(locks, 0);
-});
-
-test("Preserve the legacy initializer response shape", () => {
-  const { context } = server({ userProperties: {} });
-  const result = plain(context.initializeScriptProperties());
-  assert.equal(result.created.length, 12);
-  assert.deepEqual(result.existing, []);
 });
 
 test("Release the initialization lock after storage failures", () => {
@@ -58,7 +51,7 @@ test("Release the initialization lock after storage failures", () => {
     PropertiesService: { getScriptProperties: () => ({ getProperties: () => ({}) }), getUserProperties: () => ({ getProperties: () => ({}), setProperties() { throw new Error('write failed'); } }) },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() { released = true; } }) },
   });
-  assert.throws(() => context.initializeScriptProperties(), /write failed/);
+  assert.throws(() => context.getPortalUserProperties_(), /write failed/);
   assert.equal(released, true);
 });
 
@@ -91,7 +84,7 @@ test('Render an unconfigured portal without consulting Script Properties', () =>
 });
 
 
-test('Editor initialization requests consent before locking or writing and preserves automatic initialization', () => {
+test('Editor authorization changes no settings and initialization does not explicitly request consent', () => {
   let consentRequired = true;
   let checks = 0;
   let locks = 0;
@@ -104,16 +97,21 @@ test('Editor initialization requests consent before locking or writing and prese
     } },
     LockService: { getScriptLock: () => ({ waitLock() { locks++; }, releaseLock() {} }) },
   });
-  assert.throws(() => app.context.initializeProperties(), /CONSENT_PROMPT/);
+  assert.throws(() => app.context.authorizePortal(), /CONSENT_PROMPT/);
   assert.equal(locks, 0);
   assert.deepEqual(userProperties, { PORTAL_NAME: 'Keep me', PORTAL_HEADLINE: '' });
   assert.deepEqual(plain(app.logs), [['PORTAL_AUTHORIZATION_CHECK_STARTED']]);
   consentRequired = false;
-  assert.equal(app.context.initializeProperties().user.created.length, 10);
+  assert.deepEqual(plain(app.context.authorizePortal()), { ok: true });
+  assert.equal(locks, 0);
+  assert.deepEqual(userProperties, { PORTAL_NAME: 'Keep me', PORTAL_HEADLINE: '' });
   assert.equal(checks, 2);
+  consentRequired = true;
+  assert.equal(Object.keys(app.context.getPortalUserProperties_()).length, 13);
+  assert.equal(checks, 2, 'Automatic initialization must not invoke the consent flow');
   assert.equal(userProperties.PORTAL_NAME, 'Keep me');
   assert.equal(userProperties.PORTAL_HEADLINE, '');
-  assert.deepEqual(plain(app.logs.at(-1)), ['PORTAL_AUTHORIZATION_GRANTED']);
+  assert.deepEqual(plain(app.logs.at(-1)), ['PORTAL_AUTHORIZATION_GRANTED: All required permissions are granted. No additional authorization is needed.']);
   consentRequired = true;
   app.context.getPortalUserProperties_();
   assert.equal(checks, 2, 'Normal page initialization must not request consent');

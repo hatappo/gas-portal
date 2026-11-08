@@ -126,9 +126,9 @@ test('Settings keyboard navigation and history preserve drafts and keep parent t
   assert.equal(selected(doc), 'tab-settings');
   doc.getElementById('setting-sheet-name').value = 'Draft sheet';
   doc.getElementById('settings-tab-tools').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'End', bubbles: true }));
-  assert.equal(window.location.hash, '#settings/actions');
+  assert.equal(window.location.hash, '#settings/calendar');
   const length = window.history.length;
-  doc.getElementById('settings-tab-actions').click();
+  doc.getElementById('settings-tab-calendar').click();
   assert.equal(window.history.length, length);
   const back = new Promise((resolve) => window.addEventListener('popstate', resolve, { once: true }));
   window.history.back(); await back;
@@ -141,7 +141,7 @@ test('Settings keyboard navigation and history preserve drafts and keep parent t
   assert.equal(window.location.hash, '#settings/appearance');
   doc.getElementById('settings-tab-appearance').focus();
   doc.getElementById('settings-tab-appearance').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
-  assert.equal(window.location.hash, '#settings/actions');
+  assert.equal(window.location.hash, '#settings/calendar');
 });
 
 test('GAS subtab links use the outer history bridge and Manage connections opens Action Items settings', (t) => {

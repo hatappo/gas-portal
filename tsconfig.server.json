@@ -16,6 +16,7 @@
   "include": [
     "src/server/*.js",
     "src/shared/*.js",
-    "types/i18n.d.ts"
+    "types/i18n.d.ts",
+    "types/calendar.d.ts"
   ]
 }

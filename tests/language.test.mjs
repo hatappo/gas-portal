@@ -28,13 +28,13 @@ test('Initialize the language once, preserving existing values and isolating use
   for (const value of ['ja', 'en', 'auto', '', 'unknown']) {
     const userProperties = { PORTAL_LANGUAGE: value };
     const app = server({ userProperties });
-    app.context.initializeProperties();
-    app.context.initializeProperties();
+    app.context.getPortalUserProperties_();
+    app.context.getPortalUserProperties_();
     assert.equal(userProperties.PORTAL_LANGUAGE, value);
     assert.equal(app.context.getPortalLanguage_(), value === 'ja' ? 'ja' : 'en');
   }
   const userProperties = {};
-  server({ userProperties }).context.initializeProperties();
+  server({ userProperties }).context.getPortalUserProperties_();
   assert.equal(userProperties.PORTAL_LANGUAGE, 'auto');
 });
 

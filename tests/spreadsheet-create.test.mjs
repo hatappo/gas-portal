@@ -215,7 +215,7 @@ test('Missing consent stops before Sheets or property writes and gives authoriza
   const app = setup({ unauthorized: true });
   const result = plain(app.context.createPortalSpreadsheet('en'));
   assert.equal(result.ok, false);
-  assert.match(result.error, /initializeProperties/);
+  assert.match(result.error, /authorizePortal/);
   assert.match(result.error, /authoriz/i);
   assert.deepEqual(app.requests, []);
   assert.deepEqual(app.userProperties, {});
@@ -283,7 +283,7 @@ test('Creation cursor distinguishes an unavailable source action from an active 
 test('Mark failures before the create request as not created, and keep later failures uncertain', () => {
   for (const [options, expected] of [
     [{ userProperties: { SPREADSHEET_ID: 'existing' } }, /already configured|既に/],
-    [{ unauthorized: true }, /initializeProperties/],
+    [{ unauthorized: true }, /authorizePortal/],
   ]) {
     const result = plain(setup(options).context.createPortalSpreadsheet('en'));
     assert.equal(result.notCreated, true);

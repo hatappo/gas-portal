@@ -1,6 +1,7 @@
 // One composition root: imports do not mount controls, touch the DOM, or start RPCs.
 // Initialize language before rendering views, routing before lazy service connections,
 // and tooltip adapters after their underlying controls are mounted.
+import { initializeCalendar } from './calendar';
 import { createMotion } from './motion.js';
 import { initializeLanguage } from './language.js';
 import { initializeNavigation } from './navigation.js';
@@ -17,8 +18,8 @@ import { initializeSlack } from './slack.js';
 import { mountDisclosures } from './disclosure';
 import { mountRefreshHints } from './ui';
 
-/** @param {{connectGitHub?: typeof initializeGitHub, connectSlack?: typeof initializeSlack}} [options] */
-export function initializePortal({ connectGitHub = initializeGitHub, connectSlack = initializeSlack } = {}) {
+/** @param {{connectGitHub?: typeof initializeGitHub, connectSlack?: typeof initializeSlack, connectCalendar?: typeof initializeCalendar}} [options] */
+export function initializePortal({ connectGitHub = initializeGitHub, connectSlack = initializeSlack, connectCalendar = initializeCalendar } = {}) {
   const motion = createMotion();
   initializeLanguage();
   initializeNavigation(motion);
@@ -33,6 +34,7 @@ export function initializePortal({ connectGitHub = initializeGitHub, connectSlac
   const actions = initializeActions();
   connectGitHub(actions);
   connectSlack(actions);
+  const calendar = connectCalendar();
   mountRefreshHints();
-  return { actions };
+  return { actions, calendar };
 }

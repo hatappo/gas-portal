@@ -199,10 +199,10 @@ test('Slack limit settings validate input, preserve other properties and initial
   assert.equal(app.context.getPortalContent_(app.userProperties).slackBookmarkLimit, '20');
   for (const limit of ['20', 0, -1, 21, 1000, null, NaN]) assert.equal(app.context.saveSlackBookmarkLimit(limit).ok, false);
   assert.deepEqual(app.userProperties, { KEEP: 'value' });
-  app.context.initializeProperties();
+  app.context.getPortalUserProperties_();
   assert.equal(app.userProperties.SLACK_BOOKMARK_LIMIT, '20');
   app.context.saveSlackBookmarkLimit(50);
-  app.context.initializeProperties();
+  app.context.getPortalUserProperties_();
   assert.equal(app.userProperties.SLACK_BOOKMARK_LIMIT, '50');
   assert.equal(app.context.getPortalContent_(app.userProperties).slackBookmarkLimit, '50');
   app.context.PropertiesService.getUserProperties = () => { throw new Error('private failure'); };

@@ -5,6 +5,7 @@ import '../shared/themes.js';
 import '../shared/catalog-rules.js';
 import '../shared/cache-durations.js';
 import '../shared/slack-settings.js';
+import '../shared/calendar.js';
 import { initializePortal } from './bootstrap.js';
 
 initializePortal();

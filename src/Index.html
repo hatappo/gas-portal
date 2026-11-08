@@ -14,7 +14,9 @@
         <span class="brand-name"><?= portal.brandLead ?><span><?= portal.brandRest ?></span></span>
       </div>
       <!-- preview-label -->
+      <div id="calendar-toggle-host"></div>
     </header>
+    <div class="portal-layout">
     <main id="main">
       <section class="intro" aria-labelledby="page-title" <? if (!portal.headline && !portal.description) { ?>hidden<? } ?>>
         <h1 id="page-title" <? if (!portal.headline) { ?>hidden<? } ?>><?= portal.headline ?></h1>
@@ -101,6 +103,7 @@
           <button type="button" id="settings-tab-appearance" class="tab" role="tab" aria-selected="true" aria-controls="settings-appearance-panel" tabindex="0" data-i18n="Appearance">Appearance</button>
           <button type="button" id="settings-tab-tools" class="tab" role="tab" aria-selected="false" aria-controls="settings-tools-panel" tabindex="-1">Tools &amp; Links</button>
           <button type="button" id="settings-tab-actions" class="tab" role="tab" aria-selected="false" aria-controls="settings-actions-panel" tabindex="-1">Action Items</button>
+          <button type="button" id="settings-tab-calendar" class="tab" role="tab" aria-selected="false" aria-controls="settings-calendar-panel" tabindex="-1">Calendar</button>
         </div>
         <div id="settings-appearance-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-appearance" tabindex="0">
           <section class="display-settings" aria-labelledby="display-settings-title">
@@ -263,8 +266,11 @@
             <button type="button" id="retry-slack-settings" class="action-text-button btn btn-ghost btn-sm" hidden data-i18n="Try again">Try again</button>
           </section>
         </div>
+        <div id="settings-calendar-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-calendar" tabindex="0" hidden><div id="calendar-settings-host"></div></div>
       </section>
     </main>
+    <aside id="calendar-panel" class="calendar-panel" aria-label="Today’s schedule" data-i18n-aria-label="Today’s schedule" hidden></aside>
+    </div>
     <footer class="site-footer">
       <nav aria-label="Management links" data-i18n-aria-label="Management links">
         <a class="link footer-link project-link" href="<?= projectUrl ?>" target="_blank" rel="noopener noreferrer">GAS <!-- external-link-icon --><span class="visually-hidden"><span data-i18n="(opens in a new tab)">(opens in a new tab)</span></span></a>
@@ -274,6 +280,11 @@
         <!-- repository-link -->
       </nav>
     </footer>
+    <template id="calendar-pin-icon"><!-- pin-icon --></template>
+    <template id="calendar-pin-off-icon"><!-- pin-off-icon --></template>
+    <template id="calendar-icon"><!-- calendar-days-icon --></template>
+    <template id="calendar-silence-icon"><!-- bell-off-icon --></template>
+    <template id="calendar-refresh-icon"><!-- refresh-cw-icon --></template>
     <script type="application/json" id="initial-catalog"><?!= initialCatalogJson ?></script>
     <script type="module" src="/browser/main.js"></script>
   </body>
