@@ -69,32 +69,18 @@ function withPortalPropertiesLock_(action) {
   try { return action(); } finally { lock.releaseLock(); }
 }
 
-/** @param {GoogleAppsScript.Properties.Properties} store
- * @param {Record<string, string>} defaults
- */
-function initializePropertyStore_(store, defaults) {
-  const current = store.getProperties();
-  /** @type {Record<string, string>} */
-  const missing = {};
-  const existing = [];
-  for (const [key, value] of Object.entries(defaults)) {
-    if (Object.prototype.hasOwnProperty.call(current, key)) {
-      existing.push(key);
-    } else {
-      missing[key] = value;
-    }
-  }
-  if (Object.keys(missing).length) store.setProperties(missing, false);
-  return { created: Object.keys(missing), existing, migrated: [] };
-}
-
-/** Initialize missing settings only in the executing user's store. */
+/** Fill missing settings in the executing user's store without overwriting saved values. */
 function initializeUserProperties_() {
-  return initializePropertyStore_(PropertiesService.getUserProperties(), {
+  const store = PropertiesService.getUserProperties();
+  const current = store.getProperties();
+  const defaults = {
     ...getPortalPropertyDefaults_(),
     PORTAL_THEME: 'auto', PORTAL_LANGUAGE: 'auto', CATALOG_CACHE_SECONDS: String(PortalCacheDurations.catalog.defaultSeconds), ACTIONS_CACHE_SECONDS: String(PortalCacheDurations.actions.defaultSeconds),
+    CALENDAR_SETTINGS: JSON.stringify(PortalCalendar.defaults()),
     SPREADSHEET_ID: '', SHEET_NAME: '', UNBLOCKED_URL_SCHEMES: '', SLACK_BOOKMARK_LIMIT: String(PortalSlackSettings.defaultLimit),
-  });
+  };
+  const missing = Object.fromEntries(Object.entries(defaults).filter(([key]) => !Object.prototype.hasOwnProperty.call(current, key)));
+  if (Object.keys(missing).length) store.setProperties(missing, false);
 }
 
 function getPortalUserProperties_() {
@@ -102,27 +88,6 @@ function getPortalUserProperties_() {
     initializeUserProperties_();
     return PropertiesService.getUserProperties().getProperties();
   });
-}
-
-/** Run in the GAS editor. Preserve existing keys, including empty values, and never return their values. */
-function initializeProperties() {
-  // Editor-only consent flow. Keep this outside the lock and automatic initialization.
-  console.info('PORTAL_AUTHORIZATION_CHECK_STARTED');
-  ScriptApp.requireAllScopes(ScriptApp.AuthMode.FULL);
-  console.info('PORTAL_AUTHORIZATION_GRANTED');
-  return withPortalPropertiesLock_(() => ({
-    script: { created: [], existing: [], migrated: [] },
-    user: initializeUserProperties_(),
-  }));
-}
-
-/** Compatibility alias for earlier commands and editor workflows. */
-function initializeScriptProperties() {
-  const result = initializeProperties();
-  return {
-    created: [...result.script.created, ...result.user.created],
-    existing: [...result.script.existing, ...result.user.existing],
-  };
 }
 
 /** @param {unknown} input @param {string} [language] @returns {Record<string, string>} */

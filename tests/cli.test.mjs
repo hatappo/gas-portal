@@ -118,7 +118,7 @@ test("Protect malformed package.json files and symbolic links during init", (t) 
   assert.equal(readFileSync(path.join(other, 'package.json'), 'utf8'), outside);
 });
 
-test("Generate only seven files and inject the consumer GitHub link", (t) => {
+test("Generate only eight files and inject the consumer GitHub link", (t) => {
   const root = fixture(t);
   saveConfig(root, { ...readConfig(root), repositoryUrl: 'https://github.com/example/work-a' });
   const result = build(root);
@@ -234,7 +234,8 @@ test("Reject unknown commands, options, and missing arguments with a failure exi
   }
   const help = spawnSync(process.execPath, [cli, '--help'], { cwd: root, encoding: 'utf8' });
   assert.equal(help.status, 0);
-  assert.match(help.stdout, /initializeProperties/);
+  assert.doesNotMatch(help.stdout, /initialize(?:Script)?Properties/);
+  assert.match(help.stdout, /authorizePortal/);
 });
 
 test("Display search and theme choices in a source-free packaged preview", async (t) => {

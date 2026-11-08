@@ -5,7 +5,8 @@
   "oauthScopes": [
     "https://www.googleapis.com/auth/spreadsheets.readonly",
     "https://www.googleapis.com/auth/drive.file",
-    "https://www.googleapis.com/auth/script.external_request"
+    "https://www.googleapis.com/auth/script.external_request",
+    "https://www.googleapis.com/auth/calendar.readonly"
   ],
   "dependencies": {
     "enabledAdvancedServices": [
@@ -13,6 +14,11 @@
         "userSymbol": "Sheets",
         "serviceId": "sheets",
         "version": "v4"
+      },
+      {
+        "userSymbol": "Calendar",
+        "serviceId": "calendar",
+        "version": "v3"
       }
     ]
   },

@@ -19,7 +19,7 @@ export function initializeNavigation(motion) {
     { hash: 'actions', button: element('tab-actions'), panel: element('actions-panel') },
     { hash: 'settings', button: element('tab-settings'), panel: element('settings-panel') },
   ];
-  const settingsTabs = ['appearance', 'tools', 'actions'].map((hash) => ({
+  const settingsTabs = ['appearance', 'tools', 'actions', 'calendar'].map((hash) => ({
     hash, button: element('settings-tab-' + hash), panel: element('settings-' + hash + '-panel'),
   }));
   const [activeSettingsTab, setActiveSettingsTab] = createSignal(0);

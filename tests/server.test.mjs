@@ -74,8 +74,8 @@ test("Do not expose API error details or file IDs", () => {
 test("Use private deployer execution with read-only Sheets access, per-file creation, and external API requests", () => {
   const manifest = JSON.parse(readFileSync('src/appsscript.json', 'utf8'));
   assert.deepEqual(manifest.webapp, { access: 'MYSELF', executeAs: 'USER_DEPLOYING' });
-  assert.deepEqual(manifest.oauthScopes, ['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/script.external_request']);
-  assert.deepEqual(manifest.dependencies.enabledAdvancedServices, [{ userSymbol: 'Sheets', serviceId: 'sheets', version: 'v4' }]);
+  assert.deepEqual(manifest.oauthScopes, ['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/script.external_request', 'https://www.googleapis.com/auth/calendar.readonly']);
+  assert.deepEqual(manifest.dependencies.enabledAdvancedServices, [{ userSymbol: 'Sheets', serviceId: 'sheets', version: 'v4' }, { userSymbol: 'Calendar', serviceId: 'calendar', version: 'v3' }]);
 });
 
 test("Generate the editor URL from the current project and set the page title", () => {

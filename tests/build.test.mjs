@@ -24,8 +24,14 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   const first = build();
   assert.equal(first.status, 0, first.stderr);
   assert.deepEqual(readdirSync(path.join(root, 'dist')).sort(), [
-    'Catalog.js', 'Client.html', 'Code.js', 'Index.html', 'SheetCatalog.js', 'Styles.html', 'appsscript.json',
+    'Authorization.js', 'Catalog.js', 'Client.html', 'Code.js', 'Index.html', 'SheetCatalog.js', 'Styles.html', 'appsscript.json',
   ]);
+  const code = readFileSync(path.join(root, 'dist/Code.js'), 'utf8');
+  const authorization = readFileSync(path.join(root, 'dist/Authorization.js'), 'utf8');
+  const parsed = ts.createSourceFile('Authorization.js', authorization, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  assert.equal(parsed.statements.length, 1, 'The standalone editor file contains only the authorization entry point');
+  assert.equal(parsed.statements[0].name?.text, 'authorizePortal');
+  assert.doesNotMatch(code, /function authorizePortal\b/, 'Do not duplicate the editor entry point in Code.gs');
   const html = readFileSync(path.join(root, 'dist/Index.html'), 'utf8');
   assert.match(html, /class="external-link-icon"/);
   assert.match(html, /Copyright \(c\) 2026 Lucide Icons and Contributors/);
@@ -52,7 +58,7 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   });
   assert.equal(status.status, 0, status.stderr);
   assert.deepEqual(JSON.parse(status.stdout).filesToPush.sort(), [
-    'dist/Catalog.js', 'dist/Client.html', 'dist/Code.js', 'dist/Index.html',
+    'dist/Authorization.js', 'dist/Catalog.js', 'dist/Client.html', 'dist/Code.js', 'dist/Index.html',
     'dist/SheetCatalog.js', 'dist/Styles.html', 'dist/appsscript.json',
   ]);
   const bundledClient = readFileSync(path.join(root, 'dist/Client.html'), 'utf8');
@@ -103,7 +109,7 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   assert.equal(app.document.title, 'Built Portal');
   assert.equal(app.document.querySelector('#page-title').textContent, 'Built headline');
   // Node accepts these operators, but GAS rejects them. Fail before replacing output.
-  for (const relative of ['src/server/GitHub.js', 'src/server/Settings.js', 'src/server/SpreadsheetSetup.js', 'src/shared/i18n.js']) {
+  for (const relative of ['src/server/Authorization.js', 'src/server/GitHub.js', 'src/server/Settings.js', 'src/server/SpreadsheetSetup.js', 'src/shared/i18n.js']) {
     const sourcePath = path.join(root, relative);
     const original = readFileSync(sourcePath, 'utf8');
     for (const operator of ['||=', '&&=', '??=']) {

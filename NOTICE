@@ -1,5 +1,5 @@
 gas-portal uses the Lucide external-link, refresh-cw, layout-grid, list,
-tool-case, list-checks, and settings icons.
+tool-case, list-checks, settings, calendar-days, pin, pin-off, and bell-off icons.
 Their ISC and applicable MIT copyright/license notices are retained in
 src/assets/*.svg, the distributed assets/external-link.svg, and the
 generated HTML that embeds these icons.

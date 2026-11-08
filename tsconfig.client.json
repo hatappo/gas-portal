@@ -22,6 +22,7 @@
     "types/browser.d.ts",
     "src/shared/*.js",
     "types/i18n.d.ts",
-    "src/browser/*.tsx"
+    "src/browser/*.tsx",
+    "types/calendar.d.ts"
   ]
 }

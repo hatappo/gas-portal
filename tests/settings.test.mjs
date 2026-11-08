@@ -31,7 +31,7 @@ test("Save and reset only four display fields without reading Script Properties"
   const reset = plain(context.savePortalSettings(context.getPortalPropertyDefaults_()));
   assert.deepEqual(reset.settings, plain(context.getPortalPropertyDefaults_()));
   context.getPortalUserProperties_();
-  context.initializeProperties();
+  context.getPortalUserProperties_();
   assert.equal(userProperties.PORTAL_NAME, 'My Portal');
   assert.equal(userProperties.PORTAL_THEME, 'emerald');
   assert.equal(userProperties.OTHER, 'keep');
@@ -134,7 +134,7 @@ test('Persist empty intro text, preserve it during initialization, and hide it b
   const result = context.savePortalSettings(values({ PORTAL_HEADLINE: '  ', PORTAL_DESCRIPTION: '\n' }));
   assert.equal(result.settings.PORTAL_HEADLINE, '');
   assert.equal(result.settings.PORTAL_DESCRIPTION, '');
-  context.initializeProperties();
+  context.getPortalUserProperties_();
   const content = context.getPortalContent_(userProperties);
   assert.equal(content.headline, '');
   assert.equal(content.description, '');

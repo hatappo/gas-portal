@@ -39,6 +39,10 @@ type SlackActionsResponse = { ok: true; items: SlackActionItem[]; hasMore?: bool
 type SlackConnectionsResponse = { ok: true; connections: SlackConnectionInfo[] } | { ok: false; error: string };
 type SlackSaveResponse = { ok: true; connection: SlackConnectionInfo } | { ok: false; error: string };
 interface GasRunner {
+  getCalendarSettings(): void;
+  saveCalendarSettings(settings: CalendarSettings, names?: Record<string, string>): void;
+  getCalendarChoices(): void;
+  getCalendarEvents(forceRefresh: boolean, timeZone: string): void;
   saveSlackBookmarkLimit(limit: number): void;
   getSlackConnections(): void;
   saveSlackConnection(input: SlackConnectionInput): void;

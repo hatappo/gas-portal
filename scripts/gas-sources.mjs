@@ -1,6 +1,6 @@
 /**
  * Shared files, in load order. Each defines one global used by both the server and the browser.
- * The server build prepends them to Code.js; src/browser/main.js imports the same files.
+ * The server build places them at the start of Code.js; src/browser/main.js imports the same files.
  */
 export const sharedSources = [
   'src/shared/i18n.js',
@@ -9,11 +9,13 @@ export const sharedSources = [
   'src/shared/catalog-rules.js',
   'src/shared/cache-durations.js',
   'src/shared/slack-settings.js',
+  'src/shared/calendar.js',
 ];
 
-// Source boundaries do not change the public seven-file GAS project layout.
+// Keep editor entry points in their own file for easy discovery in the GAS editor.
 export const serverGroups = {
-  'Code.js': ['Settings', 'SpreadsheetSetup', 'GitHub', 'Slack', 'Code'],
+  'Authorization.js': ['Authorization'],
+  'Code.js': ['Settings', 'SpreadsheetSetup', 'GitHub', 'Slack', 'Calendar', 'Code'],
   'Catalog.js': ['Catalog'],
   'SheetCatalog.js': ['SheetCatalog'],
 };

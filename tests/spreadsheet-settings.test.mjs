@@ -29,13 +29,13 @@ test('Ignore Script Properties and initialize missing source fields with empty v
     const properties = settings('legacy', 'Old tab');
     const userProperties = { ...initial };
     const { context } = server({ properties, userProperties });
-    context.initializeProperties();
+    context.getPortalUserProperties_();
     assert.equal(userProperties.SPREADSHEET_ID, expected.SPREADSHEET_ID);
     assert.equal(userProperties.SHEET_NAME, expected.SHEET_NAME);
     assert.deepEqual(properties, settings('legacy', 'Old tab'));
     properties.SPREADSHEET_ID = 'changed-legacy';
     properties.SHEET_NAME = 'Changed tab';
-    context.initializeProperties();
+    context.getPortalUserProperties_();
     assert.equal(userProperties.SPREADSHEET_ID, expected.SPREADSHEET_ID);
     assert.equal(userProperties.SHEET_NAME, expected.SHEET_NAME);
   }
@@ -68,7 +68,7 @@ test('Save only validated source fields, preserve unrelated preferences, and kee
     assert.deepEqual(userProperties, before);
   }
   assert.equal(context.saveSpreadsheetSettings(settings('', '')).ok, true);
-  context.initializeProperties();
+  context.getPortalUserProperties_();
   assert.equal(userProperties.SPREADSHEET_ID, '');
   const broken = server({ PropertiesService: { getUserProperties: () => ({ setProperties() { throw new Error('private-details'); } }) } });
   const failed = broken.context.saveSpreadsheetSettings(settings());

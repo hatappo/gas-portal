@@ -1,5 +1,6 @@
 **/**
 !appsscript.json
+!Authorization.js
 !Code.js
 !Catalog.js
 !SheetCatalog.js

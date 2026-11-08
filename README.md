@@ -6,6 +6,8 @@ Display links from a spreadsheet as cards or a list. Connect an existing spreads
 
 **Consumer projects only need configuration and a package dependency.** The CLI generates GAS code under `.portal/`. Each work environment can use its own Google account, Apps Script project, and spreadsheet.
 
+Google Calendar adds a collapsible **Today** sidebar across all tabs, with compact past/future events, expanding hover/focus details, and free-time blocks between appointments. Select calendars, cache duration and optional in-page notices in Settings. Calendar access is read-only and uses the executing Google account. See [Calendar setup](docs/usage.md#google-calendar).
+
 ## Installation
 
 Packages are distributed as `gas-portal-VERSION.tgz` assets on GitHub Releases, without publishing to the npm registry. Use the attached package from a published release in the public repository. GitHub's automatic Source code archives do not include the compiled assets.
@@ -37,7 +39,7 @@ my-work-portal/
 └── .portal/               # Not tracked by Git
     ├── generated.json
     ├── .clasp.json         # Generated
-    ├── .claspignore        # Allows only the seven GAS files
+    ├── .claspignore        # Allows only the eight GAS files
     ├── dist/
     └── preview/
 ```
@@ -72,7 +74,7 @@ Authentication tokens remain in clasp's standard credential store. Every remote 
 | `portal init` | Prepare environment configuration, npm scripts, and gitignore entries |
 | `portal login` | Sign in to Google using the selected profile |
 | `portal status` | Show the target project and authentication status |
-| `portal build` | Generate seven GAS files from bundled assets, without network access |
+| `portal build` | Generate eight GAS files from bundled assets, without network access |
 | `portal preview [--port 4174]` | Serve mock data with Vite, without contacting GAS or Sheets |
 | `portal browse [--deployment-id ID]` | Open the published web app in the default browser without pushing or deploying |
 | `portal push` | Build and upload the code to GAS; does not update the published version |
@@ -85,7 +87,7 @@ Authentication tokens remain in clasp's standard credential store. Every remote 
 
 **deploy does not run build, push, or check.** Create the first web app deployment manually in the GAS console. The CLI stops with instructions if no versioned deployment exists. It also refuses to update HEAD or a deployment ID outside the target project. If multiple versioned deployments exist, including API executable deployments, specify the web app's ID.
 
-Missing property defaults are initialized automatically; manually running an initializer is optional. To initialize them explicitly or authorize newly added permissions, run `initializeProperties` in the GAS editor as the deploying account. It calls `ScriptApp.requireAllScopes` before adding missing properties, preserving existing values. No Execution API deployment or custom OAuth client is required.
+Missing User Property defaults are initialized automatically; Script Properties are not used. To grant newly added permissions, run `authorizePortal` in the GAS editor as the deploying account. It is placed in `Authorization.gs` and calls `ScriptApp.requireAllScopes` without reading or changing settings. Missing defaults are supplied during normal page loads, preserving existing values. No Execution API deployment or custom OAuth client is required.
 
 See the [usage guide](docs/usage.md) for initial setup, spreadsheet columns, display settings, and preview scenarios.
 
@@ -103,13 +105,13 @@ The frontend uses [Solid](https://www.solidjs.com/) 1.x with [Kobalte](https://k
 
 `main.js` loads the browser/server shared definitions and calls `initializePortal` in `bootstrap.js`. Feature modules export initializers; importing them does not mount UI or start RPCs. The composition root passes the motion service to navigation/catalog and the Action Items coordinator to GitHub and Slack. Save helpers use module imports instead of window globals. Keep initialization order and service wiring in this one place.
 
-Server sources are grouped by responsibility: `Code.js` handles page rendering and catalog RPC responses, `Settings.js` owns user preferences/initialization, `SpreadsheetSetup.js` owns source settings and spreadsheet creation, and `GitHub.js`/`Slack.js` own service credentials and reads. `scripts/gas-sources.mjs` maps them to the existing GAS outputs; build, preview, and tests use the same source list. The deployed project still contains seven files, preserving existing RPC names and OAuth scopes.
+Server sources are grouped by responsibility: `Code.js` handles page rendering and catalog RPC responses, `Settings.js` owns user preferences/initialization, `SpreadsheetSetup.js` owns source settings and spreadsheet creation, `GitHub.js`/`Slack.js` own service credentials and reads, and `Calendar.js` handles read-only schedule access. `scripts/gas-sources.mjs` maps them to the existing GAS outputs; build, preview, and tests use the same source list. The deployed project still contains eight files, preserving existing RPC names. Calendar adds the read-only Calendar OAuth scope.
 
 Solid and Kobalte are build-time dependencies, bundled into `Client.html`; deployed portals do not fetch them from a CDN. Source development, linked consumer previews, and production builds use the same Solid Vite plugin. Browser tests compile the components with this plugin before running their interactions in jsdom.
 
 Application source lives in `src/`; the CLI lives in `bin/` and `lib/`. Styles use [Tailwind CSS](https://tailwindcss.com/) v4 and [DaisyUI](https://daisyui.com/) v5, compiled into the inline GAS stylesheet at build time. Prefer DaisyUI components (`btn`, `input`, `card`, `badge`, …) and DaisyUI color variables over custom colors. The `include` list in `src/browser/styles.css` names the DaisyUI parts in use; add a component there before using it. Use `primary` only as a fill, not as text color, so every theme keeps readable contrast. `npm run build` generates GAS output in `dist/` and package assets in `assets/`. Published packages contain the CLI, compiled assets, and usage documentation. They exclude source files, tests, environment configuration, and credentials.
 
-`npm run screenshots` captures the local preview in every theme at 1280px and 390px for visual review, and writes per-theme images plus one contact sheet per view and width to the untracked `screenshots/` directory. It takes about 20 seconds. Narrow it with `--themes nord,night`, `--views tools,appearance`, or `--widths 390`; views are `tools`, `list`, `actions`, `appearance`, `settings-tools`, and `settings-actions`. It uses Playwright and is not part of `npm run check` or CI. The separate `npm run test:browser` smoke suite runs in CI and covers navigation/drafts, saving/resetting display settings, disclosure accessibility, responsive card layout in two representative themes, and mixed GitHub/Slack actions with Slack connection settings. Install the browser once with `npx playwright install chromium` (about 100MB). Page errors make the command fail.
+`npm run screenshots` captures the local preview in every theme at 1280px and 390px for visual review, and writes per-theme images plus one contact sheet per view and width to the untracked `screenshots/` directory. It takes about 20 seconds. Narrow it with `--themes nord,night`, `--views tools,appearance`, or `--widths 390`; views are `tools`, `list`, `actions`, `appearance`, `settings-tools`, and `settings-actions`. It uses Playwright and is not part of `npm run check` or CI. The separate `npm run test:browser` smoke suite runs in CI and covers navigation/drafts, saving/resetting display settings, disclosure accessibility, responsive card layout in two representative themes, and mixed GitHub/Slack actions with Slack connection settings, and Calendar expansion, mobile interactions and settings persistence. Install the browser once with `npx playwright install chromium` (about 100MB). Page errors make the command fail.
 
 To preview the GAS footer link during development, set `scriptId` in an untracked `.clasp.json`. The optional `SPREADSHEET_ID` environment variable accepts an ID or Google Sheets URL to preview the spreadsheet setting and footer link. Neither value is embedded in packaged assets.
 

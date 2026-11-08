@@ -23,7 +23,8 @@ Usage: portal <command> [options]
   deploy [--deployment-id ID] [--description TEXT]
                    Update an existing deployment from code saved in GAS (without pushing)
 
-To initialize properties, run initializeProperties in the GAS editor.
+To grant required permissions, run authorizePortal in Authorization.gs in the GAS editor.
+Missing User Property defaults are initialized automatically.
 `;
 
 export async function main(args = process.argv.slice(2), root = process.cwd()) {

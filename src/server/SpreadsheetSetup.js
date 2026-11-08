@@ -71,7 +71,7 @@ function createPortalSpreadsheet(browserLanguage) {
       const authorization = ScriptApp.getAuthorizationInfo(ScriptApp.AuthMode.FULL);
       if (authorization.getAuthorizationStatus() === ScriptApp.AuthorizationStatus.REQUIRED) {
         console.error('SPREADSHEET_CREATION_BLOCKED', 'AUTHORIZATION_REQUIRED');
-        return { ok: false, notCreated: true, error: 'Additional authorization is required. Run initializeProperties in the GAS editor as the deploying account, grant the requested permissions, then reload the portal.' };
+        return { ok: false, notCreated: true, error: 'Additional authorization is required. Run authorizePortal in the GAS editor as the deploying account, grant the requested permissions, then reload the portal.' };
       }
       stage = 'PREPARE_REQUEST';
       const columns = portalSpreadsheetColumns_(language);

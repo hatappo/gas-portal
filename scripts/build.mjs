@@ -64,4 +64,4 @@ writeFileSync(path.join(dist, 'Index.html'), index);
 for (const [file, source] of Object.entries(serverOutputs)) writeFileSync(path.join(dist, file), source);
 writeFileSync(path.join(dist, 'Styles.html'), `<style>\n${css}\n</style>\n`);
 writeFileSync(path.join(dist, 'Client.html'), `<script>\n${client}\n</script>\n`);
-console.log('Generated seven GAS files in dist/.');
+console.log('Generated eight GAS files in dist/.');
