@@ -314,3 +314,32 @@ test('Connection editors show masked suffixes and require an explicit switch to 
     await page.locator('#cancel-' + service).click();
   }
 });
+
+test('Description preserves line breaks after saving and reload, and tab hover strengthens icon strokes without background fills', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  await page.locator('#tab-settings').click();
+  const description = 'First line\nSecond line\n\nPlain <b>text</b>';
+  await page.getByLabel('Notes', { exact: true }).fill(description);
+  await page.locator('#portal-settings-form [type="submit"]').click();
+  await page.waitForFunction(value => document.querySelector('.intro-copy').textContent === value, description);
+  const copy = page.locator('.intro-copy');
+  assert.equal(await copy.evaluate(el => getComputedStyle(el).whiteSpace), 'pre-line');
+  assert.equal(await copy.locator('b').count(), 0);
+  const lineTops = await copy.evaluate(el => {
+    const text = el.firstChild;
+    return [0, 11, 24].map(start => { const range = document.createRange(); range.setStart(text, start); range.setEnd(text, start + 1); return range.getBoundingClientRect().top; });
+  });
+  assert.ok(lineTops[1] > lineTops[0] && lineTops[2] > lineTops[1]);
+  await page.reload();
+  assert.equal(await copy.textContent(), description);
+  for (const id of ['#tab-tools', '#tab-actions', '#tab-settings']) {
+    await page.mouse.move(0, 0);
+    const tab = page.locator(id);
+    const before = await tab.evaluate(el => getComputedStyle(el).backgroundColor);
+    await tab.hover();
+    assert.equal(await tab.evaluate(el => getComputedStyle(el).backgroundColor), before);
+    assert.equal(await tab.locator('svg').evaluate(el => parseFloat(getComputedStyle(el).strokeWidth)), 2.1);
+    await page.mouse.move(0, 0);
+    assert.equal(await tab.locator('svg').evaluate(el => parseFloat(getComputedStyle(el).strokeWidth)), 1.75);
+  }
+});

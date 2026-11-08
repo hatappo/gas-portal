@@ -44,11 +44,13 @@ main { width: 100%; max-width: 1040px; flex: 1; margin: 0 auto; padding: 0 40px 
 .preview-label span { white-space: nowrap; }
 h1 { margin: 0; font-size: clamp(25px, 3.5vw, 36px); line-height: 1.6; font-weight: 600; letter-spacing: .045em; overflow-wrap: anywhere; }
 #page-title[hidden] + .intro-copy { margin-top: 0; }
-.intro-copy { margin: 14px 0 0; color: var(--portal-muted); font-size: 13px; overflow-wrap: anywhere; }
+.intro-copy { white-space: pre-line; margin: 14px 0 0; color: var(--portal-muted); font-size: 13px; overflow-wrap: anywhere; }
 /* DaisyUI tabs-border marks the tab whose aria-selected is true. */
 .portal-tabs { margin-bottom: 28px; border-bottom: 1px solid var(--color-base-300); }
-.portal-tabs .tab { --tab-height: 48px; gap: 8px; font-size: 15px; font-weight: 600; }
-.portal-tabs .tab > svg { width: 18px; height: 18px; flex-shrink: 0; stroke-width: 1.75; }
+.portal-tabs .tab { transition: color 160ms ease; --tab-height: 48px; gap: 8px; font-size: 15px; font-weight: 600; }
+.portal-tabs .tab:hover { color: var(--color-base-content); }
+.portal-tabs .tab > svg { width: 18px; height: 18px; flex-shrink: 0; stroke-width: 1.75; transition: stroke-width 160ms ease, color 160ms ease; }
+.portal-tabs .tab:hover > svg { stroke-width: 2.1; }
 h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 600; margin: 0; }
 .count, .tool-description, .status p, .table-view td, .intro-copy, .settings-help { color: var(--portal-muted); }
 .count { flex-shrink: 0; min-width: calc(var(--count-digits, 1) * 2ch + 9ch); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-family: "Avenir Next", Avenir, sans-serif; font-size: 12px; font-weight: 400; }
@@ -342,3 +344,5 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .token-input-row .settings-field { flex: 1; min-width: 0; margin-bottom: 0; }
 .token-input-row > button { flex-shrink: 0; margin-bottom: 4px; }
 .token-input-row input[readonly] { background: var(--color-base-200); color: var(--portal-muted); cursor: default; }
+
+@media (prefers-reduced-motion: reduce) { .portal-tabs .tab, .portal-tabs .tab > svg { transition: none; } }
