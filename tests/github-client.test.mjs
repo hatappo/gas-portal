@@ -50,7 +50,7 @@ test('Keep connections independent and never label failed or partial retrievals 
   app.githubRequests[2].success({ ok: true, fetchedAt: Date.now(), groups: [{ ...response.groups[0], partial: true, error: 'FORBIDDEN' }] });
   assert.equal(app.document.querySelectorAll('.action-item-list > li').length, 1);
   assert.match(app.document.getElementById('actions-status').textContent, /アクセスが拒否/);
-  assert.doesNotMatch(app.document.getElementById('action-items').textContent, /現在、対応が必要な項目はありません/);
+  assert.doesNotMatch(app.document.getElementById('action-items').textContent, /現在、対応が必要なタスクはありません/);
 });
 
 test('Initialize connection metadata from a direct Settings hash without loading action data', (t) => {
@@ -157,7 +157,7 @@ test('Render changes requested alongside the original categories and translate i
 test('An empty result describes all four categories', (t) => {
   const app = appFor(t); open(app);
   app.githubRequests[1].success({ ...response, groups: ['assigned', 'direct', 'team', 'changes'].map((kind) => ({ ...response.groups[0], kind, items: [] })) });
-  assert.match(app.document.getElementById('action-items').textContent, /現在、対応が必要な項目はありません/);
+  assert.match(app.document.getElementById('action-items').textContent, /現在、対応が必要なタスクはありません/);
   assert.equal(app.document.querySelectorAll('.action-item-list > li').length, 0);
 });
 
@@ -210,7 +210,7 @@ test('Use the same empty-state presentation for Tools, disconnected Actions, and
 });
 
 test('Show only a spinner while initial Settings connections load and clear it on failure and retry', (t) => {
-  const app = appFor(t, (window) => window.history.replaceState(null, '', '#settings/actions'));
+  const app = appFor(t, (window) => window.history.replaceState(null, '', '#settings/inbox-and-tasks'));
   const spinner = app.document.getElementById('github-settings-loading');
   const status = app.document.getElementById('github-settings-status');
   assert.equal(spinner.hidden, false);

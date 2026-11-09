@@ -147,7 +147,7 @@ Theme names saved before v0.3.0 (Tsuyukusa, Sakura, and the other earlier palett
 
 The initial catalog is embedded as escaped JSON in the HTML response. The browser renders it directly without an initial `google.script.run` round trip. A live catalog read for a named sheet makes one Sheets API values request. When the sheet name is empty, it first fetches sheet titles and indices to resolve the first sheet, then reads values. Metadata is also fetched after a failed values request to retain useful missing-sheet diagnostics. Reordering tabs takes effect after cache expiry or **Fetch latest** when using the first-sheet fallback. Cache hits do not call Sheets.
 
-**Catalog cache duration**, in **Settings → Tools & Links**, offers Disabled, 5 minutes, 1 hour, and 6 hours (default). Changes are saved automatically to the executing user's `CATALOG_CACHE_SECONDS` User Property and apply to the next load. Initialization preserves existing values. These settings do not belong in Script Properties or in the "gas-portal" configuration in package.json.
+**Tools & Links cache duration**, in **Settings → Tools & Links**, offers Disabled, 5 minutes, 1 hour, and 6 hours (default). Changes are saved automatically to the executing user's `CATALOG_CACHE_SECONDS` User Property and apply to the next load. Initialization preserves existing values. These settings do not belong in Script Properties or in the "gas-portal" configuration in package.json.
 
 **Fetch latest** in Tools & Links bypasses the cache, reads the spreadsheet, and replaces the cached entry. Search, remaining selected tags, and the Cards/List choice are preserved. The retrieval time identifies the data snapshot; a Cached label indicates reuse. A normal browser reload may reuse the cache. Fetch latest also retries failed loads. Initial asynchronous loading and refresh use the spinning refresh icon without visible loading messages; failures and empty results remain explicit.
 
@@ -278,7 +278,14 @@ Preview includes a fictional Slack connection and two saved messages. It never c
 
 ## Settings navigation
 
-Settings has four subtabs: **Appearance** (portal text, theme, then language), **Tools & Links** (spreadsheet and catalog cache), **Action Items** (shared cache duration, then Gmail settings, Slack connections and GitHub connections), and **Calendar** (calendar selection, cache and in-page notices). Switching tabs preserves unsaved form values; each control keeps its existing save behavior.
+Cache duration is the first setting in Tools & Links, Action Items and Calendar.
+Tools and Action Items cache preferences save automatically; Calendar cache
+changes are saved with the rest of the Calendar form using **Save changes**.
+Tools **Advanced settings** starts collapsed and contains blocked URL schemes
+and the favicon finder. Opening or closing it preserves the current controls
+and their save behavior.
+
+Settings has four subtabs: **Appearance** (portal text, theme, then language), **Tools & Links** (catalog cache, spreadsheet, then collapsible advanced settings for blocked URL schemes and favicon lookup), **Action Items** (shared cache duration, then Gmail settings, Slack connections and GitHub connections), and **Calendar** (cache, calendar selection and in-page notices). Switching tabs preserves unsaved form values; each control keeps its existing save behavior.
 
 Direct links use `#settings/appearance`, `#settings/tools`, `#settings/actions`, and `#settings/calendar`. The existing `#settings` link opens Appearance. Browser back/forward works in both the GAS web app and local preview. Arrow keys and Home/End navigate within the focused tab row. **Manage connections** opens Action Items settings directly.
 

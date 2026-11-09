@@ -44,7 +44,7 @@ export function renderPreview(html, root, options = {}) {
     .replace('placeholder="github_pat_…"', 'placeholder="demo"')
     .replace('placeholder="xoxp-…"', 'placeholder="demo"')
     .replace('<?!= initialCatalogJson ?>', () => context.serializeCatalog_(catalog))
-    .replace('<!-- preview-label -->', '<p class="preview-label"><span>LOCAL PREVIEW</span> · <span data-i18n="Mock data">Mock data</span></p>')
+    .replace('<!-- preview-label -->', '<p class="preview-label badge badge-warning" aria-label="Local preview with mock data" data-i18n-aria-label="Local preview with mock data" title="Local preview with mock data" data-i18n-title="Local preview with mock data">LOCAL PREVIEW</p>')
     .replace('<script type="module" src="/browser/main.js"></script>', () => `<script>
       ${i18n}
       ${urlSchemes}

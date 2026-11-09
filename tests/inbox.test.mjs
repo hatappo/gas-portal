@@ -1,0 +1,103 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { browser, bundleBrowser } from './helpers.mjs';
+const client = await bundleBrowser({ connectGitHub: false });
+const message = (id, service = 'slack') => ({ id, service, serviceLabel: service, title: 'Message ' + id, url: 'https://example.com/' + id, context: 'Sender', updatedAt: '2026-11-09T10:00:00Z', reasons: [] });
+function fixture(t) {
+  const app = browser(() => {}, client); t.after(() => app.dom.window.close());
+  const calls = [];
+  const source = (id, inboxService) => ({ id, inboxService, label: id, serviceLabel: inboxService || 'GitHub', load(force, done) { calls.push({ id, force, done }); } });
+  const api = app.dom.window.testPortal.actions;
+  return { ...app, calls, source, api, start: () => app.document.getElementById('tab-actions').click() };
+}
+const result = (items, extra = {}) => ({ items, notices: [], fetchedAt: 1794220000000, ...extra });
+test('Inbox aggregates and deduplicates per service while Tasks and forced refresh remain independent', t => {
+  const app = fixture(t);
+  app.api.setSources('slack', [app.source('mentions', 'slack'), app.source('unread', 'slack')]);
+  app.api.setSources('github', [app.source('issues')]);
+  app.start();
+  assert.equal(app.calls.length, 3);
+  assert.equal(app.document.querySelector('.inbox-count').textContent, '—');
+  app.calls[0].done(result([message('a')]));
+  app.calls[1].done(result([message('a'), message('b')], { hasMore: true }));
+  app.calls[2].done(result([message('task', 'github')]));
+  assert.equal(app.document.querySelectorAll('.inbox-card').length, 1);
+  assert.equal(app.document.querySelector('.inbox-count').textContent, '2+');
+  assert.equal(app.document.querySelectorAll('.inbox-message-list li').length, 2);
+  assert.equal(app.document.querySelectorAll('.action-item-list li').length, 1);
+  assert.equal(app.document.getElementById('actions-count').textContent, '1 / 1 件');
+  app.document.getElementById('refresh-actions').click();
+  assert.equal(app.calls.length, 6);
+  assert.ok(app.calls.slice(3).every(call => call.force));
+  assert.equal(app.document.querySelector('.inbox-count').textContent, '2+', 'Keep the last snapshot during refresh');
+  app.calls[3].done(result([])); app.calls[4].done(result([])); app.calls[5].done(result([]));
+  assert.equal(app.document.querySelector('.inbox-count').textContent, '0');
+  assert.equal(app.document.querySelector('.inbox-card').dataset.empty, 'true');
+});
+test('Inbox never presents failed retrieval as a muted zero and preserves partial successful rows', t => {
+  const app = fixture(t);
+  app.api.setSources('gmail', [app.source('mail', 'gmail')]); app.start();
+  app.calls[0].done(result([], { notices: [{ message: 'Failed' }] }));
+  assert.equal(app.document.querySelector('.inbox-count').textContent, '—');
+  assert.equal(app.document.querySelector('.inbox-card').dataset.empty, 'false');
+  assert.equal(app.document.querySelector('.inbox-card').dataset.error, 'true');
+  app.document.getElementById('refresh-actions').click();
+  app.calls[1].done(result([message('mail', 'gmail')], { notices: [{ message: 'Failed' }] }));
+  assert.equal(app.document.querySelector('.inbox-count').textContent, '1+');
+  assert.match(app.document.querySelector('.inbox-error').textContent, /取得できません/);
+  app.api.setSources('gmail', []);
+  assert.equal(app.document.querySelector('.inbox-card'), null);
+});
+
+test('One Inbox mixes services chronologically and shared local search updates both queues without fetching', t => {
+  const app = fixture(t);
+  app.api.setSources('gmail', [app.source('mail', 'gmail')]);
+  app.api.setSources('slack', [app.source('mentions', 'slack')]);
+  app.api.setSources('github', [app.source('issues')]);
+  app.start();
+  app.calls[0].done(result([
+    { ...message('old', 'gmail'), title: 'Old proposal', context: 'Alex', updatedAt: '2026-11-09T08:00:00Z' },
+    { ...message('new', 'gmail'), title: 'New proposal', context: 'Sam', updatedAt: '2026-11-09T12:00:00Z' },
+  ], { hasMore: true }));
+  app.calls[1].done(result([{ ...message('mention'), title: 'Proposal review', context: 'Alex', updatedAt: '2026-11-09T10:00:00Z' }]));
+  app.calls[2].done(result([{ ...message('task', 'github'), title: 'Draft proposal', context: 'example/project' }]));
+  const doc = app.document;
+  const summary = doc.querySelector('.inbox-summary');
+  assert.equal(doc.querySelectorAll('.inbox-card').length, 1);
+  assert.equal(doc.querySelectorAll('.inbox-service').length, 2);
+  assert.equal(summary.getAttribute('aria-expanded'), 'false');
+  assert.deepEqual([...doc.querySelectorAll('.inbox-message-title')].map(el => el.textContent.trim()), ['New proposal', 'Proposal review', 'Old proposal']);
+  const search = text => { doc.getElementById('actions-search').value = text; doc.getElementById('actions-search').dispatchEvent(new app.dom.window.Event('input')); };
+  assert.equal(doc.getElementById('inbox-total-count').textContent, '3 / 3 件');
+  search('proposal');
+  assert.equal(doc.querySelector('[data-service="gmail"] .inbox-count').textContent, '2', 'Filtering never implies more unseen matching items');
+  assert.equal(doc.querySelectorAll('.action-item-list li').length, 1);
+  assert.equal(doc.getElementById('actions-count').textContent, '1 / 1 件');
+  search('Alex');
+  assert.equal(doc.getElementById('inbox-total-count').textContent, '2 / 3 件');
+  assert.equal(doc.getElementById('actions-count').textContent, '0 / 1 件');
+  assert.equal(summary.getAttribute('aria-expanded'), 'false');
+  assert.equal(doc.querySelector('[data-service="gmail"] .inbox-count').textContent, '1');
+  assert.equal(doc.querySelector('[data-service="slack"] .inbox-count').textContent, '1');
+  assert.equal(doc.querySelectorAll('.inbox-message-list li').length, 2);
+  assert.equal(doc.querySelectorAll('.action-item-list li').length, 0);
+  summary.click();
+  const metadata = [...doc.querySelector('.inbox-message-meta').children];
+  assert.equal(metadata[0].getAttribute('role'), 'img');
+  assert.equal(metadata[1].tagName, 'TIME');
+  assert.equal(metadata[2].textContent, 'Alex');
+  search('no matches');
+  assert.equal(doc.getElementById('inbox-total-count').textContent, '0 / 3 件');
+  assert.deepEqual([...doc.querySelectorAll('.inbox-count')].map(el => el.textContent), ['0', '0']);
+  assert.equal(doc.querySelectorAll('.inbox-message-list li').length, 0);
+  assert.match(doc.querySelector('.inbox-empty').textContent, /一致/);
+  search('');
+  assert.equal(doc.querySelector('[data-service="gmail"] .inbox-count').textContent, '2+');
+  const taskMeta = [...doc.querySelector('.action-item-meta').children];
+  assert.equal(taskMeta[0].querySelector('[role="img"]').getAttribute('aria-label'), 'github');
+  assert.equal(taskMeta[1].tagName, 'TIME');
+  assert.equal(taskMeta[2].textContent, 'example/project');
+  assert.equal(app.calls.length, 3);
+  assert.equal(doc.getElementById('actions-settings'), null);
+  assert.equal(doc.querySelector('.inbox-detail-heading'), null);
+});

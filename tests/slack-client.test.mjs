@@ -40,7 +40,7 @@ test('Slack initializes lazily, waits for both providers, and renders safe poste
   assert.equal(app.slackRequests[2].force, true);
   assert.equal(app.get('action-items').querySelectorAll('li').length, 1, 'Keep the snapshot during refresh');
   app.slackRequests[2].success(response([]));
-  assert.match(app.get('action-items').textContent, /No action items right now/);
+  assert.match(app.get('action-items').textContent, /No tasks right now/);
 });
 
 test('A single refresh starts GitHub and Slack together and commits only after both finish', t => {

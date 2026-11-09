@@ -15,7 +15,7 @@ test("Resolve GAS templates and include the mock and Vite module entry", (t) => 
   t.after(() => dom.window.close());
   assert.equal(dom.window.document.title, 'My Portal');
   assert.equal(dom.window.document.querySelector('.intro .preview-label'), null);
-  assert.match(dom.window.document.querySelector('.site-header > .preview-label').textContent, /LOCAL PREVIEW/);
+  assert.equal(dom.window.document.querySelector('.site-header > .preview-label.badge-warning').textContent, 'LOCAL PREVIEW');
   assert.equal(dom.window.document.querySelector('script[type="module"]').getAttribute('src'), '/browser/main.js');
   assert.equal(dom.window.document.querySelectorAll('.external-link-icon').length >= 1, true);
   for (const [tab, icon] of [['tools', 'tool-case'], ['actions', 'list-checks'], ['settings', 'settings']]) {

@@ -7,7 +7,7 @@ export function withPortalAssets(html, root) {
   const repositoryUrl = readRepositoryUrl(root);
   const link = repositoryUrl ? `<a class="link footer-link repository-link" href="${repositoryUrl}" target="_blank" rel="noopener noreferrer">GitHub <!-- external-link-icon --><span class="visually-hidden" data-i18n="(opens in a new tab)">(opens in a new tab)</span></a>` : '';
   let result = html.replace('<!-- repository-link -->', link);
-  for (const name of ['external-link', 'refresh-cw', 'layout-grid', 'list', 'tool-case', 'list-checks', 'settings', 'calendar-days', 'pin', 'pin-off', 'bell-off']) {
+  for (const name of ['external-link', 'refresh-cw', 'layout-grid', 'list', 'tool-case', 'list-checks', 'settings', 'calendar-days', 'calendar-off', 'pin', 'pin-off', 'bell-off']) {
     const icon = readFileSync(path.join(root, `src/assets/${name}.svg`), 'utf8');
     result = result.replaceAll(`<!-- ${name}-icon -->`, icon);
   }

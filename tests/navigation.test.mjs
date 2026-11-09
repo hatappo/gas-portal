@@ -5,7 +5,7 @@ import { browser, catalog } from './helpers.mjs';
 const selected = (document) => document.querySelector('[role="tab"][aria-selected="true"]').id;
 
 test('Open each tab directly from the hash and fall back safely for absent or unknown routes', (t) => {
-  for (const [hash, tab] of [['#tools', 'tools'], ['#actions', 'actions'], ['#settings', 'settings'], ['', 'tools'], ['#unknown', 'tools'], ['#%ZZ', 'tools']]) {
+  for (const [hash, tab] of [['#tools', 'tools'], ['#inbox-and-tasks', 'actions'], ['#settings', 'settings'], ['', 'tools'], ['#unknown', 'tools'], ['#%ZZ', 'tools']]) {
     const app = browser((window) => window.history.replaceState(null, '', '/?state=empty' + hash));
     t.after(() => app.dom.window.close());
     assert.equal(selected(app.document), 'tab-' + tab);
@@ -25,7 +25,7 @@ test('Local tab navigation supports back and forward, retains queries and drafts
   doc.getElementById('search').value = 'guide';
   doc.getElementById('search').dispatchEvent(new window.Event('input'));
   doc.getElementById('tab-actions').click();
-  assert.equal(window.location.hash, '#actions');
+  assert.equal(window.location.hash, '#inbox-and-tasks');
   doc.getElementById('tab-actions').click();
   assert.equal(window.history.length, 2);
   doc.getElementById('tab-actions').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'End', bubbles: true }));
@@ -72,7 +72,7 @@ test('GAS reads and updates the outer web app URL while retaining query paramete
   app.initial('settings');
   assert.equal(selected(app.document), 'tab-settings');
   app.document.getElementById('tab-actions').click();
-  assert.deepEqual(JSON.parse(JSON.stringify(app.pushes)), [[null, null, 'actions']]);
+  assert.deepEqual(JSON.parse(JSON.stringify(app.pushes)), [[null, null, 'inbox-and-tasks']]);
   assert.equal(app.dom.window.location.hash, '#unrelated', 'Never route the sandbox iframe URL');
   app.pop('tools');
   assert.equal(selected(app.document), 'tab-tools');
@@ -88,7 +88,7 @@ test('Delayed initial GAS location cannot override user navigation or a newer hi
   assert.equal(selected(clicked.document), 'tab-actions');
   const popped = gasBrowser(t);
   popped.pop('settings');
-  popped.initial('actions');
+  popped.initial('inbox-and-tasks');
   assert.equal(selected(popped.document), 'tab-settings');
 });
 
@@ -102,8 +102,8 @@ test('The skip link hash keeps the current tab and unavailable history does not 
   assert.equal(selected(app.document), 'tab-actions');
 });
 
-test('Settings subroutes open the correct panel and safely handle legacy or unknown section links', (t) => {
-  for (const [hash, section] of [['settings', 'appearance'], ['settings/appearance', 'appearance'], ['settings/tools', 'tools'], ['settings/actions', 'actions'], ['settings/missing', 'appearance']]) {
+test('Settings subroutes open the correct panel and safely handle unknown section links', (t) => {
+  for (const [hash, section] of [['settings', 'appearance'], ['settings/appearance', 'appearance'], ['settings/tools', 'tools'], ['settings/inbox-and-tasks', 'actions'], ['settings/missing', 'appearance']]) {
     const app = browser((window) => window.history.replaceState(null, '', '#' + hash));
     t.after(() => app.dom.window.close());
     assert.equal(selected(app.document), 'tab-settings');
@@ -144,15 +144,15 @@ test('Settings keyboard navigation and history preserve drafts and keep parent t
   assert.equal(window.location.hash, '#settings/calendar');
 });
 
-test('GAS subtab links use the outer history bridge and Manage connections opens Action Items settings', (t) => {
+test('GAS settings subtabs use the outer history bridge', (t) => {
   const app = gasBrowser(t);
   app.initial('settings/tools');
   assert.equal(app.document.getElementById('settings-tools-panel').hidden, false);
   app.document.getElementById('tab-actions').click();
-  app.document.getElementById('actions-settings').click();
+  app.document.getElementById('tab-settings').click();
+  app.document.getElementById('settings-tab-actions').click();
   assert.equal(app.document.getElementById('settings-actions-panel').hidden, false);
-  assert.equal(app.document.activeElement.id, 'settings-tab-actions');
-  assert.equal(app.pushes.at(-1)[2], 'settings/actions');
+  assert.equal(app.pushes.at(-1)[2], 'settings/inbox-and-tasks');
   const count = app.pushes.length;
   app.pop('settings/appearance');
   assert.equal(app.document.getElementById('settings-appearance-panel').hidden, false);

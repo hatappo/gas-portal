@@ -13,10 +13,10 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 export const views = {
   tools: { hash: '', ready: '#directory[aria-busy="false"]' },
   list: { hash: '', ready: '#directory[aria-busy="false"]', prepare: (page) => page.locator('label:has(#view-list)').click() },
-  actions: { query: '?github=multiple', hash: '#actions', ready: '#action-items[aria-busy="false"]' },
+  actions: { query: '?github=multiple', hash: '#inbox-and-tasks', ready: '#action-items[aria-busy="false"]' },
   appearance: { hash: '#settings/appearance', ready: '#settings-appearance-panel:not([hidden])' },
   'settings-tools': { hash: '#settings/tools', ready: '#settings-tools-panel:not([hidden])' },
-  'settings-actions': { hash: '#settings/actions', ready: '#github-connections li' },
+  'settings-actions': { hash: '#settings/inbox-and-tasks', ready: '#github-connections li' },
 };
 
 /** @param {string[]} argv */

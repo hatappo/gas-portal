@@ -23,8 +23,8 @@ export function initializeGmail(actions: Actions) {
     AUTHORIZATION_REQUIRED: 'Gmail authorization is required. Run authorizePortal in Authorization.gs in the GAS editor, then grant access and reload the portal.',
     FORBIDDEN: 'Gmail access was denied. Check your account permissions and enable the Gmail API in your Cloud project if needed.',
     RATE_LIMITED: 'Gmail rate limit reached. Wait a few minutes before refreshing.',
-    SETTINGS_CHANGED: 'Gmail settings changed during this request. Refresh Action Items.',
-    DISABLED: 'Gmail is disabled. Refresh Action Items.',
+    SETTINGS_CHANGED: 'Gmail settings changed during this request. Refresh Inbox & Tasks.',
+    DISABLED: 'Gmail is disabled. Refresh Inbox & Tasks.',
   } as Record<string, string>)[code] || 'Could not load Gmail data. Check authorization and try again.';
   actions.setProviderState('gmail', { ready: false, loading: false, error: '' });
   function normalize(response: GmailActionsResponse): ActionResult {
@@ -40,7 +40,7 @@ export function initializeGmail(actions: Actions) {
   }
   function publish() {
     actions.setSources('gmail', settings().enabled ? [{
-      id: 'google', get label() { return PortalI18n.t('Unread mail', document.documentElement.lang); }, serviceLabel: 'Gmail',
+      id: 'google', inboxService: 'gmail', get label() { return PortalI18n.t('Unread mail', document.documentElement.lang); }, serviceLabel: 'Gmail',
       load(force, done) {
         const fail = () => done(normalize({ ok: false, error: 'REQUEST_FAILED' }));
         try { google.script.run.withSuccessHandler((response: GmailActionsResponse) => done(normalize(response))).withFailureHandler(fail).getGmailActionItems(force); }
@@ -78,9 +78,9 @@ export function initializeGmail(actions: Actions) {
     <Show when={busy()}><div class="refresh-catalog actions-loading" role="status" aria-label={t('Loading…')} aria-busy="true">{document.querySelector<HTMLTemplateElement>('#gmail-refresh-icon')!.content.cloneNode(true)}</div></Show>
     <form id="gmail-settings-form" onSubmit={event => { event.preventDefault(); void save(); }}>
       <fieldset disabled={busy() || !initialized()}>
-        <label class="gmail-enabled"><input id="gmail-enabled" type="checkbox" class="toggle toggle-sm" checked={draft().enabled} onChange={event => setDraft({ ...draft(), enabled: event.currentTarget.checked })}/><span>{t('Show unread Gmail in Action Items')}</span></label>
+        <label class="gmail-enabled"><input id="gmail-enabled" type="checkbox" class="toggle toggle-sm" checked={draft().enabled} onChange={event => setDraft({ ...draft(), enabled: event.currentTarget.checked })}/><span>{t('Show unread Gmail in Inbox')}</span></label>
         <label class="settings-field"><span id="gmail-limit-label">{t('Maximum unread messages')}</span><select id="gmail-limit" aria-labelledby="gmail-limit-label" class="select" value={draft().limit} onChange={event => setDraft({ ...draft(), limit: Number(event.currentTarget.value) })}><For each={PortalGmail.limits}>{limit => <option value={limit}>{limit}</option>}</For></select></label>
-        <p class="settings-help">{t('20 by default. Each unread message is one item. Uses the shared Action Items cache; Fetch latest refreshes all services.')}</p>
+        <p class="settings-help">{t('20 by default. Shows a preview of unread messages; a + indicates more. Uses the shared Inbox & Tasks cache.')}</p>
         <button type="submit" class="btn btn-primary">{t('Save changes')}</button>
       </fieldset>
     </form>

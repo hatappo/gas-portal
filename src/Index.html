@@ -14,6 +14,7 @@
         <span class="brand-name"><?= portal.brandLead ?><span><?= portal.brandRest ?></span></span>
       </div>
       <!-- preview-label -->
+      <div id="compact-navigation"></div>
       <div id="calendar-toggle-host"></div>
     </header>
     <div class="portal-layout">
@@ -24,7 +25,7 @@
       </section>
       <div class="portal-tabs tabs tabs-border" role="tablist" aria-label="Portal sections" data-i18n-aria-label="Portal sections">
         <button type="button" id="tab-tools" class="tab" role="tab" aria-selected="true" aria-controls="directory" tabindex="0"><!-- tool-case-icon --><span>Tools &amp; Links</span></button>
-        <button type="button" id="tab-actions" class="tab" role="tab" aria-selected="false" aria-controls="actions-panel" tabindex="-1"><!-- list-checks-icon --><span>Action Items</span></button>
+        <button type="button" id="tab-actions" class="tab" role="tab" aria-selected="false" aria-controls="actions-panel" tabindex="-1"><!-- list-checks-icon --><span>Inbox &amp; Tasks</span></button>
         <button type="button" id="tab-settings" class="tab settings-tab" role="tab" aria-label="Settings" data-i18n-aria-label="Settings" title="Settings" data-i18n-title="Settings" aria-selected="false" aria-controls="settings-panel" tabindex="-1"><!-- settings-icon --></button>
       </div>
       <section class="directory" role="tabpanel" aria-labelledby="tab-tools" aria-busy="true" id="directory" tabindex="0">
@@ -76,33 +77,39 @@
         <noscript><p><span data-i18n="Enable JavaScript to display the tool list.">Enable JavaScript to display the tool list.</span></p></noscript>
       </section>
       <section class="action-items" role="tabpanel" aria-labelledby="tab-actions" id="actions-panel" tabindex="0" hidden>
-        <div class="actions-toolbar">
+        <div class="actions-toolbar inbox-tasks-toolbar">
           <div class="search-controls">
             <div class="search-box input">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
-              <label class="visually-hidden" for="actions-search" data-i18n="Search by title or message">Search by title or message</label>
-              <input type="search" id="actions-search" placeholder="Search by title or message" data-i18n-placeholder="Search by title or message" autocomplete="off">
+              <label class="visually-hidden" for="actions-search" data-i18n="Search inbox and tasks">Search inbox and tasks</label>
+              <input type="search" id="actions-search" placeholder="Search inbox and tasks" data-i18n-placeholder="Search inbox and tasks" autocomplete="off">
             </div>
           </div>
-          <button type="button" id="actions-settings" class="action-text-button btn btn-ghost btn-sm" data-i18n="Manage connections">Manage connections</button>
-          <div class="actions-summary">
-            <span id="actions-count" class="count" role="status" aria-live="polite" aria-atomic="true">—</span>
-            <button type="button" id="refresh-actions" class="refresh-catalog btn btn-ghost" aria-describedby="actions-freshness" aria-busy="true" disabled aria-label="Fetch latest" data-i18n-aria-label="Fetch latest" title="Fetch latest" data-i18n-title="Fetch latest">
-              <!-- refresh-cw-icon -->
-              <span id="actions-freshness" class="catalog-freshness" role="status" aria-live="polite" hidden></span>
-            </button>
+          <div class="actions-summary queue-counts">
+            <span class="queue-count">Inbox <span id="inbox-total-count" class="count" role="status" aria-live="polite" aria-atomic="true">—</span></span>
+            <span class="queue-count">Tasks <span id="actions-count" class="count" role="status" aria-live="polite" aria-atomic="true">—</span></span>
           </div>
+          <button type="button" id="refresh-actions" class="refresh-catalog btn btn-ghost" aria-describedby="actions-freshness" aria-busy="true" disabled aria-label="Fetch latest" data-i18n-aria-label="Fetch latest" title="Fetch latest" data-i18n-title="Fetch latest">
+            <!-- refresh-cw-icon -->
+            <span id="actions-freshness" class="catalog-freshness" role="status" aria-live="polite" hidden></span>
+          </button>
         </div>
-        <div id="action-filters"></div>
+        <h2 id="inbox-title" class="queue-section-title">Inbox</h2>
+        <div id="inbox-services" aria-labelledby="inbox-title"></div>
         <div id="actions-status" class="action-notice alert" role="status" aria-live="polite" hidden></div>
-        <div id="action-items" class="action-items-list" aria-label="Action Items" aria-busy="true"></div>
+        <section class="tasks-section" aria-labelledby="tasks-title">
+          <div class="tasks-heading">
+            <h2 id="tasks-title" class="queue-section-title">Tasks</h2>
+          </div>
+          <div id="action-items" class="action-items-list" aria-label="Tasks" aria-busy="true"></div>
+        </section>
         <template id="action-external-icon"><!-- external-link-icon --></template>
       </section>
       <section id="settings-panel" class="settings-panel" role="tabpanel" aria-labelledby="tab-settings" tabindex="0" hidden>
         <div class="settings-tabs tabs tabs-box" role="tablist" aria-label="Settings sections" data-i18n-aria-label="Settings sections">
           <button type="button" id="settings-tab-appearance" class="tab" role="tab" aria-selected="true" aria-controls="settings-appearance-panel" tabindex="0" data-i18n="Appearance">Appearance</button>
           <button type="button" id="settings-tab-tools" class="tab" role="tab" aria-selected="false" aria-controls="settings-tools-panel" tabindex="-1">Tools &amp; Links</button>
-          <button type="button" id="settings-tab-actions" class="tab" role="tab" aria-selected="false" aria-controls="settings-actions-panel" tabindex="-1">Action Items</button>
+          <button type="button" id="settings-tab-actions" class="tab" role="tab" aria-selected="false" aria-controls="settings-actions-panel" tabindex="-1">Inbox &amp; Tasks</button>
           <button type="button" id="settings-tab-calendar" class="tab" role="tab" aria-selected="false" aria-controls="settings-calendar-panel" tabindex="-1">Calendar</button>
         </div>
         <div id="settings-appearance-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-appearance" tabindex="0">
@@ -139,6 +146,16 @@
           </section>
         </div>
         <div id="settings-tools-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-tools" tabindex="0" hidden>
+          <div class="cache-settings">
+            <label class="settings-field" for="catalog-cache-seconds"><span data-i18n="Tools & Links cache duration">Tools &amp; Links cache duration</span>
+              <select id="catalog-cache-seconds" class="select" data-saved-value="<?= portal.cacheSeconds ?>" aria-describedby="cache-help cache-settings-status">
+                <!-- Generated from PortalCacheDurations.catalog. -->
+              </select>
+            </label>
+            <p id="cache-help" data-i18n="Reuse data for this duration. Fetch latest bypasses the cache.">Reuse data for this duration. Fetch latest bypasses the cache.</p>
+            <p data-i18n="Saved automatically.">Saved automatically.</p>
+            <p id="cache-settings-status" role="status" aria-live="polite"></p>
+          </div>
           <section class="display-settings" aria-labelledby="spreadsheet-settings-title">
             <form id="spreadsheet-settings-form" class="portal-settings-form">
               <div class="settings-heading"><h2 id="spreadsheet-settings-title"><span class="service-logo service-logo-drive" aria-hidden="true"></span><span data-i18n="Spreadsheet">Spreadsheet</span></h2><p data-i18n="Choose the source for Tools & Links. Saved for your Google account.">Choose the source for Tools &amp; Links. Saved for your Google account.</p></div>
@@ -154,44 +171,41 @@
               <p id="spreadsheet-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
             </form>
           </section>
-            <div class="cache-settings">
-              <label class="settings-field" for="catalog-cache-seconds"><span data-i18n="Catalog cache duration">Catalog cache duration</span>
-                <select id="catalog-cache-seconds" class="select" data-saved-value="<?= portal.cacheSeconds ?>" aria-describedby="cache-help cache-settings-status">
-                  <!-- Generated from PortalCacheDurations.catalog. -->
-                </select>
-              </label>
-              <p id="cache-help" data-i18n="Reuse the list to load faster. Fetch latest always reads the spreadsheet. Changes are saved automatically and apply to the next load.">Reuse the list to load faster. Fetch latest always reads the spreadsheet. Changes are saved automatically and apply to the next load.</p>
-              <p id="cache-settings-status" role="status" aria-live="polite"></p>
-            </div>
-            <fieldset id="url-scheme-settings" class="cache-settings url-scheme-settings" data-saved-value="<?= portal.unblockedUrlSchemes ?>" aria-describedby="url-scheme-help url-scheme-settings-status">
-              <legend data-i18n="Blocked URL schemes">Blocked URL schemes</legend>
-              <div class="url-scheme-choices"><!-- Generated from PortalUrlSchemes.optional. --></div>
-              <p id="url-scheme-help" data-i18n="Links with a checked scheme are shown but cannot be opened. javascript: and vbscript: are always blocked. Changes are saved automatically.">Links with a checked scheme are shown but cannot be opened. javascript: and vbscript: are always blocked. Changes are saved automatically.</p>
-              <p id="url-scheme-settings-status" role="status" aria-live="polite"></p>
-            </fieldset>
-            <section class="display-settings favicon-finder" aria-labelledby="favicon-finder-title">
-              <div class="settings-heading"><h2 id="favicon-finder-title" data-i18n="Favicon finder">Favicon finder</h2><p data-i18n="When a tool shows the 🌐 fallback, find the icon URL to put in its icon column.">When a tool shows the 🌐 fallback, find the icon URL to put in its icon column.</p></div>
-              <p><a id="favicon-finder-link" class="bookmarklet-link btn btn-outline" draggable="true"><span aria-hidden="true">🔍</span> <span data-i18n="Find favicon">Find favicon</span></a></p>
-              <p class="settings-help" data-i18n="Drag the link above to your bookmarks bar. Then open the page whose icon you need and click the bookmark to show its icon URL.">Drag the link above to your bookmarks bar. Then open the page whose icon you need and click the bookmark to show its icon URL.</p>
-              <div data-disclosure class="settings-help">
-                <span data-disclosure-title data-i18n="If dragging does not work">If dragging does not work</span>
-                <div data-disclosure-content>
-                  <p data-i18n="Create a bookmark manually and paste this code as its URL.">Create a bookmark manually and paste this code as its URL.</p>
-                  <textarea id="favicon-finder-code" class="bookmarklet-code textarea textarea-sm w-full" rows="3" readonly spellcheck="false" aria-label="Bookmarklet code" data-i18n-aria-label="Bookmarklet code"></textarea>
-                  <div class="settings-form-actions"><button type="button" id="favicon-finder-copy" class="settings-reset btn" data-i18n="Copy code">Copy code</button></div>
+          <div data-disclosure class="tools-advanced-settings">
+            <span data-disclosure-title data-i18n="Advanced settings">Advanced settings</span>
+            <div data-disclosure-content>
+              <fieldset id="url-scheme-settings" class="cache-settings url-scheme-settings" data-saved-value="<?= portal.unblockedUrlSchemes ?>" aria-describedby="url-scheme-help url-scheme-settings-status">
+                <legend data-i18n="Blocked URL schemes">Blocked URL schemes</legend>
+                <div class="url-scheme-choices"><!-- Generated from PortalUrlSchemes.optional. --></div>
+                <p id="url-scheme-help" data-i18n="Links with a checked scheme are shown but cannot be opened. javascript: and vbscript: are always blocked. Changes are saved automatically.">Links with a checked scheme are shown but cannot be opened. javascript: and vbscript: are always blocked. Changes are saved automatically.</p>
+                <p id="url-scheme-settings-status" role="status" aria-live="polite"></p>
+              </fieldset>
+              <section class="display-settings favicon-finder" aria-labelledby="favicon-finder-title">
+                <div class="settings-heading"><h2 id="favicon-finder-title" data-i18n="Favicon finder">Favicon finder</h2><p data-i18n="When a tool shows the 🌐 fallback, find the icon URL to put in its icon column.">When a tool shows the 🌐 fallback, find the icon URL to put in its icon column.</p></div>
+                <p><a id="favicon-finder-link" class="bookmarklet-link btn btn-outline" draggable="true"><span aria-hidden="true">🔍</span> <span data-i18n="Find favicon">Find favicon</span></a></p>
+                <p class="settings-help" data-i18n="Drag the link above to your bookmarks bar. Then open the page whose icon you need and click the bookmark to show its icon URL.">Drag the link above to your bookmarks bar. Then open the page whose icon you need and click the bookmark to show its icon URL.</p>
+                <div data-disclosure class="settings-help">
+                  <span data-disclosure-title data-i18n="If dragging does not work">If dragging does not work</span>
+                  <div data-disclosure-content>
+                    <p data-i18n="Create a bookmark manually and paste this code as its URL.">Create a bookmark manually and paste this code as its URL.</p>
+                    <textarea id="favicon-finder-code" class="bookmarklet-code textarea textarea-sm w-full" rows="3" readonly spellcheck="false" aria-label="Bookmarklet code" data-i18n-aria-label="Bookmarklet code"></textarea>
+                    <div class="settings-form-actions"><button type="button" id="favicon-finder-copy" class="settings-reset btn" data-i18n="Copy code">Copy code</button></div>
+                  </div>
                 </div>
-              </div>
-              <p id="favicon-finder-status" class="settings-form-status" role="status" aria-live="polite"></p>
-            </section>
+                <p id="favicon-finder-status" class="settings-form-status" role="status" aria-live="polite"></p>
+              </section>
+            </div>
+          </div>
         </div>
         <div id="settings-actions-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-actions" tabindex="0" hidden>
           <div class="cache-settings">
-            <label class="settings-field" for="actions-cache-seconds"><span data-i18n="Action Items cache duration">Action Items cache duration</span>
+            <label class="settings-field" for="actions-cache-seconds"><span data-i18n="Inbox & Tasks cache duration">Inbox & Tasks cache duration</span>
               <select id="actions-cache-seconds" class="select" data-saved-value="<?= portal.actionsCacheSeconds ?>" aria-describedby="actions-cache-help actions-cache-settings-status">
                 <!-- Generated from PortalCacheDurations.actions. -->
               </select>
             </label>
-            <p id="actions-cache-help" data-i18n="Shared by all Action Items services and connections. Fetch latest always bypasses the cache. Changes are saved automatically and apply to the next load.">Shared by all Action Items services and connections. Fetch latest always bypasses the cache. Changes are saved automatically and apply to the next load.</p>
+            <p id="actions-cache-help" data-i18n="Reuse data for this duration. Fetch latest bypasses the cache.">Reuse data for this duration. Fetch latest bypasses the cache.</p>
+            <p><span data-i18n="Applies to all services and connections.">Applies to all services and connections.</span> <span data-i18n="Saved automatically.">Saved automatically.</span></p>
             <p id="actions-cache-settings-status" role="status" aria-live="polite"></p>
           </div>
           <section id="gmail-settings-host" class="display-settings gmail-settings" aria-labelledby="gmail-settings-title"></section>
@@ -283,6 +297,7 @@
     </footer>
     <template id="calendar-pin-icon"><!-- pin-icon --></template>
     <template id="calendar-pin-off-icon"><!-- pin-off-icon --></template>
+    <template id="calendar-off-icon"><!-- calendar-off-icon --></template>
     <template id="calendar-icon"><!-- calendar-days-icon --></template>
     <template id="calendar-silence-icon"><!-- bell-off-icon --></template>
     <template id="gmail-refresh-icon"><!-- refresh-cw-icon --></template>

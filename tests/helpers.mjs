@@ -7,6 +7,7 @@ import solid from 'vite-plugin-solid';
 import path from 'node:path';
 import { withPreviewContent } from '../scripts/preview-project.mjs';
 import { renderPreview } from '../scripts/preview.mjs';
+import { withPortalAssets } from '../scripts/portal-html.mjs';
 import { sharedSources, serverSources } from '../scripts/gas-sources.mjs';
 
 // Compile explicit startup with the production JSX transform. Individual services can be
@@ -78,7 +79,7 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
 export const plain = (value) => JSON.parse(JSON.stringify(value));
 
 export function browser(setupWindow = () => {}, client = browserClient, source = readFileSync('src/Index.html', 'utf8')) {
-  const html = withPreviewContent(source, server().context.getPortalContent_({ PORTAL_LANGUAGE: 'ja' }))
+  const html = withPreviewContent(withPortalAssets(source, process.cwd()), server().context.getPortalContent_({ PORTAL_LANGUAGE: 'ja' }))
     .replace(/<\?[\s\S]*?\?>/g, '');
   const dom = new JSDOM(html, { runScripts: 'outside-only', url: 'https://example.com', pretendToBeVisual: true });
   const requests = [];

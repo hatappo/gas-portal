@@ -93,4 +93,5 @@ interface ActionItem {
 }
 interface ActionNotice { message: string; reason?: string; url?: string }
 interface ActionResult { hasMore?: boolean; items: ActionItem[]; notices: ActionNotice[]; fetchedAt?: number; cached?: boolean }
-interface ActionSource { id: string; label: string; serviceLabel: string; load(force: boolean, done: (result: ActionResult) => void): void }
+interface InboxGroup { id: string; label: string; items: ActionItem[]; loaded: boolean; failed: boolean; hasMore: boolean }
+interface ActionSource { inboxService?: string; id: string; label: string; serviceLabel: string; load(force: boolean, done: (result: ActionResult) => void): void }
