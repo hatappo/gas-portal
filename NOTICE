@@ -28,3 +28,11 @@ The publisher permits free use, including commercial and logo use,
 without restrictions, and provides the font without warranty.
 Only the single glyph artwork is included; the original font is not
 bundled. The font is not claimed to be covered by this project's MIT license.
+
+Service logos (GitHub Octocat, Slack, Gmail, Google Calendar and Google Drive)
+are sourced from https://cdn.svglogos.dev/logos/ (gilbarbara/logos).
+The collection is published under CC0 1.0; its license is retained in
+src/assets/brands/LICENSE.txt and the distributed assets/brand-logos-LICENSE.txt.
+Original SVGs are kept in src/assets/brands and embedded in the generated CSS.
+All logos and trademarks remain the property of their respective owners.
+Source: https://github.com/gilbarbara/logos

@@ -141,7 +141,7 @@
         <div id="settings-tools-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-tools" tabindex="0" hidden>
           <section class="display-settings" aria-labelledby="spreadsheet-settings-title">
             <form id="spreadsheet-settings-form" class="portal-settings-form">
-              <div class="settings-heading"><h2 id="spreadsheet-settings-title" data-i18n="Spreadsheet">Spreadsheet</h2><p data-i18n="Choose the source for Tools & Links. Saved for your Google account.">Choose the source for Tools &amp; Links. Saved for your Google account.</p></div>
+              <div class="settings-heading"><h2 id="spreadsheet-settings-title"><span class="service-logo service-logo-drive" aria-hidden="true"></span><span data-i18n="Spreadsheet">Spreadsheet</span></h2><p data-i18n="Choose the source for Tools & Links. Saved for your Google account.">Choose the source for Tools &amp; Links. Saved for your Google account.</p></div>
               <fieldset id="spreadsheet-settings-fields">
                 <legend class="visually-hidden" data-i18n="Spreadsheet settings">Spreadsheet settings</legend>
                 <label class="settings-field"><span data-i18n="Spreadsheet ID or URL">Spreadsheet ID or URL</span><input id="setting-spreadsheet" class="input w-full" name="SPREADSHEET_ID" value="<?= portal.spreadsheetId ?>" autocomplete="off" spellcheck="false" aria-describedby="spreadsheet-help"></label>
@@ -196,7 +196,7 @@
           </div>
           <section id="gmail-settings-host" class="display-settings gmail-settings" aria-labelledby="gmail-settings-title"></section>
           <section class="display-settings slack-settings" aria-labelledby="slack-settings-title">
-            <div class="settings-heading"><h2 id="slack-settings-title">Slack</h2><p data-i18n="Show saved messages found by Slack search. To-do completion status is not available.">Show saved messages found by Slack search. To-do completion status is not available.</p></div>
+            <div class="settings-heading"><h2 id="slack-settings-title"><span class="service-logo service-logo-slack" aria-hidden="true"></span>Slack</h2><p data-i18n="Show saved messages found by Slack search. To-do completion status is not available.">Show saved messages found by Slack search. To-do completion status is not available.</p></div>
             <p class="settings-help" data-i18n="Search results may differ from Slack’s Saved view. Messages are ordered by posting time.">Search results may differ from Slack’s Saved view. Messages are ordered by posting time.</p>
             <label class="settings-field"><span data-i18n="Bookmarks per connection">Bookmarks per connection</span><select id="slack-bookmark-limit" class="select" data-saved-value="<?= portal.slackBookmarkLimit ?>" aria-describedby="slack-limit-help slack-limit-status"></select></label>
             <p id="slack-limit-help" class="settings-help" data-i18n="20 by default. Saved automatically; applies to every Slack connection on the next load.">20 by default. Saved automatically; applies to every Slack connection on the next load.</p>
@@ -231,7 +231,7 @@
             <button type="button" id="retry-slack-settings" class="action-text-button btn btn-ghost btn-sm" hidden data-i18n="Try again">Try again</button>
           </section>
           <section class="display-settings github-settings" aria-labelledby="github-settings-title">
-            <div class="settings-heading"><h2 id="github-settings-title">GitHub</h2><p data-i18n="Connect GitHub.com accounts to show assigned issues, review requests, and changes requested on your PRs.">Connect GitHub.com accounts to show assigned issues, review requests, and changes requested on your PRs.</p></div>
+            <div class="settings-heading"><h2 id="github-settings-title"><span class="service-logo service-logo-github" aria-hidden="true"></span>GitHub</h2><p data-i18n="Connect GitHub.com accounts to show assigned issues, review requests, and changes requested on your PRs.">Connect GitHub.com accounts to show assigned issues, review requests, and changes requested on your PRs.</p></div>
             <p class="settings-help" data-i18n="Use a fine-grained personal access token restricted to the repositories you need. Tokens are saved in GAS User Properties and are never shown again.">Use a fine-grained personal access token restricted to the repositories you need. Tokens are saved in GAS User Properties and are never shown again.</p>
             <div data-disclosure class="github-pat-help settings-help">
               <span data-disclosure-title data-i18n="PAT setup and permissions">PAT setup and permissions</span>

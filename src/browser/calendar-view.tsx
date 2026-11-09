@@ -1,3 +1,4 @@
+import { ServiceLogo } from './service-logo';
 import { For, Show, createMemo, createSignal, createEffect, onCleanup, type Accessor, type JSX } from 'solid-js';
 import { Hint } from './ui';
 import { SegmentedControl } from '@kobalte/core/segmented-control';
@@ -201,7 +202,7 @@ export function CalendarSettingsForm(props: { state: CalendarViewState; draft: A
     return { id: 'sample', start, end: start + 1800000, gap: false, event: { id: 'sample', calendarId: 'sample', calendarName: t('Sample'), title: t('Sample event'), start, end: start + 1800000, allDay: false, busy: true, color: '#38a1db', url: '', meetingUrl: '' } };
   };
   const change = (patch: Partial<CalendarSettings>) => props.change({ ...props.draft(), ...patch });
-  return <section class="calendar-settings"><h2>Google Calendar</h2><p class="settings-help">{t('Show today’s schedule in a side panel using the Google account running this app. Calendar access is read-only.')}</p>
+  return <section class="calendar-settings"><h2><ServiceLogo service="calendar" label="Google Calendar" decorative/>Google Calendar</h2><p class="settings-help">{t('Show today’s schedule in a side panel using the Google account running this app. Calendar access is read-only.')}</p>
     <Show when={!props.state.initialized && props.state.settingsError}><p class="calendar-notice alert alert-error alert-soft" role="alert">{props.state.settingsError}</p><button type="button" class="btn btn-ghost btn-sm" disabled={props.state.busy} onClick={props.commands.refresh}>{t('Fetch latest')}</button></Show>
     <form onSubmit={event => { event.preventDefault(); props.commands.save(props.draft()); }}>
       <fieldset disabled={props.state.saving || !props.state.initialized}>

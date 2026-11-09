@@ -244,3 +244,9 @@ UI text supports Japanese and English through `src/shared/i18n.js`. Keep transla
 ## License
 
 MIT. See [NOTICE](NOTICE) for icon licensing.
+
+Service marks in Action Items and Settings use the supplied SVG Logos artwork.
+They are bundled into the stylesheet as data URLs, so viewing a row does not
+contact a logo CDN. Icons retain accessible service names and hover labels;
+unknown services keep their text label. Spreadsheet settings use the Google
+Drive mark. See [NOTICE](NOTICE) for sources and licensing.

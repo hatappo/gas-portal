@@ -889,3 +889,38 @@ test('Gmail settings precede Slack and GitHub, persist across reload and join th
   await page.screenshot({ path: '/tmp/gmail-action-items-mobile.png', fullPage: true });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
 });
+
+
+test('Service logos are embedded, accessible, and visible in Actions and Settings in both themes', async t => {
+  const page = await pageFor(t);
+  await page.goto(base + '/?gmail=ready#actions');
+  await page.locator('#refresh-actions[aria-busy="false"]').waitFor();
+  for (const name of ['GitHub', 'Slack', 'Gmail']) {
+    const logo = page.locator('.action-service').getByRole('img', { name, exact: true }).first();
+    await logo.waitFor();
+    assert.equal(await logo.getAttribute('title'), name);
+    assert.equal(await logo.locator('.visually-hidden').textContent(), name);
+  }
+  for (const theme of ['lofi', 'dracula']) {
+    await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+    for (const width of [1280, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      await page.screenshot({ path: '/tmp/service-logos-' + theme + '-' + width + '.png', fullPage: true });
+    }
+  }
+  await page.locator('#tab-settings').click();
+  await page.locator('#settings-tab-actions').click();
+  for (const service of ['gmail', 'slack', 'github']) assert.equal(await page.locator('#' + service + '-settings-title .service-logo[aria-hidden="true"]').count(), 1);
+  await page.locator('#settings-tab-tools').click();
+  assert.equal(await page.locator('#spreadsheet-settings-title .service-logo-drive').isVisible(), true);
+  await page.locator('#settings-tab-calendar').click();
+  await page.locator('.calendar-settings h2 .service-logo-calendar').waitFor();
+  // All brand SVGs decode from data URLs, including when every external request is blocked.
+  const loaded = await page.locator('.service-logo').evaluateAll(async logos => {
+    const urls = [...new Set(logos.map(logo => getComputedStyle(logo).backgroundImage.slice(5, -2)))];
+    return Promise.all(urls.map(async url => { const image = new Image(); image.src = url; await image.decode(); return { inline: url.startsWith('data:image/svg+xml'), width: image.naturalWidth }; }));
+  });
+  assert.equal(loaded.length, 5);
+  assert.ok(loaded.every(image => image.inline && image.width > 0));
+});

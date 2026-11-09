@@ -504,3 +504,13 @@ main { container-type: inline-size; container-name: portal-main; }
 .gmail-enabled { display: flex; align-items: center; gap: 10px; min-height: 44px; margin-bottom: 12px; font-size: 13px; }
 .gmail-settings .settings-field { max-width: 300px; }
 .gmail-status { margin-top: 12px; font-size: 12px; }
+
+/* Bundled brand SVGs preserve their colors in every theme, without runtime CDN access. */
+.service-logo { display: inline-block; flex: 0 0 auto; width: 18px; height: 18px; background-position: center; background-repeat: no-repeat; background-size: contain; vertical-align: middle; }
+.service-logo-github { background-color: #f6f8fa; border-radius: 3px; background-size: 90%; background-image: url('../assets/brands/github-octocat.svg?inline'); }
+.service-logo-slack { background-image: url('../assets/brands/slack-icon.svg?inline'); }
+.service-logo-gmail { background-image: url('../assets/brands/google-gmail.svg?inline'); }
+.service-logo-calendar { background-image: url('../assets/brands/google-calendar.svg?inline'); }
+.service-logo-drive { background-image: url('../assets/brands/google-drive.svg?inline'); }
+h2 .service-logo { width: 24px; height: 24px; }
+.action-service { display: inline-flex; align-items: center; }

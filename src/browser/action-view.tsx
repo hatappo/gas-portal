@@ -1,6 +1,7 @@
 import { For, Show, createMemo, createSignal, createEffect, type JSX } from 'solid-js';
 import { createStore, reconcile } from 'solid-js/store';
 import { render } from 'solid-js/web';
+import { ServiceLogo } from './service-logo';
 import { tagPalette } from './tag-palette.js';
 import { formatListCount } from './list-presentation.js';
 import { Disclosure } from './disclosure';
@@ -43,7 +44,7 @@ function SourceLink(props: { url: string; class?: string; children: JSX.Element 
 function ActionRow(props: { item: ActionItem; language: string }) {
   return <li>
     <SourceLink url={props.item.url} class="action-item-title link link-hover">{props.item.title || t(props.item.titleFallback || '', props.language)}</SourceLink>
-    <div class="action-item-meta"><span class="action-service">{props.item.serviceLabel}</span><span class="action-context">{props.item.context}</span>
+    <div class="action-item-meta"><span class="action-service"><ServiceLogo service={props.item.service} label={props.item.serviceLabel}/></span><span class="action-context">{props.item.context}</span>
       <time dateTime={props.item.updatedAt}>{t(props.item.dateLabel || 'Updated', props.language) + ' ' + new Intl.DateTimeFormat(props.language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(props.item.updatedAt))}</time>
     </div>
     <div class="action-item-reasons"><For each={props.item.reasons}>{(reason) => <span class="action-item-kind badge badge-sm" style={{ "--tag-accent": typeColor(props.item.service, reason) }}>{typeLabel(props.item.serviceLabel, reason, props.language)}</span>}</For></div>
