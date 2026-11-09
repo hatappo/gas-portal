@@ -2,6 +2,22 @@
 globalThis.PortalI18n = (() => {
   /** @type {Record<string, string>} */
   const messages = {
+  "Unread mail": "未読メール",
+  "Received": "受信",
+  "(No subject)": "（件名なし）",
+  "Show unread mail for the Google account running this app. Open Gmail to read or reply.": "このアプリを実行する Google アカウントの未読メールを表示します。閲覧・返信は Gmail で行います。",
+  "Only subjects, senders, labels and dates are read. Bodies and attachments are not accessed. Spam and trash are excluded; archived unread mail is included.": "件名・差出人・ラベル・日時のみ取得します。本文や添付ファイルにはアクセスしません。迷惑メール・ゴミ箱は除外し、アーカイブ済みの未読メールも含みます。",
+  "Show unread Gmail in Action Items": "Gmail の未読メールを Action Items に表示",
+  "Maximum unread messages": "未読メールの取得上限",
+  "20 by default. Each unread message is one item. Uses the shared Action Items cache; Fetch latest refreshes all services.": "初期値は20件です。未読メール1通を1件として表示します。Action Items 共通のキャッシュを使用し、更新ボタンで全サービスを再取得します。",
+  "Gmail authorization is required. Run authorizePortal in Authorization.gs in the GAS editor, then grant access and reload the portal.": "Gmail の認可が必要です。GAS エディタの Authorization.gs で authorizePortal を実行し、アクセスを許可してからポータルを再読み込みしてください。",
+  "Gmail access was denied. Check your account permissions and enable the Gmail API in your Cloud project if needed.": "Gmail へのアクセスが拒否されました。アカウントの権限を確認し、必要に応じて Cloud プロジェクトで Gmail API を有効にしてください。",
+  "Gmail rate limit reached. Wait a few minutes before refreshing.": "Gmail の取得制限に達しました。数分待ってから再取得してください。",
+  "Gmail settings changed during this request. Refresh Action Items.": "取得中に Gmail の設定が変更されました。Action Items を更新してください。",
+  "Gmail is disabled. Refresh Action Items.": "Gmail 連携は無効です。Action Items を更新してください。",
+  "Could not load Gmail data. Check authorization and try again.": "Gmail のデータを取得できませんでした。認可を確認し、再試行してください。",
+  "Could not load Gmail settings. Try again.": "Gmail の設定を取得できませんでした。再試行してください。",
+
   "Filter by tags (match all)": "タグで絞り込み（すべてに一致）",
   "Filter by type (match any)": "種類で絞り込み（いずれかに一致）",
   "No items match your filters.": "絞り込み条件に一致する項目はありません。",

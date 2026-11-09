@@ -194,6 +194,42 @@
             <p id="actions-cache-help" data-i18n="Shared by all Action Items services and connections. Fetch latest always bypasses the cache. Changes are saved automatically and apply to the next load.">Shared by all Action Items services and connections. Fetch latest always bypasses the cache. Changes are saved automatically and apply to the next load.</p>
             <p id="actions-cache-settings-status" role="status" aria-live="polite"></p>
           </div>
+          <section id="gmail-settings-host" class="display-settings gmail-settings" aria-labelledby="gmail-settings-title"></section>
+          <section class="display-settings slack-settings" aria-labelledby="slack-settings-title">
+            <div class="settings-heading"><h2 id="slack-settings-title">Slack</h2><p data-i18n="Show saved messages found by Slack search. To-do completion status is not available.">Show saved messages found by Slack search. To-do completion status is not available.</p></div>
+            <p class="settings-help" data-i18n="Search results may differ from Slack’s Saved view. Messages are ordered by posting time.">Search results may differ from Slack’s Saved view. Messages are ordered by posting time.</p>
+            <label class="settings-field"><span data-i18n="Bookmarks per connection">Bookmarks per connection</span><select id="slack-bookmark-limit" class="select" data-saved-value="<?= portal.slackBookmarkLimit ?>" aria-describedby="slack-limit-help slack-limit-status"></select></label>
+            <p id="slack-limit-help" class="settings-help" data-i18n="20 by default. Saved automatically; applies to every Slack connection on the next load.">20 by default. Saved automatically; applies to every Slack connection on the next load.</p>
+            <p id="slack-limit-status" class="settings-form-status" role="status" aria-live="polite"></p>
+            <div data-disclosure class="slack-token-help settings-help">
+              <span data-disclosure-title data-i18n="Slack app setup and permissions">Slack app setup and permissions</span>
+              <div data-disclosure-content>
+                <ul>
+                  <li data-i18n="Create a Slack app in the workspace you want to connect.">Create a Slack app in the workspace you want to connect.</li>
+                  <li id="slack-token-permissions" data-i18n="OAuth &amp; Permissions → User Token Scopes: add search:read, then install or reinstall the app.">OAuth &amp; Permissions → User Token Scopes: add search:read, then install or reinstall the app.</li>
+                  <li data-i18n="Copy the User OAuth Token (xoxp-). A bot token cannot be used. Workspace approval may be required.">Copy the User OAuth Token (xoxp-). A bot token cannot be used. Workspace approval may be required.</li>
+                </ul>
+                <p data-i18n="search:read allows searching messages you can access, not only bookmarks. Tokens are stored in GAS User Properties and never shown again.">search:read allows searching messages you can access, not only bookmarks. Tokens are stored in GAS User Properties and never shown again.</p>
+                <a class="link footer-link" href="https://api.slack.com/apps" target="_blank" rel="noopener noreferrer"><span data-i18n="Manage Slack apps">Manage Slack apps</span> <!-- external-link-icon --></a>
+              </div>
+            </div>
+            <div id="slack-settings-loading" class="refresh-catalog actions-loading" role="status" aria-label="Loading…" data-i18n-aria-label="Loading…" aria-busy="true" hidden><!-- refresh-cw-icon --></div>
+            <ul id="slack-connections" class="slack-connections"></ul>
+            <button type="button" id="add-slack" class="action-text-button btn btn-outline btn-sm" data-i18n="Add connection" disabled>Add connection</button>
+            <form id="slack-settings-form" class="portal-settings-form" hidden>
+              <fieldset id="slack-settings-fields">
+                <legend class="visually-hidden" data-i18n="Slack connection">Slack connection</legend>
+                <div class="token-input-row">
+                  <label class="settings-field"><span data-i18n="Slack User OAuth Token">Slack User OAuth Token</span><input type="password" id="slack-token" class="input w-full" maxlength="512" autocomplete="new-password" spellcheck="false" placeholder="xoxp-…" aria-describedby="slack-token-help slack-token-permissions"></label>
+                  <button type="button" id="replace-slack-token" class="btn btn-ghost btn-sm" data-i18n="Replace token" hidden>Replace token</button>
+                </div>
+                <p id="slack-token-help" class="settings-help" data-i18n="Choose Replace token to enter a new token. Leaving it empty keeps the saved token. Never enter a real token in local preview.">Choose Replace token to enter a new token. Leaving it empty keeps the saved token. Never enter a real token in local preview.</p>
+                <div class="settings-form-actions"><button type="submit" class="settings-save btn btn-primary" data-i18n="Save connection">Save connection</button><button type="button" id="cancel-slack" class="settings-reset btn" data-i18n="Cancel">Cancel</button></div>
+              </fieldset>
+            </form>
+            <p id="slack-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
+            <button type="button" id="retry-slack-settings" class="action-text-button btn btn-ghost btn-sm" hidden data-i18n="Try again">Try again</button>
+          </section>
           <section class="display-settings github-settings" aria-labelledby="github-settings-title">
             <div class="settings-heading"><h2 id="github-settings-title">GitHub</h2><p data-i18n="Connect GitHub.com accounts to show assigned issues, review requests, and changes requested on your PRs.">Connect GitHub.com accounts to show assigned issues, review requests, and changes requested on your PRs.</p></div>
             <p class="settings-help" data-i18n="Use a fine-grained personal access token restricted to the repositories you need. Tokens are saved in GAS User Properties and are never shown again.">Use a fine-grained personal access token restricted to the repositories you need. Tokens are saved in GAS User Properties and are never shown again.</p>
@@ -230,41 +266,6 @@
             <p id="github-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
             <button type="button" id="retry-github-settings" class="action-text-button btn btn-ghost btn-sm" hidden data-i18n="Try again">Try again</button>
           </section>
-          <section class="display-settings slack-settings" aria-labelledby="slack-settings-title">
-            <div class="settings-heading"><h2 id="slack-settings-title">Slack</h2><p data-i18n="Show saved messages found by Slack search. To-do completion status is not available.">Show saved messages found by Slack search. To-do completion status is not available.</p></div>
-            <p class="settings-help" data-i18n="Search results may differ from Slack’s Saved view. Messages are ordered by posting time.">Search results may differ from Slack’s Saved view. Messages are ordered by posting time.</p>
-            <label class="settings-field"><span data-i18n="Bookmarks per connection">Bookmarks per connection</span><select id="slack-bookmark-limit" class="select" data-saved-value="<?= portal.slackBookmarkLimit ?>" aria-describedby="slack-limit-help slack-limit-status"></select></label>
-            <p id="slack-limit-help" class="settings-help" data-i18n="20 by default. Saved automatically; applies to every Slack connection on the next load.">20 by default. Saved automatically; applies to every Slack connection on the next load.</p>
-            <p id="slack-limit-status" class="settings-form-status" role="status" aria-live="polite"></p>
-            <div data-disclosure class="slack-token-help settings-help">
-              <span data-disclosure-title data-i18n="Slack app setup and permissions">Slack app setup and permissions</span>
-              <div data-disclosure-content>
-                <ul>
-                  <li data-i18n="Create a Slack app in the workspace you want to connect.">Create a Slack app in the workspace you want to connect.</li>
-                  <li id="slack-token-permissions" data-i18n="OAuth &amp; Permissions → User Token Scopes: add search:read, then install or reinstall the app.">OAuth &amp; Permissions → User Token Scopes: add search:read, then install or reinstall the app.</li>
-                  <li data-i18n="Copy the User OAuth Token (xoxp-). A bot token cannot be used. Workspace approval may be required.">Copy the User OAuth Token (xoxp-). A bot token cannot be used. Workspace approval may be required.</li>
-                </ul>
-                <p data-i18n="search:read allows searching messages you can access, not only bookmarks. Tokens are stored in GAS User Properties and never shown again.">search:read allows searching messages you can access, not only bookmarks. Tokens are stored in GAS User Properties and never shown again.</p>
-                <a class="link footer-link" href="https://api.slack.com/apps" target="_blank" rel="noopener noreferrer"><span data-i18n="Manage Slack apps">Manage Slack apps</span> <!-- external-link-icon --></a>
-              </div>
-            </div>
-            <div id="slack-settings-loading" class="refresh-catalog actions-loading" role="status" aria-label="Loading…" data-i18n-aria-label="Loading…" aria-busy="true" hidden><!-- refresh-cw-icon --></div>
-            <ul id="slack-connections" class="slack-connections"></ul>
-            <button type="button" id="add-slack" class="action-text-button btn btn-outline btn-sm" data-i18n="Add connection" disabled>Add connection</button>
-            <form id="slack-settings-form" class="portal-settings-form" hidden>
-              <fieldset id="slack-settings-fields">
-                <legend class="visually-hidden" data-i18n="Slack connection">Slack connection</legend>
-                <div class="token-input-row">
-                  <label class="settings-field"><span data-i18n="Slack User OAuth Token">Slack User OAuth Token</span><input type="password" id="slack-token" class="input w-full" maxlength="512" autocomplete="new-password" spellcheck="false" placeholder="xoxp-…" aria-describedby="slack-token-help slack-token-permissions"></label>
-                  <button type="button" id="replace-slack-token" class="btn btn-ghost btn-sm" data-i18n="Replace token" hidden>Replace token</button>
-                </div>
-                <p id="slack-token-help" class="settings-help" data-i18n="Choose Replace token to enter a new token. Leaving it empty keeps the saved token. Never enter a real token in local preview.">Choose Replace token to enter a new token. Leaving it empty keeps the saved token. Never enter a real token in local preview.</p>
-                <div class="settings-form-actions"><button type="submit" class="settings-save btn btn-primary" data-i18n="Save connection">Save connection</button><button type="button" id="cancel-slack" class="settings-reset btn" data-i18n="Cancel">Cancel</button></div>
-              </fieldset>
-            </form>
-            <p id="slack-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
-            <button type="button" id="retry-slack-settings" class="action-text-button btn btn-ghost btn-sm" hidden data-i18n="Try again">Try again</button>
-          </section>
         </div>
         <div id="settings-calendar-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-calendar" tabindex="0" hidden><div id="calendar-settings-host"></div></div>
       </section>
@@ -284,6 +285,7 @@
     <template id="calendar-pin-off-icon"><!-- pin-off-icon --></template>
     <template id="calendar-icon"><!-- calendar-days-icon --></template>
     <template id="calendar-silence-icon"><!-- bell-off-icon --></template>
+    <template id="gmail-refresh-icon"><!-- refresh-cw-icon --></template>
     <template id="calendar-refresh-icon"><!-- refresh-cw-icon --></template>
     <script type="application/json" id="initial-catalog"><?!= initialCatalogJson ?></script>
     <script type="module" src="/browser/main.js"></script>

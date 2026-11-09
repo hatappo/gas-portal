@@ -20,9 +20,9 @@ export async function bundleModule(source) {
   }], build: { write: false, minify: false, lib: { entry: entryId, name: 'PortalTest', formats: ['iife'] } } });
   return (Array.isArray(result) ? result : [result]).flatMap((bundle) => bundle.output).find((file) => file.type === 'chunk').code;
 }
-export async function bundleBrowser({ connectGitHub = true, connectSlack = false, connectCalendar = false, start = true } = {}) {
+export async function bundleBrowser({ connectGitHub = true, connectSlack = false, connectCalendar = false, connectGmail = false, start = true } = {}) {
   const imports = sharedSources.map(file => `import ${JSON.stringify(path.resolve(file))};`).join('\n');
-  const init = `initializePortal({ ${connectGitHub ? '' : 'connectGitHub: () => {},'} ${connectSlack ? '' : 'connectSlack: () => {},'} ${connectCalendar ? '' : 'connectCalendar: () => {},'} })`;
+  const init = `initializePortal({ ${connectGitHub ? '' : 'connectGitHub: () => {},'} ${connectSlack ? '' : 'connectSlack: () => {},'} ${connectCalendar ? '' : 'connectCalendar: () => {},'} ${connectGmail ? '' : 'connectGmail: () => {},'} })`;
   return bundleModule(`${imports}
     import { initializePortal } from ${JSON.stringify(path.resolve('src/browser/bootstrap.js'))};
     ${start ? `window.testPortal = ${init};` : `window.startPortal = () => ${init};`}`);
@@ -91,8 +91,12 @@ export function browser(setupWindow = () => {}, client = browserClient, source =
   const githubRequests = [];
   const slackRequests = [];
   const calendarRequests = [];
+  const gmailRequests = [];
   const urlSchemeRequests = [];
   const runner = {
+    getGmailSettings() { gmailRequests.push({ kind: 'settings', success: this.success, failure: this.failure }); },
+    saveGmailSettings(input) { gmailRequests.push({ kind: 'save', input, success: this.success, failure: this.failure }); },
+    getGmailActionItems(force) { gmailRequests.push({ kind: 'actions', force, success: this.success, failure: this.failure }); },
     getCalendarSettings() { calendarRequests.push({kind: 'settings', success: this.success, failure: this.failure}); },
     saveCalendarSettings(input, names) { calendarRequests.push({kind: 'save', input, names, success: this.success, failure: this.failure}); },
     getCalendarChoices() { calendarRequests.push({kind: 'choices', success: this.success, failure: this.failure}); },
@@ -122,7 +126,7 @@ export function browser(setupWindow = () => {}, client = browserClient, source =
   setupWindow(dom.window);
   for (const file of sharedSources) dom.window.eval(readFileSync(file, 'utf8'));
   dom.window.eval(client);
-  return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests, cacheSettingsRequests, sourceSettingsRequests, creationRequests, githubRequests, slackRequests, calendarRequests, urlSchemeRequests };
+  return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests, cacheSettingsRequests, sourceSettingsRequests, creationRequests, githubRequests, slackRequests, calendarRequests, gmailRequests, urlSchemeRequests };
 }
 
 export const catalog = {

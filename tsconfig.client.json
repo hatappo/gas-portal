@@ -23,6 +23,7 @@
     "src/shared/*.js",
     "types/i18n.d.ts",
     "src/browser/*.tsx",
-    "types/calendar.d.ts"
+    "types/calendar.d.ts",
+    "types/gmail.d.ts"
   ]
 }

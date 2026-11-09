@@ -859,3 +859,33 @@ test('Restored Calendar checkboxes stay visible and focused when unchecked, incl
   await personal.check();
   assert.equal(await personal.isChecked(), true);
 });
+
+test('Gmail settings precede Slack and GitHub, persist across reload and join the shared Action Items filters', async t => {
+  const page = await pageFor(t);
+  await page.locator('#tab-settings').click();
+  await page.locator('#settings-tab-actions').click();
+  const settings = page.locator('#settings-actions-panel');
+  const headings = await settings.locator('h2').allTextContents();
+  assert.deepEqual(headings.filter(text => ['Gmail', 'Slack', 'GitHub'].includes(text)), ['Gmail', 'Slack', 'GitHub']);
+  await page.getByLabel('Show unread Gmail in Action Items', { exact: true }).check();
+  await page.getByLabel('Maximum unread messages', { exact: true }).selectOption('50');
+  await page.locator('#gmail-settings-form button[type="submit"]').click();
+  await page.locator('#gmail-settings-host').getByText('Saved', { exact: true }).waitFor();
+  await page.reload();
+  await page.locator('#gmail-enabled:enabled').waitFor();
+  assert.equal(await page.getByLabel('Show unread Gmail in Action Items', { exact: true }).isChecked(), true);
+  assert.equal(await page.getByLabel('Maximum unread messages', { exact: true }).inputValue(), '50');
+  await page.locator('#tab-actions').click();
+  const filter = page.getByRole('button', { name: 'Gmail Unread mail', exact: true });
+  await filter.click();
+  assert.equal(await page.locator('.action-item-list > li').count(), 3);
+  await page.getByRole('searchbox', { name: 'Search by title or message', exact: true }).fill('proposal');
+  assert.equal(await page.locator('.action-item-list > li').count(), 1);
+  assert.match(await page.locator('.action-item-list a').getAttribute('href'), /^https:\/\/mail.google.com\/mail\/\?authuser=demo%40example.com#all\//);
+  await page.locator('#refresh-actions').click();
+  await page.locator('#refresh-actions[aria-busy="false"]').waitFor();
+  assert.equal(await page.locator('.action-item-list > li').count(), 1);
+  await page.setViewportSize({ width: 390, height: 1000 });
+  await page.screenshot({ path: '/tmp/gmail-action-items-mobile.png', fullPage: true });
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+});

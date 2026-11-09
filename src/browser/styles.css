@@ -499,3 +499,8 @@ main { container-type: inline-size; container-name: portal-main; }
 .calendar-event[data-reminder-active="true"][data-expanded="false"] .calendar-event-trigger { padding-right: 100px; }
 .calendar-event:lang(ja)[data-reminder-active="true"][data-expanded="false"] .calendar-event-trigger { padding-right: 132px; }
 .calendar-schedule[data-filter="free"] .calendar-event[data-expanded="false"] .calendar-silence { visibility: hidden; }
+
+.gmail-settings fieldset { border: 0; padding: 0; min-width: 0; }
+.gmail-enabled { display: flex; align-items: center; gap: 10px; min-height: 44px; margin-bottom: 12px; font-size: 13px; }
+.gmail-settings .settings-field { max-width: 300px; }
+.gmail-status { margin-top: 12px; font-size: 12px; }
