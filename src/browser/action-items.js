@@ -28,14 +28,26 @@ export function initializeActions() {
     const notices = [];
     const timestamps = [];
     const moreSources = [];
+    /** @type {Map<string, InboxGroup>} */
+    const inboxes = new Map();
+    let tasksConnected = false;
     for (const provider of providers.values()) if (provider.error) notices.push({ label: '', notice: { message: provider.error } });
     for (const [key, source] of sources) {
       const result = results.get(key);
+      if (source.inboxService) {
+        const id = source.inboxService;
+        const group = inboxes.get(id) || { id, label: source.serviceLabel, items: [], loaded: true, failed: false, hasMore: false };
+        group.loaded = group.loaded && Boolean(result);
+        group.failed = group.failed || Boolean(result?.notices.length);
+        group.hasMore = group.hasMore || result?.hasMore === true;
+        if (result) group.items.push(...result.items);
+        inboxes.set(id, group);
+      } else tasksConnected = true;
       if (!result) continue;
-      if (result.hasMore) moreSources.push(source.serviceLabel + ' · ' + source.label);
+      if (result.hasMore && !source.inboxService) moreSources.push(source.serviceLabel + ' · ' + source.label);
       if (result.fetchedAt !== undefined) timestamps.push(result.fetchedAt);
       result.notices.forEach((notice) => notices.push({ label: source.serviceLabel + ' · ' + source.label, notice }));
-      for (const item of result.items) {
+      for (const item of source.inboxService ? [] : result.items) {
         const id = item.service + ':' + item.id;
         const previous = unique.get(id);
         const reasons = [...new Set([...(previous?.reasons || []), ...item.reasons])];
@@ -49,7 +61,10 @@ export function initializeActions() {
       oldest: sources.size > 1,
     }, document.documentElement.lang);
     el('actions-status').hidden = !notices.length;
-    updateView({ items, notices, moreSources, pending, hasResults: results.size > 0, connected: sources.size > 0, language: document.documentElement.lang });
+    const inboxGroups = [...inboxes.values()].map(group => ({ ...group,
+      items: [...new Map(group.items.map(item => [item.service + ':' + item.id, item])).values()].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)),
+    }));
+    updateView({ items, inboxes: inboxGroups, notices, moreSources, pending, hasResults: results.size > 0, connected: tasksConnected, language: document.documentElement.lang });
   }
 
   function cancelBatch() {
@@ -108,10 +123,6 @@ export function initializeActions() {
     forcePending = true;
     document.dispatchEvent(new Event('portal:refresh-actions'));
     loadAll(true);
-  });
-  el('actions-settings').addEventListener('click', () => {
-    el('settings-tab-actions').click();
-    el('settings-tab-actions').focus();
   });
   document.addEventListener('portal:tabchange', loadVisible);
   document.addEventListener('portal:languagechange', render);

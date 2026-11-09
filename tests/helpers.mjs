@@ -7,6 +7,7 @@ import solid from 'vite-plugin-solid';
 import path from 'node:path';
 import { withPreviewContent } from '../scripts/preview-project.mjs';
 import { renderPreview } from '../scripts/preview.mjs';
+import { withPortalAssets } from '../scripts/portal-html.mjs';
 import { sharedSources, serverSources } from '../scripts/gas-sources.mjs';
 
 // Compile explicit startup with the production JSX transform. Individual services can be
@@ -20,9 +21,9 @@ export async function bundleModule(source) {
   }], build: { write: false, minify: false, lib: { entry: entryId, name: 'PortalTest', formats: ['iife'] } } });
   return (Array.isArray(result) ? result : [result]).flatMap((bundle) => bundle.output).find((file) => file.type === 'chunk').code;
 }
-export async function bundleBrowser({ connectGitHub = true, connectSlack = false, connectCalendar = false, start = true } = {}) {
+export async function bundleBrowser({ connectGitHub = true, connectSlack = false, connectCalendar = false, connectGmail = false, start = true } = {}) {
   const imports = sharedSources.map(file => `import ${JSON.stringify(path.resolve(file))};`).join('\n');
-  const init = `initializePortal({ ${connectGitHub ? '' : 'connectGitHub: () => {},'} ${connectSlack ? '' : 'connectSlack: () => {},'} ${connectCalendar ? '' : 'connectCalendar: () => {},'} })`;
+  const init = `initializePortal({ ${connectGitHub ? '' : 'connectGitHub: () => {},'} ${connectSlack ? '' : 'connectSlack: () => {},'} ${connectCalendar ? '' : 'connectCalendar: () => {},'} ${connectGmail ? '' : 'connectGmail: () => {},'} })`;
   return bundleModule(`${imports}
     import { initializePortal } from ${JSON.stringify(path.resolve('src/browser/bootstrap.js'))};
     ${start ? `window.testPortal = ${init};` : `window.startPortal = () => ${init};`}`);
@@ -78,7 +79,7 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
 export const plain = (value) => JSON.parse(JSON.stringify(value));
 
 export function browser(setupWindow = () => {}, client = browserClient, source = readFileSync('src/Index.html', 'utf8')) {
-  const html = withPreviewContent(source, server().context.getPortalContent_({ PORTAL_LANGUAGE: 'ja' }))
+  const html = withPreviewContent(withPortalAssets(source, process.cwd()), server().context.getPortalContent_({ PORTAL_LANGUAGE: 'ja' }))
     .replace(/<\?[\s\S]*?\?>/g, '');
   const dom = new JSDOM(html, { runScripts: 'outside-only', url: 'https://example.com', pretendToBeVisual: true });
   const requests = [];
@@ -91,8 +92,12 @@ export function browser(setupWindow = () => {}, client = browserClient, source =
   const githubRequests = [];
   const slackRequests = [];
   const calendarRequests = [];
+  const gmailRequests = [];
   const urlSchemeRequests = [];
   const runner = {
+    getGmailSettings() { gmailRequests.push({ kind: 'settings', success: this.success, failure: this.failure }); },
+    saveGmailSettings(input) { gmailRequests.push({ kind: 'save', input, success: this.success, failure: this.failure }); },
+    getGmailActionItems(force) { gmailRequests.push({ kind: 'actions', force, success: this.success, failure: this.failure }); },
     getCalendarSettings() { calendarRequests.push({kind: 'settings', success: this.success, failure: this.failure}); },
     saveCalendarSettings(input, names) { calendarRequests.push({kind: 'save', input, names, success: this.success, failure: this.failure}); },
     getCalendarChoices() { calendarRequests.push({kind: 'choices', success: this.success, failure: this.failure}); },
@@ -122,7 +127,7 @@ export function browser(setupWindow = () => {}, client = browserClient, source =
   setupWindow(dom.window);
   for (const file of sharedSources) dom.window.eval(readFileSync(file, 'utf8'));
   dom.window.eval(client);
-  return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests, cacheSettingsRequests, sourceSettingsRequests, creationRequests, githubRequests, slackRequests, calendarRequests, urlSchemeRequests };
+  return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests, cacheSettingsRequests, sourceSettingsRequests, creationRequests, githubRequests, slackRequests, calendarRequests, gmailRequests, urlSchemeRequests };
 }
 
 export const catalog = {

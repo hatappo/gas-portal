@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { createGitHubPreview } from './github-preview.mjs';
+import { createGmailPreview } from './gmail-preview.mjs';
 import { createCalendarPreview } from './calendar-preview.mjs';
 import { createSlackPreview } from './slack-preview.mjs';
 import { withPreviewProject, withPreviewContent } from './preview-project.mjs';
@@ -43,7 +44,7 @@ export function renderPreview(html, root, options = {}) {
     .replace('placeholder="github_pat_…"', 'placeholder="demo"')
     .replace('placeholder="xoxp-…"', 'placeholder="demo"')
     .replace('<?!= initialCatalogJson ?>', () => context.serializeCatalog_(catalog))
-    .replace('<!-- preview-label -->', '<p class="preview-label"><span>LOCAL PREVIEW</span> · <span data-i18n="Mock data">Mock data</span></p>')
+    .replace('<!-- preview-label -->', '<p class="preview-label badge badge-warning" aria-label="Local preview with mock data" data-i18n-aria-label="Local preview with mock data" title="Local preview with mock data" data-i18n-title="Local preview with mock data">LOCAL PREVIEW</p>')
     .replace('<script type="module" src="/browser/main.js"></script>', () => `<script>
       ${i18n}
       ${urlSchemes}
@@ -51,6 +52,7 @@ export function renderPreview(html, root, options = {}) {
       ${readFileSync(path.join(root, 'src/shared/cache-durations.js'), 'utf8')}
       ${readFileSync(path.join(root, 'src/shared/slack-settings.js'), 'utf8')}
       ${readFileSync(path.join(root, 'src/shared/calendar.js'), 'utf8')}
+      ${readFileSync(path.join(root, 'src/shared/gmail-settings.js'), 'utf8')}
       let previewSlackLimit = PortalSlackSettings.defaultLimit;
       try { previewSlackLimit = PortalSlackSettings.normalize(localStorage.getItem('portal-preview-slack-limit')); } catch { /* Use the default. */ }
       document.getElementById('slack-bookmark-limit').dataset.savedValue = String(previewSlackLimit);
@@ -149,10 +151,12 @@ export function renderPreview(html, root, options = {}) {
         if (initial) initial.textContent = JSON.stringify(readPreviewCatalog());
       }
       const createGitHubPreview = ${createGitHubPreview.toString()};
+      const createGmailPreview = ${createGmailPreview.toString()};
       const createCalendarPreview = ${createCalendarPreview.toString()};
       const createSlackPreview = ${createSlackPreview.toString()};
       const google = {script: {run: {
         ...createGitHubPreview(new URLSearchParams(location.search).get('github'), () => previewActionsCacheSeconds),
+        ...createGmailPreview(new URLSearchParams(location.search).get('gmail'), () => previewActionsCacheSeconds),
         ...createCalendarPreview(new URLSearchParams(location.search).get('calendar')),
         ...createSlackPreview(new URLSearchParams(location.search).get('slack'), () => previewActionsCacheSeconds, () => previewSlackLimit),
         withSuccessHandler(fn) {return {...this, success: fn};},

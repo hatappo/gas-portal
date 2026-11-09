@@ -196,7 +196,7 @@ export function initializeGitHub(actions) {
           if (!response?.ok || !response.connection) { finish(false, errorMessage(response && !response.ok ? response.error : 'REQUEST_FAILED')); return; }
           connections = [...connections.filter((connection) => connection.id !== response.connection.id), response.connection];
           sources.delete(response.connection.id);
-          finish(true, t('Connected. Action Items will use this account and scope.'));
+          finish(true, t('Connected. Inbox & Tasks will use this account and scope.'));
         }).saveGitHubConnection(input);
       }
     } catch { failure(); }

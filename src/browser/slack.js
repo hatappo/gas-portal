@@ -208,7 +208,7 @@ export function initializeSlack(actions) {
           if (!response?.ok || !response.connection) { finish(false, errorMessage(response && !response.ok ? response.error : 'REQUEST_FAILED')); return; }
           connections = [...connections.filter((connection) => connection.id !== response.connection.id), response.connection];
           sources.delete(response.connection.id);
-          finish(true, t('Connected. Action Items will show saved-message search results.'));
+          finish(true, t('Connected. Inbox & Tasks will show saved-message search results.'));
         }).saveSlackConnection(input);
       }
     } catch { failure(); }

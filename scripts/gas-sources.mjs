@@ -10,12 +10,13 @@ export const sharedSources = [
   'src/shared/cache-durations.js',
   'src/shared/slack-settings.js',
   'src/shared/calendar.js',
+  'src/shared/gmail-settings.js',
 ];
 
 // Keep editor entry points in their own file for easy discovery in the GAS editor.
 export const serverGroups = {
   'Authorization.js': ['Authorization'],
-  'Code.js': ['Settings', 'SpreadsheetSetup', 'GitHub', 'Slack', 'Calendar', 'Code'],
+  'Code.js': ['Settings', 'SpreadsheetSetup', 'GitHub', 'Slack', 'Calendar', 'Gmail', 'Code'],
   'Catalog.js': ['Catalog'],
   'SheetCatalog.js': ['SheetCatalog'],
 };

@@ -1,12 +1,16 @@
-import { For, Show, createMemo, createSignal, createEffect, type JSX } from 'solid-js';
+import { SettingsGuidance } from './settings-guidance';
+import { For, Show, createMemo, createSignal, createEffect } from 'solid-js';
 import { createStore, reconcile } from 'solid-js/store';
 import { render } from 'solid-js/web';
+import { InboxCards } from './inbox-view';
+import { SourceLink } from './source-link';
+import { ServiceLogo } from './service-logo';
 import { tagPalette } from './tag-palette.js';
 import { formatListCount } from './list-presentation.js';
 import { Disclosure } from './disclosure';
-import { ToggleGroup } from '@kobalte/core/toggle-group';
 
 interface ActionView {
+  inboxes: InboxGroup[];
   items: ActionItem[];
   notices: { label: string; notice: ActionNotice }[];
   moreSources: string[];
@@ -17,8 +21,6 @@ interface ActionView {
 }
 const t = (key: string, language: string) => PortalI18n.t(key, language);
 
-interface ActionType { id: string; service: string; serviceLabel: string; reason: string }
-const typeId = (service: string, reason: string) => encodeURIComponent(JSON.stringify([service, reason]));
 const typeLabel = (service: string, reason: string, language: string) => service + ' ' + t(reason, language);
 // Stable category hues are blended into the current theme by the shared tag styles.
 function typeColor(service: string, reason: string) {
@@ -29,65 +31,32 @@ function typeColor(service: string, reason: string) {
   return service === 'github' ? colors[reason] || tagPalette[5] : service === 'slack' ? tagPalette[4] : tagPalette[5];
 }
 
-function SourceLink(props: { url: string; class?: string; children: JSX.Element }) {
-  const href = () => {
-    try {
-      const url = new URL(props.url);
-      if (url.protocol === 'https:' && !url.username && !url.password) return url.href;
-    } catch { /* Invalid destinations stay inert. */ }
-    return undefined;
-  };
-  const icon = document.querySelector<HTMLTemplateElement>('#action-external-icon')!.content.cloneNode(true);
-  return <a href={href()} target={href() ? '_blank' : undefined} rel={href() ? 'noopener noreferrer' : undefined} class={props.class}>{props.children}{icon}</a>;
-}
 function ActionRow(props: { item: ActionItem; language: string }) {
   return <li>
-    <SourceLink url={props.item.url} class="action-item-title link link-hover">{props.item.title}</SourceLink>
-    <div class="action-item-meta"><span class="action-service">{props.item.serviceLabel}</span><span class="action-context">{props.item.context}</span>
-      <time dateTime={props.item.updatedAt}>{t(props.item.dateLabel || 'Updated', props.language) + ' ' + new Intl.DateTimeFormat(props.language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(props.item.updatedAt))}</time>
+    <SourceLink url={props.item.url} class="action-item-title link link-hover">{props.item.title || t(props.item.titleFallback || '', props.language)}</SourceLink>
+    <div class="action-item-meta"><span class="action-service"><ServiceLogo service={props.item.service} label={props.item.serviceLabel}/></span>
+      <time dateTime={props.item.updatedAt}>{t(props.item.dateLabel || 'Updated', props.language) + ' ' + new Intl.DateTimeFormat(props.language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(props.item.updatedAt))}</time><span class="action-context">{props.item.context}</span>
     </div>
     <div class="action-item-reasons"><For each={props.item.reasons}>{(reason) => <span class="action-item-kind badge badge-sm" style={{ "--tag-accent": typeColor(props.item.service, reason) }}>{typeLabel(props.item.serviceLabel, reason, props.language)}</span>}</For></div>
   </li>;
 }
 export function mountActionView() {
-  const [state, setState] = createStore<ActionView>({ items: [], notices: [], moreSources: [], pending: true, hasResults: false, connected: false, language: 'en' });
-  // Keep selected types available even if a refresh removes their last matching item.
-  const [selected, setSelected] = createSignal<ActionType[]>([]);
+  const [state, setState] = createStore<ActionView>({ inboxes: [], items: [], notices: [], moreSources: [], pending: true, hasResults: false, connected: false, language: 'en' });
   const search = document.getElementById('actions-search') as HTMLInputElement;
   const [query, setQuery] = createSignal('');
   const normalize = (text: string) => text.normalize('NFKC').toLocaleLowerCase('ja').trim();
   search.addEventListener('input', () => setQuery(normalize(search.value)));
-  const clearFilters = () => { setSelected([]); search.value = ''; setQuery(''); search.focus(); };
-  const hasFilters = () => selected().length > 0 || query().length > 0;
-  const types = createMemo(() => {
-    const choices = new Map<string, ActionType>();
-    for (const item of state.items) for (const reason of item.reasons) {
-      const id = typeId(item.service, reason);
-      choices.set(id, { id, service: item.service, serviceLabel: item.serviceLabel, reason });
-    }
-    for (const choice of selected()) if (!choices.has(choice.id)) choices.set(choice.id, choice);
-    return [...choices.values()].sort((a, b) => a.id.localeCompare(b.id));
-  });
-  const filtered = createMemo(() => {
-    const ids = new Set(selected().map(choice => choice.id));
-    return state.items.filter(item => normalize(item.title).includes(query()) &&
-      (!ids.size || item.reasons.some(reason => ids.has(typeId(item.service, reason)))));
-  });
-  render(() => <Show when={types().length}><div class="tag-filter action-type-filter">
-    <div class="tag-heading" title={t('Filter by type (match any)', state.language)}>Types</div>
-    <div class="tags">
-      <button type="button" class="tag-button btn btn-sm" aria-pressed={!selected().length} onClick={() => setSelected([])}>{t('All', state.language)}</button>
-      <ToggleGroup multiple class="tag-options" value={selected().map(choice => choice.id)}
-        onChange={ids => setSelected(types().filter(choice => ids.includes(choice.id)))}
-        aria-label={t('Filter by type (match any)', state.language)}>
-        <For each={types().map(choice => choice.id)}>{id => {
-          const choice = () => types().find(choice => choice.id === id)!;
-          return <ToggleGroup.Item value={id} class="tag-button action-type-button btn btn-sm"
-            style={{ "--tag-accent": typeColor(choice().service, choice().reason) }}>{typeLabel(choice().serviceLabel, choice().reason, state.language)}</ToggleGroup.Item>;
-        }}</For>
-      </ToggleGroup>
-    </div>
-  </div></Show>, document.getElementById('action-filters')!);
+  const matches = (item: ActionItem) => normalize([item.title || t(item.titleFallback || '', state.language), item.context].join(' ')).includes(query());
+  render(() => <InboxCards groups={state.inboxes} pending={state.pending} language={state.language} matches={matches} filtering={!!query()}/>, document.getElementById('inbox-services')!);
+  const clearFilters = () => { search.value = ''; setQuery(''); search.focus(); };
+  const hasFilters = () => query().length > 0;
+  const filtered = createMemo(() => state.items.filter(matches));
+  const inboxItems = createMemo(() => state.inboxes.flatMap(group => group.items));
+  const inboxCountHost = document.getElementById('inbox-total-count')!;
+  inboxCountHost.replaceChildren();
+  createEffect(() => inboxCountHost.style.setProperty('--count-digits', String(String(inboxItems().length).length)));
+  render(() => <>{(state.hasResults || !state.pending) && state.inboxes.every(group => group.loaded && (!group.failed || group.items.length > 0))
+    ? formatListCount(inboxItems().filter(matches).length, inboxItems().length, state.language) : '—'}</>, inboxCountHost);
   const countHost = document.getElementById('actions-count')!;
   countHost.replaceChildren();
   createEffect(() => countHost.style.setProperty('--count-digits', String(String(state.items.length).length)));
@@ -95,16 +64,16 @@ export function mountActionView() {
   render(() => <Show when={state.notices.length}>
     <Disclosure autoOpen={!state.items.length} title={t('Some results could not be retrieved.', state.language)}><ul>
       <For each={state.notices}>{(entry) => <li>
-        <span>{[entry.label, entry.notice.reason && t(entry.notice.reason, state.language), PortalI18n.translate(entry.notice.message, state.language)].filter(Boolean).join(' · ')}</span>
+        <span>{[entry.label, entry.notice.reason && t(entry.notice.reason, state.language)].filter(Boolean).map(part => part + ' · ')}<SettingsGuidance message={entry.notice.message} language={state.language}/></span>
         <Show when={entry.notice.url}>{' '}<SourceLink url={entry.notice.url!}>{t('View source', state.language)}</SourceLink></Show>
       </li>}</For>
     </ul></Disclosure>
   </Show>, document.getElementById('actions-status')!);
   render(() => <><Show when={filtered().length} fallback={
-    <Show when={!state.pending && !state.notices.length}><div class="status" role="status"><h3>{t('No items to display', state.language)}</h3><p>{t(hasFilters() ? 'No items match your filters.' : state.connected ? 'No action items right now.' : 'Connect a service in Settings to see your action items.', state.language)}</p><Show when={hasFilters()}><button type="button" class="reset-button btn btn-sm" onClick={clearFilters}>{t('Clear filters', state.language)}</button></Show></div></Show>
+    <Show when={!state.pending && !state.notices.length}><div class="status" role="status"><h3>{t('No items to display', state.language)}</h3><p><SettingsGuidance message={hasFilters() ? 'No items match your filters.' : state.connected ? 'No tasks right now.' : 'Connect a task service in Settings.'} language={state.language}/></p><Show when={hasFilters()}><button type="button" class="reset-button btn btn-sm" onClick={clearFilters}>{t('Clear filters', state.language)}</button></Show></div></Show>
   }><ul class="action-item-list"><For each={filtered()}>{(item) => <ActionRow item={item} language={state.language} />}</For></ul></Show>
-    <For each={state.moreSources}>{(source) => <p class="settings-help action-more-results">{source + ' · ' + t('More search results are available. Increase the limit in Settings to show more.', state.language)}</p>}</For>
+    <For each={state.moreSources}>{(source) => <p class="settings-help action-more-results">{source + ' · '}<SettingsGuidance message="More search results are available. Increase the limit in Settings to show more." language={state.language}/></p>}</For>
   </>, document.getElementById('action-items')!);
   // Keep row identity through refreshes and language changes, including IDs shared by services.
-  return (snapshot: ActionView) => setState(reconcile({ ...snapshot, items: snapshot.items.map((item) => ({ ...item, key: item.service + ':' + item.id })) }, { key: 'key' }));
+  return (snapshot: ActionView) => setState(reconcile({ ...snapshot, inboxes: snapshot.inboxes.map(group => ({ ...group, key: 'inbox:' + group.id, items: group.items.map(item => ({ ...item, key: item.service + ':' + item.id })) })), items: snapshot.items.map((item) => ({ ...item, key: item.service + ':' + item.id })) }, { key: 'key' }));
 }

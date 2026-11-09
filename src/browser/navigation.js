@@ -1,5 +1,6 @@
 import { createSignal } from 'solid-js';
 import { mountTabs } from './tabs';
+import { mountCompactNavigation } from './compact-navigation';
 
 // Portal and settings tabs, kept in sync with the URL hash.
 /** @param {ReturnType<typeof import('./motion.js').createMotion>} motion */
@@ -16,11 +17,11 @@ export function initializeNavigation(motion) {
 
   const portalTabs = [
     { hash: 'tools', button: element('tab-tools'), panel: element('directory') },
-    { hash: 'actions', button: element('tab-actions'), panel: element('actions-panel') },
+    { hash: 'inbox-and-tasks', button: element('tab-actions'), panel: element('actions-panel') },
     { hash: 'settings', button: element('tab-settings'), panel: element('settings-panel') },
   ];
-  const settingsTabs = ['appearance', 'tools', 'actions', 'calendar'].map((hash) => ({
-    hash, button: element('settings-tab-' + hash), panel: element('settings-' + hash + '-panel'),
+  const settingsTabs = ['appearance', 'tools', 'actions', 'calendar'].map((id) => ({
+    hash: id === 'actions' ? 'inbox-and-tasks' : id, button: element('settings-tab-' + id), panel: element('settings-' + id + '-panel'),
   }));
   const [activeSettingsTab, setActiveSettingsTab] = createSignal(0);
   /** @param {number} index */
@@ -78,6 +79,7 @@ export function initializeNavigation(motion) {
     navigatePortalTab(2, 'settings/' + settingsTabs[index].hash);
   });
   mountTabs(portalTabs, activeTab, navigatePortalTab);
+  mountCompactNavigation(portalTabs, activeTab, navigatePortalTab);
 
   if (useGasHistory) {
     try {

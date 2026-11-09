@@ -147,7 +147,7 @@ Theme names saved before v0.3.0 (Tsuyukusa, Sakura, and the other earlier palett
 
 The initial catalog is embedded as escaped JSON in the HTML response. The browser renders it directly without an initial `google.script.run` round trip. A live catalog read for a named sheet makes one Sheets API values request. When the sheet name is empty, it first fetches sheet titles and indices to resolve the first sheet, then reads values. Metadata is also fetched after a failed values request to retain useful missing-sheet diagnostics. Reordering tabs takes effect after cache expiry or **Fetch latest** when using the first-sheet fallback. Cache hits do not call Sheets.
 
-**Catalog cache duration**, in **Settings → Tools & Links**, offers Disabled, 5 minutes, 1 hour, and 6 hours (default). Changes are saved automatically to the executing user's `CATALOG_CACHE_SECONDS` User Property and apply to the next load. Initialization preserves existing values. These settings do not belong in Script Properties or in the "gas-portal" configuration in package.json.
+**Tools & Links cache duration**, in **Settings → Tools & Links**, offers Disabled, 5 minutes, 1 hour, and 6 hours (default). Changes are saved automatically to the executing user's `CATALOG_CACHE_SECONDS` User Property and apply to the next load. Initialization preserves existing values. These settings do not belong in Script Properties or in the "gas-portal" configuration in package.json.
 
 **Fetch latest** in Tools & Links bypasses the cache, reads the spreadsheet, and replaces the cached entry. Search, remaining selected tags, and the Cards/List choice are preserved. The retrieval time identifies the data snapshot; a Cached label indicates reuse. A normal browser reload may reuse the cache. Fetch latest also retries failed loads. Initial asynchronous loading and refresh use the spinning refresh icon without visible loading messages; failures and empty results remain explicit.
 
@@ -179,6 +179,31 @@ Spreadsheet settings are simulated too: saving an ID or URL still displays mock 
 - Multiple versioned deployments: inspect `npx portal deployments` and select the target with `npx portal deploy --deployment-id ID`.
 - Configured deploymentId not found: check whether it belongs to another project or has been deleted. The CLI does not switch to a different ID automatically.
 - Direct clasp access: run `npx clasp --project .portal/.clasp.json --user PROFILE COMMAND`, explicitly selecting both the project and authentication profile.
+
+## Gmail unread mail
+
+Gmail is optional and **disabled by default**. Enable it in **Settings → Action Items → Gmail**, above Slack and GitHub. There is no separate Gmail subtab. The integration uses the Google account executing the web app; no manually entered token or extra connection is needed. In an owner-executed deployment, this is the deploying account, so keep a personal portal private.
+
+### Setup and authorization
+
+1. Build and deploy the updated code with `npm run ship`. The manifest adds the Gmail v1 advanced service and **`https://www.googleapis.com/auth/gmail.metadata`**. This scope permits reading message headers and labels across the account; it does not grant message-body or attachment access, or write access. Unread-only filtering is an application rule, not an OAuth restriction.
+2. When additional authorization is needed, open **Authorization.gs** in the GAS editor, run **`authorizePortal`**, grant access, then reload the portal. CLI deployment alone does not grant consent. For a standard Google Cloud project, enable the **Gmail API** there if necessary. Workspace policies may restrict Gmail API access.
+3. In **Settings → Action Items → Gmail**, enable **Show unread Gmail in Action Items**, choose the maximum unread message count, and save. The limit offers **10, 20 (default), 50 or 100**. Settings are stored in the executing user's `GMAIL_SETTINGS` User Property; no manual property initialization is needed.
+4. Open **Action Items**. Each unread message is one row, with its subject, sender and received time. Click the row to open its thread in Gmail. Multiple unread messages in one thread can produce multiple rows. The portal never marks messages read or modifies mail; opening Gmail itself may mark them read.
+
+### Results and caching
+
+- The query uses the **UNREAD** label, excludes spam and trash, and includes archived unread mail. Drafts are omitted. Subjects and senders are plain text, capped at 500 characters each; mail bodies, previews and attachments are neither requested nor returned. Missing subjects use **(No subject)**.
+- Gmail joins the existing list, text search, service/type filters and single refresh button. Results sort by received time alongside other services' timestamps. Filtering searches the loaded subject, not the mail body. No Gmail request occurs during page rendering; reads start asynchronously when Action Items opens.
+- The existing **Action Items cache duration** applies (five minutes by default). User Cache holds only the displayed metadata. Settings changes rotate the cache revision; **Fetch latest** bypasses every service cache. The list does not poll in the background, so reading mail elsewhere changes the portal after expiry and a subsequent load, or an explicit refresh. Disabling Gmail stops reads and removes its rows; it does not revoke previously granted OAuth consent.
+- Profile and unread-ID requests start in parallel. Message headers are fetched in batches of ten concurrent requests, up to the selected limit. A next-page token produces an additional-results notice without downloading another page. Counts mean loaded messages, not a mailbox-wide unread total. Messages deleted or marked read between listing and header retrieval are skipped.
+- Partial failures preserve successful rows with a warning and are not cached. Authorization errors, denied API access and rate limits are shown distinctly from an empty mailbox. There is no automatic retry loop. Raw API error details and OAuth tokens are never returned or logged.
+
+### Offline preview
+
+Enable Gmail in local preview settings to show three fictional messages. Preferences persist in preview localStorage; no Google connection is made. Query scenarios are `?gmail=ready#actions`, `empty`, `more`, `partial`, `unauthorized`, `forbidden`, `rate-limit`, and `error`. A saved preview preference takes precedence over the scenario's initial enabled state. Combine with `github=…` and `slack=…` to inspect mixed results.
+
+References: [Gmail scopes](https://developers.google.com/workspace/gmail/api/auth/scopes), [message listing](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/list), and [metadata retrieval](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/get).
 
 ## GitHub Action Items
 
@@ -219,9 +244,9 @@ References: [GitHub Search API](https://docs.github.com/en/rest/search/search#se
 
 ## Action filters
 
-The shared Action Items toolbar provides colored type chips, using the same subtle color tints and service-qualified names as row badges: **GitHub Assigned issue**, **GitHub Direct review**, **GitHub Team review**, **GitHub Changes requested**, and **Slack Bookmark**. Choose any number of chips to show items matching **at least one** selected type (OR). **All**, or deselecting every chip, shows the full loaded list. Tools tag filtering continues to use AND.
+The shared Action Items toolbar provides colored type chips, using the same subtle color tints and service-qualified names as row badges: **GitHub Assigned issue**, **GitHub Direct review**, **GitHub Team review**, **GitHub Changes requested**, **Slack Bookmark**, and **Gmail Unread mail**. Choose any number of chips to show items matching **at least one** selected type (OR). **All**, or deselecting every chip, shows the full loaded list. Tools tag filtering continues to use AND.
 
-The search field matches loaded titles and Slack message excerpts, ignoring case, surrounding whitespace, and full-width character differences. Text search is combined with type selection using AND. **All** clears only the type selection; **Clear filters** in the empty state clears both. Search does not fetch additional messages or their full contents. Tools tags cycle through a shared accent palette in catalog tag order; their filter chips and card/list badges share colors. Filtering does not reassign colors, but catalog changes may.
+The search field matches loaded titles (including email subjects) and Slack message excerpts, ignoring case, surrounding whitespace, and full-width character differences. Text search is combined with type selection using AND. **All** clears only the type selection; **Clear filters** in the empty state clears both. Search does not fetch additional messages or their full contents. Tools tags cycle through a shared accent palette in catalog tag order; their filter chips and card/list badges share colors. Filtering does not reassign colors, but catalog changes may.
 
 Filtering is local and does not call APIs or change the server search limits. Both Tools and Actions use **visible / loaded items** counters, 24-hour **Retrieved HH:mm** labels, and the same refresh and filter-chip styling. Cache information appears in the timestamp tooltip; Actions additionally explains when the time represents the oldest connection result. Tags and action badges use a light tint of their accent color over the current theme, with readable theme text. Unselected filter chips have no visible border; selected chips use a stronger tint and inset outline. Transparent borders reserve the same space, and keyboard focus retains a separate outer outline. Action counts are deduplicated across connections. A PR with multiple matching types is still shown once. Filters survive tab changes, refreshes and language changes within the page; reloading resets them. A selected type remains available if its last matching item disappears, with a clearable empty state. Retrieval errors and additional-result notices remain visible regardless of filtering, so hidden rows do not conceal incomplete data.
 
@@ -235,7 +260,7 @@ Slack bookmarks appear in the shared **Action Items** list alongside GitHub, wit
 2. Copy the **User OAuth Token** starting with `xoxp-`. Bot tokens, browser session tokens, and cookies are not supported. `search:read` permits searching messages the user can access, not only bookmarks; the portal always queries `is:saved` and never modifies Slack data. Automatic token rotation/refresh is not implemented; replace expired or revoked tokens in Settings.
 3. Deploy the updated portal with `npm run ship`. No additional GAS scope is needed if GitHub already works: both use `script.external_request`.
 4. Open **Settings → Action Items → Slack → Add connection**, paste the token, and save. `auth.test` verifies the workspace and user once at save time; the connection label is generated as `workspace@user`. Up to three distinct workspace/user connections are supported. Edit an existing connection to replace its token; leave the token blank to keep it. The password field is cleared immediately after submission.
-5. Open **Action Items**. Its single refresh button fetches both GitHub and Slack connections together and bypasses all their caches.
+5. Open **Action Items**. Its single refresh button fetches all enabled services together and bypasses all their caches.
 
 Credentials live only in the executing user's `SLACK_CONNECTION_<id>` User Properties. They are excluded from HTML, metadata responses, result caches and logs. As with GitHub, User Properties are not a secret vault: code running as that user can read them. **Disconnect** deletes the local credential and cache, but does not uninstall the Slack app or revoke its token.
 
@@ -253,7 +278,14 @@ Preview includes a fictional Slack connection and two saved messages. It never c
 
 ## Settings navigation
 
-Settings has four subtabs: **Appearance** (portal text, theme, then language), **Tools & Links** (spreadsheet and catalog cache), **Action Items** (shared cache duration, then GitHub and Slack connections), and **Calendar** (calendar selection, cache and in-page notices). Switching tabs preserves unsaved form values; each control keeps its existing save behavior.
+Cache duration is the first setting in Tools & Links, Action Items and Calendar.
+Tools and Action Items cache preferences save automatically; Calendar cache
+changes are saved with the rest of the Calendar form using **Save changes**.
+Tools **Advanced settings** starts collapsed and contains blocked URL schemes
+and the favicon finder. Opening or closing it preserves the current controls
+and their save behavior.
+
+Settings has four subtabs: **Appearance** (portal text, theme, then language), **Tools & Links** (catalog cache, spreadsheet, then collapsible advanced settings for blocked URL schemes and favicon lookup), **Action Items** (shared cache duration, then Gmail settings, Slack connections and GitHub connections), and **Calendar** (cache, calendar selection and in-page notices). Switching tabs preserves unsaved form values; each control keeps its existing save behavior.
 
 Direct links use `#settings/appearance`, `#settings/tools`, `#settings/actions`, and `#settings/calendar`. The existing `#settings` link opens Appearance. Browser back/forward works in both the GAS web app and local preview. Arrow keys and Home/End navigate within the focused tab row. **Manage connections** opens Action Items settings directly.
 

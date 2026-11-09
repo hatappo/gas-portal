@@ -1,3 +1,5 @@
+import { SettingsGuidance } from './settings-guidance';
+import { ServiceLogo } from './service-logo';
 import { For, Show, createMemo, createSignal, createEffect, onCleanup, type Accessor, type JSX } from 'solid-js';
 import { Hint } from './ui';
 import { SegmentedControl } from '@kobalte/core/segmented-control';
@@ -11,7 +13,7 @@ export interface CalendarCommands {
   toggle(open: boolean): void; refresh(): void; loadChoices(): void;
   save(settings: CalendarSettings): void;
 }
-const HOVER_OPEN_DELAY = 180;
+const HOVER_OPEN_DELAY = 150;
 const tr = (key: string, language: string, values = {}) => PortalI18n.t(key, language, values);
 export function calendarErrorText(code: string, language: string) {
   const key = code === 'AUTHORIZATION_REQUIRED' ? 'Calendar authorization is required. Run authorizePortal in the GAS editor and grant access.'
@@ -20,7 +22,6 @@ export function calendarErrorText(code: string, language: string) {
     : code === 'RATE_LIMITED' ? 'Calendar rate limit reached. Try again later.' : 'Could not load the calendar. Try again.';
   return tr(key, language);
 }
-export function CalendarIcon() { return document.querySelector<HTMLTemplateElement>('#calendar-icon')!.content.cloneNode(true); }
 function PinIcon(props: { off?: boolean }) { return document.querySelector<HTMLTemplateElement>(props.off ? '#calendar-pin-off-icon' : '#calendar-pin-icon')!.content.cloneNode(true); }
 function RefreshIcon() { return document.querySelector<HTMLTemplateElement>('#calendar-refresh-icon')!.content.cloneNode(true); }
 function SilenceIcon() { return document.querySelector<HTMLTemplateElement>('#calendar-silence-icon')!.content.cloneNode(true); }
@@ -172,9 +173,9 @@ export function CalendarPanel(props: { state: CalendarViewState; commands: Calen
       <button type="button" class="calendar-panel-close btn btn-ghost btn-square btn-sm" aria-label={t('Close calendar')} onClick={() => props.commands.toggle(false)}><CloseIcon/></button>
     </div>
 
-    <Show when={props.state.error}><p class="calendar-notice alert alert-error alert-soft" role="alert">{props.state.error}</p></Show>
+    <Show when={props.state.error}><p class="calendar-notice alert alert-error alert-soft" role="alert"><SettingsGuidance message={props.state.error} language={props.state.language}/></p></Show>
     <Show when={props.state.snapshot}>
-      <Show when={props.state.snapshot!.notices.length}><p class="calendar-notice alert alert-warning alert-soft" role="status">{t('Some calendars could not be loaded. Free-time blocks are hidden.')}<br/>{[...new Set(props.state.snapshot!.notices.map(notice => calendarErrorText(notice.split(': ').pop() || '', props.state.language)))].join(' ')}</p></Show>
+      <Show when={props.state.snapshot!.notices.length}><p class="calendar-notice alert alert-warning alert-soft" role="status">{t('Some calendars could not be loaded. Free-time blocks are hidden.')}<br/><For each={[...new Set(props.state.snapshot!.notices.map(notice => calendarErrorText(notice.split(': ').pop() || '', props.state.language)))]}>{message => <><SettingsGuidance message={message} language={props.state.language}/>{' '}</>}</For></p></Show>
       <div ref={element => { schedule = element; }} class="calendar-schedule" data-filter={filter()} data-browsing-past={browsingPast()}
         onPointerOver={event => { if (event.pointerType !== 'touch') inspectPast(event.target); }}
         onPointerLeave={() => { if (!schedule.contains(document.activeElement) || !document.activeElement?.matches(':focus-visible')) finishInspection(); }}
@@ -201,26 +202,34 @@ export function CalendarSettingsForm(props: { state: CalendarViewState; draft: A
     return { id: 'sample', start, end: start + 1800000, gap: false, event: { id: 'sample', calendarId: 'sample', calendarName: t('Sample'), title: t('Sample event'), start, end: start + 1800000, allDay: false, busy: true, color: '#38a1db', url: '', meetingUrl: '' } };
   };
   const change = (patch: Partial<CalendarSettings>) => props.change({ ...props.draft(), ...patch });
-  return <section class="calendar-settings"><h2>Google Calendar</h2><p class="settings-help">{t('Show today’s schedule in a side panel using the Google account running this app. Calendar access is read-only.')}</p>
+  return <div class="calendar-settings">
     <Show when={!props.state.initialized && props.state.settingsError}><p class="calendar-notice alert alert-error alert-soft" role="alert">{props.state.settingsError}</p><button type="button" class="btn btn-ghost btn-sm" disabled={props.state.busy} onClick={props.commands.refresh}>{t('Fetch latest')}</button></Show>
     <form onSubmit={event => { event.preventDefault(); props.commands.save(props.draft()); }}>
       <fieldset disabled={props.state.saving || !props.state.initialized}>
-        <div class="calendar-choices-heading"><span>{t('Calendars (up to 5)')}</span><button type="button" class="btn btn-ghost btn-sm" disabled={props.state.choicesBusy} aria-describedby={props.state.choicesError ? "calendar-choices-error" : undefined} onClick={props.commands.loadChoices}>{t('Load calendars')}</button></div>
-        <Show when={props.state.choicesError}><p id="calendar-choices-error" class="calendar-notice alert alert-error alert-soft" role="alert">{props.state.choicesError}</p></Show>
-        <div class="calendar-choices" aria-busy={!props.state.initialized && props.state.busy || props.state.choicesBusy}><For each={props.state.calendars}>{calendar => <label><input type="checkbox" class="checkbox checkbox-sm" checked={props.draft().calendarIds.includes(calendar.id)} onChange={event => change({ calendarIds: event.currentTarget.checked ? [...props.draft().calendarIds, calendar.id] : props.draft().calendarIds.filter(id => id !== calendar.id) })}/><span>{calendar.name || calendar.id}</span></label>}</For></div>
-        <label class="settings-field"><span id="calendar-cache-label">{t('Calendar cache duration')}</span><select class="select" aria-labelledby="calendar-cache-label" value={props.draft().cacheSeconds} onChange={event => change({ cacheSeconds: Number(event.currentTarget.value) })}><For each={PortalCacheDurations.actions.choices}>{seconds => <option value={seconds}>{t(PortalCacheDurations.label('actions', seconds))}</option>}</For></select></label>
-        <div class="calendar-notice-setting">
-          <div class="calendar-notice-heading"><label id="calendar-alert-label" for="calendar-alert-select">{t('Upcoming-event notice')}</label><button type="button" class="btn btn-ghost btn-sm" aria-expanded={showSample()} aria-controls="calendar-notice-sample" onClick={() => { setSampleSilenced(false); setShowSample(!showSample()); }}>{t('Preview notice')}</button></div>
-          <select id="calendar-alert-select" class="select" aria-labelledby="calendar-alert-label" value={props.draft().alertMinutes} onChange={event => change({ alertMinutes: Number(event.currentTarget.value) })}><For each={[0, 1, 2, 3, 5, 10, 15]}>{minutes => <option value={minutes}>{minutes ? tr('{minutes} minutes before', props.state.language, { minutes }) : t('Disabled')}</option>}</For></select>
-          <Show when={showSample()}><div id="calendar-notice-sample" class="calendar-notice-sample">
-            <ol class="calendar-timeline"><EventRow silenced={sampleSilenced()} silence={() => setSampleSilenced(true)} slot={sampleSlot()} state="next" expanded approaching showEnd={false} now={props.state.now} language={props.state.language} zone={Intl.DateTimeFormat().resolvedOptions().timeZone} enter={() => {}} leave={() => {}} toggle={() => {}}/></ol>
-          </div></Show>
+        <div class="cache-settings">
+          <label class="settings-field"><span id="calendar-cache-label">{t('Calendar cache duration')}</span><select class="select" aria-labelledby="calendar-cache-label" aria-describedby="calendar-cache-help" value={props.draft().cacheSeconds} onChange={event => change({ cacheSeconds: Number(event.currentTarget.value) })}><For each={PortalCacheDurations.actions.choices}>{seconds => <option value={seconds}>{t(PortalCacheDurations.label('actions', seconds))}</option>}</For></select></label>
+          <p id="calendar-cache-help">{t('Reuse data for this duration. Fetch latest bypasses the cache.')}</p>
+          <p>{t('Refreshes automatically while the calendar is visible.')} {t('Use Save changes to apply.')}</p>
         </div>
-        <p class="settings-help">{t('Notices appear inside the portal while it is open. Browser-local time is used. Hidden tabs and sleeping devices may delay notices.')}</p>
+        <section aria-labelledby="calendar-settings-title">
+          <h2 id="calendar-settings-title"><ServiceLogo service="calendar" label="Google Calendar" decorative/>Google Calendar</h2><p class="settings-help">{t('Show today’s schedule in a side panel using the Google account running this app. Calendar access is read-only.')}</p>
+          <div class="calendar-choices-heading"><span>{t('Calendars (up to 5)')}</span><button type="button" class="btn btn-ghost btn-sm" disabled={props.state.choicesBusy} aria-describedby={props.state.choicesError ? "calendar-choices-error" : undefined} onClick={props.commands.loadChoices}>{t('Load calendars')}</button></div>
+          <Show when={props.state.choicesError}><p id="calendar-choices-error" class="calendar-notice alert alert-error alert-soft" role="alert">{props.state.choicesError}</p></Show>
+          <div class="calendar-choices" aria-busy={!props.state.initialized && props.state.busy || props.state.choicesBusy}><For each={props.state.calendars}>{calendar => <label><input type="checkbox" class="checkbox checkbox-sm" checked={props.draft().calendarIds.includes(calendar.id)} onChange={event => change({ calendarIds: event.currentTarget.checked ? [...props.draft().calendarIds, calendar.id] : props.draft().calendarIds.filter(id => id !== calendar.id) })}/><span>{calendar.name || calendar.id}</span></label>}</For></div>
+
+          <div class="calendar-notice-setting">
+            <div class="calendar-notice-heading"><label id="calendar-alert-label" for="calendar-alert-select">{t('Upcoming-event notice')}</label><button type="button" class="btn btn-ghost btn-sm" aria-expanded={showSample()} aria-controls="calendar-notice-sample" onClick={() => { setSampleSilenced(false); setShowSample(!showSample()); }}>{t('Preview notice')}</button></div>
+            <select id="calendar-alert-select" class="select" aria-labelledby="calendar-alert-label" value={props.draft().alertMinutes} onChange={event => change({ alertMinutes: Number(event.currentTarget.value) })}><For each={[0, 1, 2, 3, 5, 10, 15]}>{minutes => <option value={minutes}>{minutes ? tr('{minutes} minutes before', props.state.language, { minutes }) : t('Disabled')}</option>}</For></select>
+            <Show when={showSample()}><div id="calendar-notice-sample" class="calendar-notice-sample">
+              <ol class="calendar-timeline"><EventRow silenced={sampleSilenced()} silence={() => setSampleSilenced(true)} slot={sampleSlot()} state="next" expanded approaching showEnd={false} now={props.state.now} language={props.state.language} zone={Intl.DateTimeFormat().resolvedOptions().timeZone} enter={() => {}} leave={() => {}} toggle={() => {}}/></ol>
+            </div></Show>
+          </div>
+          <p class="settings-help">{t('Notices appear inside the portal while it is open. Browser-local time is used. Hidden tabs and sleeping devices may delay notices.')}</p>
+        </section>
         <button type="submit" class="btn btn-primary">{t('Save changes')}</button>
       </fieldset>
     </form>
     <Show when={props.state.initialized && props.state.settingsError}><p class="calendar-notice alert alert-error alert-soft" role="alert">{props.state.settingsError}</p></Show>
     <Show when={props.state.saved}><p class="settings-form-status" role="status">{t('Saved')}</p></Show>
-  </section>;
+  </div>;
 }

@@ -39,6 +39,9 @@ type SlackActionsResponse = { ok: true; items: SlackActionItem[]; hasMore?: bool
 type SlackConnectionsResponse = { ok: true; connections: SlackConnectionInfo[] } | { ok: false; error: string };
 type SlackSaveResponse = { ok: true; connection: SlackConnectionInfo } | { ok: false; error: string };
 interface GasRunner {
+  getGmailSettings(): void;
+  saveGmailSettings(settings: GmailSettings): void;
+  getGmailActionItems(forceRefresh?: boolean): void;
   getCalendarSettings(): void;
   saveCalendarSettings(settings: CalendarSettings, names?: Record<string, string>): void;
   getCalendarChoices(): void;
@@ -85,9 +88,10 @@ declare const google: { script: {
 } };
 
 interface ActionItem {
-  service: string; serviceLabel: string; id: string; title: string; url: string;
+  service: string; serviceLabel: string; id: string; title: string; titleFallback?: string; url: string;
   context: string; updatedAt: string; dateLabel?: string; reasons: string[];
 }
 interface ActionNotice { message: string; reason?: string; url?: string }
 interface ActionResult { hasMore?: boolean; items: ActionItem[]; notices: ActionNotice[]; fetchedAt?: number; cached?: boolean }
-interface ActionSource { id: string; label: string; serviceLabel: string; load(force: boolean, done: (result: ActionResult) => void): void }
+interface InboxGroup { id: string; label: string; items: ActionItem[]; loaded: boolean; failed: boolean; hasMore: boolean }
+interface ActionSource { inboxService?: string; id: string; label: string; serviceLabel: string; load(force: boolean, done: (result: ActionResult) => void): void }

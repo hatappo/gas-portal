@@ -1,3 +1,4 @@
+import { mountSettingsGuidance } from './settings-guidance';
 import { formatListCount, renderListFreshness } from './list-presentation.js';
 import { mountCatalogView } from './catalog-view';
 
@@ -17,6 +18,8 @@ export function initializeCatalog(motion) {
   const refresh = /** @type {HTMLButtonElement} */ (element('refresh-catalog'));
   /** @type {{hit: boolean, fetchedAt: number} | undefined} */
   let freshness;
+  const updateStatusDescription = mountSettingsGuidance(element('status-description'));
+  let statusDescription = '';
   const reset = /** @type {HTMLButtonElement} */ (element('reset'));
   /** @type {CatalogTool[]} */
   let tools = [];
@@ -50,7 +53,8 @@ export function initializeCatalog(motion) {
   function showStatus(title, description, canReset = false) {
     element('status').hidden = false;
     element('status-title').textContent = title;
-    element('status-description').textContent = description;
+    statusDescription = description;
+    updateStatusDescription(statusDescription, document.documentElement.lang);
     reset.hidden = !canReset;
   }
 
@@ -213,7 +217,8 @@ export function initializeCatalog(motion) {
     clearResults(true);
     element('status').hidden = true;
     element('status-title').textContent = '';
-    element('status-description').textContent = '';
+    statusDescription = '';
+    updateStatusDescription('', document.documentElement.lang);
     // Stop waiting after the timeout and ignore late responses.
     const timeout = window.setTimeout(() => {
       if (current !== generation) return;
@@ -247,6 +252,7 @@ export function initializeCatalog(motion) {
     if (catalogReady) renderTools();
   });
   document.addEventListener('portal:languagechange', () => {
+    updateStatusDescription(statusDescription, document.documentElement.lang);
     renderFreshness();
     if (!catalogReady) {
       updateView((previous) => ({ ...previous, language: document.documentElement.lang }));

@@ -1,7 +1,8 @@
+import { CalendarToggle } from './calendar-toggle';
 import { createEffect, createSignal } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { render } from 'solid-js/web';
-import { calendarErrorText, CalendarIcon, CalendarPanel, CalendarSettingsForm, type CalendarViewState, type CalendarCommands } from './calendar-view';
+import { calendarErrorText, CalendarPanel, CalendarSettingsForm, type CalendarViewState, type CalendarCommands } from './calendar-view';
 
 /** Bounded RPCs, without logging upstream responses or exposing authorization tokens. */
 function rpc<T>(send: (runner: GasRunner) => void): Promise<T> {
@@ -24,7 +25,6 @@ export function initializeCalendar() {
   let generation = 0, retryAt = 0, initializing = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const zone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  const t = (key: string) => PortalI18n.t(key, state.language);
   const errorText = (code: string) => calendarErrorText(code, state.language);
   const rememberedOpen = () => { try { const saved = localStorage.getItem('portal-calendar-open'); return saved !== 'false'; } catch { return true; } };
   async function load(force = false) {
@@ -120,7 +120,7 @@ export function initializeCalendar() {
       finally { setState('saving', false); }
     },
   };
-  render(() => <button id="toggle-calendar" type="button" class="btn btn-ghost btn-square" aria-label={t('Today’s schedule')} title={t('Today’s schedule')} aria-expanded={state.open} aria-controls="calendar-panel" onClick={() => commands.toggle(!state.open)}><CalendarIcon/></button>, document.getElementById('calendar-toggle-host')!);
+  render(() => <CalendarToggle open={state.open} toggle={commands.toggle}/>, document.getElementById('calendar-toggle-host')!);
   render(() => <CalendarPanel state={state} commands={commands}/>, panel);
   render(() => <CalendarSettingsForm state={state} draft={draft} change={setDraft} commands={commands}/>, document.getElementById('calendar-settings-host')!);
   createEffect(() => { panel.hidden = !state.open; document.body.classList.toggle('calendar-open', state.open); });

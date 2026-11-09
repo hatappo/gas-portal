@@ -61,7 +61,7 @@ test('Generate theme choices from the shared list, grouped by color scheme', (t)
   const { dom, document, themeRequests } = browser((window) => { window.document.documentElement.dataset.theme = 'dracula'; });
   t.after(() => dom.window.close());
   const settings = document.querySelector('#tab-settings');
-  assert.equal(settings.textContent, '');
+  assert.equal(settings.textContent.trim(), '');
   assert.equal(settings.getAttribute('aria-label'), '設定');
   settings.click();
   assert.equal(document.querySelector('#settings-panel').hidden, false);

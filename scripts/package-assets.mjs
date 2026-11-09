@@ -18,6 +18,7 @@ cpSync(path.join(root, 'dist'), path.join(root, 'assets/gas'), { recursive: true
 // The other icons are already embedded, with their license comments, in assets/gas/Index.html.
 // The CLI reads only this one, for the repository link it adds to consumer builds.
 cpSync(path.join(root, 'src/assets/external-link.svg'), path.join(root, 'assets/external-link.svg'));
+cpSync(path.join(root, 'src/assets/brands/LICENSE.txt'), path.join(root, 'assets/brand-logos-LICENSE.txt'));
 cpSync(path.join(root, 'src/mobile.html'), path.join(root, 'assets/preview/mobile.html'));
 writeFileSync(path.join(root, 'assets/preview/index.html'), preview);
 console.log('Generated packaged GAS code and mock preview in assets/.');
