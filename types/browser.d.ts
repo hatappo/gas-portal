@@ -34,8 +34,10 @@ type GitHubConnectionsResponse = { ok: true; connections: GitHubConnectionInfo[]
 type GitHubSaveResponse = { ok: true; connection: GitHubConnectionInfo } | { ok: false; error: string };
 interface SlackConnectionInfo { tokenSuffix?: string; id: string; label: string }
 interface SlackConnectionInput { id: string; token: string }
-interface SlackActionItem { id: string; title: string; url: string; context: string; postedAt: string }
-type SlackActionsResponse = { ok: true; items: SlackActionItem[]; hasMore?: boolean; error: string; partial: boolean; fetchedAt: number; cached: boolean } | { ok: false; error: string };
+interface SlackActionItem { id: string; title: string; url: string; context: string; postedAt: string; todoState?: 'to_do' | 'unknown' }
+interface SlackDiagnostics { searchTotal: number | null; received: number; eligible: number; skipped: number; hasMore: boolean | null; remaining: number | null; completed: number; incomplete: number; unknown: number }
+type SlackActionsResponse = { ok: true; items: SlackActionItem[]; diagnostics?: SlackDiagnostics; hasMore?: boolean; error: string; partial: boolean; fetchedAt: number; cached: boolean } | { ok: false; error: string };
+type SlackBookmarksResponse = { ok: true; workspace: string; url: string; items: SlackActionItem[]; hasMore: boolean; partial: boolean; error: string; fetchedAt: number; cached: boolean } | { ok: false; error: string };
 type SlackConnectionsResponse = { ok: true; connections: SlackConnectionInfo[] } | { ok: false; error: string };
 type SlackSaveResponse = { ok: true; connection: SlackConnectionInfo } | { ok: false; error: string };
 interface GasRunner {
@@ -48,6 +50,7 @@ interface GasRunner {
   getCalendarEvents(forceRefresh: boolean, timeZone: string): void;
   saveSlackBookmarkLimit(limit: number): void;
   getSlackConnections(): void;
+  getSlackBookmarks(id: string, forceRefresh?: boolean): void;
   saveSlackConnection(input: SlackConnectionInput): void;
   disconnectSlack(id: string): void;
   getSlackActionItems(id: string, forceRefresh?: boolean): void;
@@ -92,6 +95,8 @@ interface ActionItem {
   context: string; updatedAt: string; dateLabel?: string; reasons: string[];
 }
 interface ActionNotice { message: string; reason?: string; url?: string }
-interface ActionResult { hasMore?: boolean; items: ActionItem[]; notices: ActionNotice[]; fetchedAt?: number; cached?: boolean }
+interface DiagnosticMetric { unit?: 'items'; label: string; value: number | string | null }
+interface ActionDiagnostic { id: string; label: string; fetchedAt?: number; cached?: boolean; metrics: DiagnosticMetric[] }
+interface ActionResult { diagnostics?: DiagnosticMetric[]; hasMore?: boolean; items: ActionItem[]; notices: ActionNotice[]; fetchedAt?: number; cached?: boolean }
 interface InboxGroup { id: string; label: string; items: ActionItem[]; loaded: boolean; failed: boolean; hasMore: boolean }
 interface ActionSource { inboxService?: string; id: string; label: string; serviceLabel: string; load(force: boolean, done: (result: ActionResult) => void): void }

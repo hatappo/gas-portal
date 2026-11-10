@@ -23,6 +23,17 @@ export function initializeCatalog(motion) {
   const reset = /** @type {HTMLButtonElement} */ (element('reset'));
   /** @type {CatalogTool[]} */
   let tools = [];
+  /** @type {CatalogTool[]} */
+  let spreadsheetTools = [];
+  /** @type {CatalogTool[]} */
+  let supplementaryTools = [];
+  /** @type {{label: string, message: string}[]} */
+  let supplementaryNotices = [];
+  /** @type {{hit: boolean, fetchedAt: number}[]} */
+  let supplementaryFreshness = [];
+  let supplementaryLoading = false;
+  let spreadsheetLoading = false;
+  let catalogError = '';
   /** @type {CatalogWarning[]} */
   let issues = [];
   /** @type {Set<string>} */
@@ -72,16 +83,19 @@ export function initializeCatalog(motion) {
     element('tag-filter').hidden = tags.length === 0;
     element('warnings').hidden = issues.length === 0;
     element('warning-summary').textContent = t('Entries not displayed: {count}. Check the spreadsheet.', { count: issues.length });
-    updateView({ disabled: search.disabled, tools: visible, tags, selected: new Set(selectedTags), issues, view,
+    const notices = [...supplementaryNotices, ...(catalogError && tools.length ? [{ label: '', message: catalogError }] : [])];
+    element('links-notices').hidden = !notices.length;
+    updateView({ notices, disabled: search.disabled, tools: visible, tags, selected: new Set(selectedTags), issues, view,
       language: document.documentElement.lang,
       unblocked: PortalUrlSchemes.normalizeUnblocked(element('url-scheme-settings').dataset.savedValue) });
   }
 
   function renderTools() {
+    tools = [...supplementaryTools, ...spreadsheetTools];
     const query = normalize(search.value);
     const visible = tools.filter((tool) =>
       [...selectedTags].every((tag) => tool.tags.includes(tag)) &&
-      normalize([tool.name, tool.description, ...tool.tags, ...(tool.children || []).map((child) => child.name)].join(' ')).includes(query));
+      normalize([tool.name, tool.description, ...tool.tags, ...(tool.children || []).flatMap((child) => [child.name, child.description])].join(' ')).includes(query));
     const list = element('tools');
     list.hidden = view !== 'cards' || visible.length === 0;
     element('table-view').hidden = view !== 'list' || visible.length === 0;
@@ -90,9 +104,13 @@ export function initializeCatalog(motion) {
     count.textContent = formatListCount(visible.length, tools.length, document.documentElement.lang);
     updateLists(visible);
     element('status').hidden = visible.length > 0;
-    if (tools.length === 0) {
-      showStatus(issues.length ? t("No tools can be displayed") : t('No items to display'),
-        issues.length ? t("Fix the spreadsheet using the issues listed above.") : t("Add tools to the spreadsheet to display them here."));
+    if (tools.length === 0 && (spreadsheetLoading || supplementaryLoading)) {
+      element('status').hidden = true;
+    } else if (tools.length === 0 && catalogError) {
+      showStatus(t('Could not load links'), PortalI18n.translate(catalogError, document.documentElement.lang));
+    } else if (tools.length === 0) {
+      showStatus(issues.length ? t("No links can be displayed") : t('No items to display'),
+        issues.length ? t("Fix the spreadsheet using the issues listed above.") : t("Add links to the spreadsheet to display them here."));
     } else if (visible.length === 0) {
       showStatus(t('No items to display'), t("Try a different keyword or tag."), true);
     }
@@ -101,9 +119,15 @@ export function initializeCatalog(motion) {
 
   /** @param {boolean} value */
   function setLoading(value) {
+    spreadsheetLoading = value;
+    updateLoading();
+  }
+
+  function updateLoading() {
+    const value = spreadsheetLoading || supplementaryLoading;
     refresh.disabled = value;
     refresh.setAttribute('aria-busy', String(value));
-    setControlsDisabled(value);
+    setControlsDisabled(value || Boolean(catalogError && !supplementaryTools.length));
     element('directory').setAttribute('aria-busy', String(value));
   }
 
@@ -127,15 +151,14 @@ export function initializeCatalog(motion) {
 
   /** @param {string | undefined} message */
   function showError(message = undefined) {
-    setLoading(false);
-    setControlsDisabled(true);
-    catalogReady = false;
+    catalogReady = true;
+    catalogError = message || t("Select Fetch latest to try again. If the problem persists, check the GAS settings.");
     freshness = undefined;
-    renderFreshness();
-    tools = [];
+    spreadsheetTools = [];
     issues = [];
-    clearResults();
-    showStatus(t("Could not load the tool list"), (message ? PortalI18n.translate(message, document.documentElement.lang) : '') || t("Select Fetch latest to try again. If the problem persists, check the GAS settings."));
+    setLoading(false);
+    renderFreshness();
+    renderTools();
   }
 
   /**
@@ -175,7 +198,8 @@ export function initializeCatalog(motion) {
   }
 
   function renderFreshness() {
-    renderListFreshness(element('catalog-freshness'), { fetchedAt: freshness?.fetchedAt, cached: freshness?.hit }, document.documentElement.lang);
+    const stamps = [...(freshness ? [freshness] : []), ...supplementaryFreshness];
+    renderListFreshness(element('catalog-freshness'), { fetchedAt: stamps.length ? Math.min(...stamps.map(stamp => stamp.fetchedAt)) : undefined, cached: stamps.length > 0 && stamps.every(stamp => stamp.hit) }, document.documentElement.lang);
   }
 
   /** Use the same validation and rendering for embedded data and refresh responses. @param {CatalogResponse} response */
@@ -198,7 +222,9 @@ export function initializeCatalog(motion) {
     catalogReady = true;
     freshness = response.cache && typeof response.cache.hit === 'boolean' && Number.isFinite(response.cache.fetchedAt) && response.cache.fetchedAt > 0 ? response.cache : undefined;
     renderFreshness();
-    tools = accepted;
+    catalogError = '';
+    spreadsheetTools = accepted;
+    tools = [...supplementaryTools, ...spreadsheetTools];
     issues = [...response.issues, ...skipped];
     const availableTags = new Set(tools.flatMap((tool) => tool.tags));
     selectedTags = new Set([...selectedTags].filter((tag) => availableTags.has(tag)));
@@ -214,7 +240,7 @@ export function initializeCatalog(motion) {
     refresh.style.minWidth = Math.max(44, Math.ceil(refresh.getBoundingClientRect().width)) + 'px';
     setLoading(true);
     const current = ++generation;
-    clearResults(true);
+    if (!tools.length) clearResults(true);
     element('status').hidden = true;
     element('status-title').textContent = '';
     statusDescription = '';
@@ -240,7 +266,11 @@ export function initializeCatalog(motion) {
     }
   }
 
-  refresh.addEventListener('click', () => { if (!refresh.disabled) loadCatalog(true); });
+  refresh.addEventListener('click', () => {
+    if (refresh.disabled) return;
+    loadCatalog(true);
+    document.dispatchEvent(new CustomEvent('portal:refresh-links'));
+  });
   search.addEventListener('input', renderTools);
   reset.addEventListener('click', () => {
     search.value = '';
@@ -268,4 +298,18 @@ export function initializeCatalog(motion) {
     // Only test fixtures render without embedded data; the built page always embeds it.
     loadCatalog();
   }
+  return {
+    /** @param {{tools: CatalogTool[], notices: {label: string, message: string}[], loading: boolean, freshness: {hit: boolean, fetchedAt: number}[]}} state */
+    setSupplementary(state) {
+      supplementaryTools = state.tools.map(sanitizeTool).filter((tool) => tool !== null);
+      supplementaryNotices = state.notices;
+      supplementaryLoading = state.loading;
+      supplementaryFreshness = state.freshness;
+      if (!state.loading) {
+        const availableTags = new Set([...supplementaryTools, ...spreadsheetTools].flatMap(tool => tool.tags));
+        selectedTags = new Set([...selectedTags].filter(tag => availableTags.has(tag)));
+      }
+      updateLoading(); renderFreshness(); renderTools();
+    },
+  };
 }

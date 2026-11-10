@@ -77,7 +77,7 @@ function initializeUserProperties_() {
     ...getPortalPropertyDefaults_(),
     PORTAL_THEME: 'auto', PORTAL_LANGUAGE: 'auto', CATALOG_CACHE_SECONDS: String(PortalCacheDurations.catalog.defaultSeconds), ACTIONS_CACHE_SECONDS: String(PortalCacheDurations.actions.defaultSeconds),
     CALENDAR_SETTINGS: JSON.stringify(PortalCalendar.defaults()),
-    SPREADSHEET_ID: '', SHEET_NAME: '', UNBLOCKED_URL_SCHEMES: '', SLACK_BOOKMARK_LIMIT: String(PortalSlackSettings.defaultLimit),
+    SPREADSHEET_ID: '', SHEET_NAME: '', UNBLOCKED_URL_SCHEMES: '',
   };
   const missing = Object.fromEntries(Object.entries(defaults).filter(([key]) => !Object.prototype.hasOwnProperty.call(current, key)));
   if (Object.keys(missing).length) store.setProperties(missing, false);

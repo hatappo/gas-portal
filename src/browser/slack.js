@@ -1,36 +1,13 @@
+import { initializeSlackLinks } from './slack-links.js';
 import { initializeTokenField } from './token-field.js';
-import { createSaver } from './save-control.js';
-/** @param {ReturnType<typeof import('./action-items.js').initializeActions>} actions */
-export function initializeSlack(actions) {
+/** @param {ReturnType<typeof import('./action-items.js').initializeActions>} actions
+ * @param {ReturnType<typeof import('./client.js').initializeCatalog>} [catalog] */
+export function initializeSlack(actions, catalog) {
+  const links = catalog ? initializeSlackLinks(catalog) : undefined;
   /** @param {string} id */
   const el = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
   /** @param {string} key @param {Record<string, string | number>} [values] */
   const t = (key, values = {}) => PortalI18n.t(key, document.documentElement.lang, values);
-  const limit = /** @type {HTMLSelectElement} */ (el('slack-bookmark-limit'));
-  let savedLimit = String(PortalSlackSettings.normalize(limit.dataset.savedValue));
-  limit.replaceChildren(...PortalSlackSettings.choices.map((value) => {
-    const option = document.createElement('option');
-    option.value = String(value); option.textContent = String(value);
-    return option;
-  }));
-  limit.value = savedLimit;
-  const saveLimit = createSaver({ status: el('slack-limit-status'), t, setBusy: (busy) => { limit.disabled = busy; } });
-  limit.addEventListener('change', () => {
-    const value = limit.value;
-    if (limit.disabled || value === savedLimit) return;
-    saveLimit({
-      send: (runner) => runner.saveSlackBookmarkLimit(Number(value)),
-      confirm: (/** @type {{ok: boolean, limit?: number}} */ response) => {
-        if (!response?.ok || response.limit !== Number(value)) return false;
-        savedLimit = value; limit.dataset.savedValue = value;
-        // Invalidate only Slack snapshots. The next visit to Actions reads the new limit.
-        sources.clear(); if (initialized) publishSources();
-        return t('Saved');
-      },
-      restore: () => { limit.value = savedLimit; },
-      failureMessage: 'Could not save the bookmark limit. Please try again.',
-    });
-  });
   const form = /** @type {HTMLFormElement} */ (el('slack-settings-form'));
   const fields = /** @type {HTMLFieldSetElement} */ (el('slack-settings-fields'));
   const token = /** @type {HTMLInputElement} */ (el('slack-token'));
@@ -54,7 +31,7 @@ export function initializeSlack(actions) {
     /** @type {Record<string, string>} */
     const messages = {
       UNAUTHORIZED: 'Slack authorization expired or was revoked. Replace the token in Settings.',
-      MISSING_SCOPE: 'Slack requires the search:read user token scope. Update the app permissions and reinstall it.',
+      MISSING_SCOPE: 'Slack requires search:read and the history scope for each conversation type. Check the permissions in Settings and reinstall the Slack app.',
       RATE_LIMITED: 'Slack rate limit reached. Wait a few minutes before refreshing.',
       INVALID_CONNECTION: 'This connection no longer exists. Reload the portal.',
       CONNECTION_CHANGED: 'The connection changed during this request. Reload the portal.',
@@ -113,18 +90,37 @@ export function initializeSlack(actions) {
     if (!data || !data.ok) return Boolean(data && typeof data.error === 'string');
     try {
       return Number.isFinite(new Date(data.fetchedAt).getTime()) && typeof data.error === 'string' && typeof data.partial === 'boolean' && Array.isArray(data.items) && data.items.length <= 200 && data.items.every((item) =>
-        item && typeof item.id === 'string' && typeof item.title === 'string' && typeof item.context === 'string' && typeof item.url === 'string' && Boolean(safeSlackUrl(item.url)) && Number.isFinite(Date.parse(item.postedAt)));
+        item && typeof item.id === 'string' && typeof item.title === 'string' && typeof item.context === 'string' && typeof item.url === 'string' && Boolean(safeSlackUrl(item.url)) && (item.todoState === undefined || item.todoState === 'to_do' || item.todoState === 'unknown') && Number.isFinite(Date.parse(item.postedAt)));
     } catch { return false; }
+  }
+
+  /** Only numeric aggregates enter diagnostics; never pass through arbitrary API fields.
+   * @param {SlackDiagnostics | undefined} value @returns {DiagnosticMetric[] | undefined}
+   */
+  function diagnosticMetrics(value) {
+    if (!value) return undefined;
+    const count = (/** @type {unknown} */ number) => Number.isSafeInteger(number) && Number(number) >= 0 ? Number(number) : null;
+    return [
+      { label: 'Search matches reported', value: count(value.searchTotal) },
+      { label: 'Search results received', value: count(value.received) },
+      { label: 'To-dos in range', value: count(value.eligible) },
+      { label: 'Excluded or duplicate results', value: count(value.skipped) },
+      { label: 'Not retrieved', value: count(value.remaining) ?? (value.hasMore === true ? 'Available (count unknown)' : value.hasMore === false ? 0 : null), unit: 'items' },
+      { label: 'Completed To-dos', value: count(value.completed) },
+      { label: 'Incomplete To-dos', value: count(value.incomplete) },
+      { label: 'Unknown To-do state', value: count(value.unknown) },
+    ];
   }
 
   /** @param {SlackActionsResponse} response @returns {ActionResult} */
   function normalizeActions(response) {
     if (!response.ok) return { items: [], notices: [{ message: errorMessage(response.error) }] };
     return {
+      diagnostics: diagnosticMetrics(response.diagnostics),
       fetchedAt: response.fetchedAt, cached: response.cached, hasMore: response.hasMore === true,
       items: response.items.map((item) => ({
-        service: 'slack', serviceLabel: 'Slack', id: item.id, title: item.title || t('Saved message'),
-        url: safeSlackUrl(item.url), context: item.context, updatedAt: item.postedAt, dateLabel: 'Posted', reasons: ['Bookmark'],
+        service: 'slack', serviceLabel: 'Slack', id: item.id, title: item.title || t('To-do'),
+        url: safeSlackUrl(item.url), context: item.context, updatedAt: item.postedAt, dateLabel: 'Posted', reasons: [item.todoState === 'to_do' ? 'To-do' : 'To-do (status unknown)'],
       })),
       notices: response.error || response.partial ? [{ message: response.error ? errorMessage(response.error) : 'Only part of the results could be retrieved.' }] : [],
     };
@@ -145,6 +141,7 @@ export function initializeSlack(actions) {
       });
     }
     actions.setSources('slack', [...sources.values()]);
+    links?.setConnections(connections);
   }
   function initialize() {
     if (initialized) return;
@@ -161,6 +158,7 @@ export function initializeSlack(actions) {
       window.clearTimeout(timeout); initializing = false;
       el('slack-settings-loading').hidden = true;
       settingsStatus.textContent = errorMessage('REQUEST_FAILED');
+      links?.connectionFailure();
       actions.setProviderState('slack', { ready: false, loading: false, error: errorMessage('REQUEST_FAILED') });
       el('retry-slack-settings').hidden = false;
     }
@@ -208,7 +206,7 @@ export function initializeSlack(actions) {
           if (!response?.ok || !response.connection) { finish(false, errorMessage(response && !response.ok ? response.error : 'REQUEST_FAILED')); return; }
           connections = [...connections.filter((connection) => connection.id !== response.connection.id), response.connection];
           sources.delete(response.connection.id);
-          finish(true, t('Connected. Inbox & Tasks will show saved-message search results.'));
+          finish(true, t('Connected. Links will show saved messages; Inbox & Tasks will show To-dos.'));
         }).saveSlackConnection(input);
       }
     } catch { failure(); }
@@ -217,11 +215,12 @@ export function initializeSlack(actions) {
   add.addEventListener('click', () => edit(undefined));
   el('cancel-slack').addEventListener('click', () => { if (!busy) { form.hidden = true; token.value = ''; } });
   form.addEventListener('submit', (event) => { event.preventDefault(); mutate(); });
+  document.addEventListener('portal:refresh-links', () => { if (!initialized) initialize(); });
   document.addEventListener('portal:refresh-actions', () => { if (!initialized) initialize(); });
   el('retry-slack-settings').addEventListener('click', initialize);
   document.addEventListener('portal:tabchange', () => {
     if (!el('actions-panel').hidden || !el('settings-panel').hidden) initialize();
   });
   document.addEventListener('portal:languagechange', renderConnections);
-  if (!el('actions-panel').hidden || !el('settings-panel').hidden) initialize();
+  if (catalog || !el('actions-panel').hidden || !el('settings-panel').hidden) initialize();
 }

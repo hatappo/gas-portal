@@ -18,7 +18,7 @@ test('Offer the bookmarklet as a link and as copyable code', (t) => {
   const { dom, document } = browser();
   t.after(() => dom.window.close());
   const link = document.getElementById('favicon-finder-link');
-  assert.ok(link.closest('#settings-tools-panel'));
+  assert.ok(link.closest('#settings-sources-panel'));
   assert.match(link.href, /^javascript:/);
   assert.doesNotMatch(link.href, /[\n\r]/, 'Line breaks are percent-encoded');
   assert.equal(document.getElementById('favicon-finder-code').value, link.getAttribute('href'));
@@ -77,8 +77,8 @@ test('Copy the code, or select it for manual copying when the clipboard is unava
       if (clipboard) Object.defineProperty(window.navigator, 'clipboard', { value: clipboard });
     });
     t.after(() => app.dom.window.close());
-    // The button is only reachable with Settings → Tools & Links open.
-    for (const id of ['settings-panel', 'settings-tools-panel']) app.document.getElementById(id).hidden = false;
+    // The button is only reachable with Settings → Links open.
+    for (const id of ['settings-panel', 'settings-sources-panel']) app.document.getElementById(id).hidden = false;
     const code = app.document.getElementById('favicon-finder-code');
     assert.equal(code.closest('.disclosure-content').getAttribute('aria-hidden'), 'true');
     app.document.getElementById('favicon-finder-copy').click();

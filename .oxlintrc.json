@@ -60,7 +60,7 @@
         "no-unused-vars": [
           "error",
           {
-            "varsIgnorePattern": "^(getGmailSettings|saveGmailSettings|getGmailActionItems|authorizePortal|getCalendarSettings|saveCalendarSettings|getCalendarChoices|getCalendarEvents|saveSlackBookmarkLimit|getSlackConnections|saveSlackConnection|disconnectSlack|getSlackActionItems|getGitHubConnections|saveGitHubConnection|disconnectGitHub|getGitHubActionItems|doGet|getCatalog|saveCatalogCacheTtl|saveActionsCacheTtl|normalizeCatalogCacheTtl_|readCachedSheetCatalog_|saveTheme|saveLanguage|include_|parseCatalog_|readSheetCatalog_|savePortalSettings|saveSpreadsheetSettings|createPortalSpreadsheet|saveUnblockedUrlSchemes|doGet|getPortalLanguage_|getPortalPropertyDefaults_|getPortalTheme_|getPortalUserProperties_|isPortalTheme_|normalizeActionsCacheTtl_|normalizeCatalogCacheTtl_|normalizePortalIcon_|normalizeSpreadsheetId_|parseCatalog_|readCachedSheetCatalog_|withPortalPropertiesLock_)$"
+            "varsIgnorePattern": "^(getGmailSettings|saveGmailSettings|getGmailActionItems|authorizePortal|getCalendarSettings|saveCalendarSettings|getCalendarChoices|getCalendarEvents|saveSlackBookmarkLimit|getSlackConnections|saveSlackConnection|disconnectSlack|getSlackActionItems|getSlackBookmarks|getGitHubConnections|saveGitHubConnection|disconnectGitHub|getGitHubActionItems|doGet|getCatalog|saveCatalogCacheTtl|saveActionsCacheTtl|normalizeCatalogCacheTtl_|readCachedSheetCatalog_|saveTheme|saveLanguage|include_|parseCatalog_|readSheetCatalog_|savePortalSettings|saveSpreadsheetSettings|createPortalSpreadsheet|saveUnblockedUrlSchemes|doGet|getPortalLanguage_|getPortalPropertyDefaults_|getPortalTheme_|getPortalUserProperties_|isPortalTheme_|normalizeActionsCacheTtl_|normalizeCatalogCacheTtl_|normalizePortalIcon_|normalizeSpreadsheetId_|parseCatalog_|readCachedSheetCatalog_|withPortalPropertiesLock_)$"
           }
         ]
       }
@@ -99,7 +99,8 @@
         "src/server/Slack.js"
       ],
       "globals": {
-        "normalizeActionsCacheTtl_": "readonly"
+        "normalizeActionsCacheTtl_": "readonly",
+        "normalizeCatalogCacheTtl_": "readonly"
       }
     },
     {

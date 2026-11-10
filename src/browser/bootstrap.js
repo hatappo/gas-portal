@@ -25,7 +25,7 @@ export function initializePortal({ connectGitHub = initializeGitHub, connectSlac
   initializeLanguage();
   initializeNavigation(motion);
   mountDisclosures();
-  initializeCatalog(motion);
+  const catalog = initializeCatalog(motion);
   initializeTheme();
   initializeSettings();
   initializeCacheSettings();
@@ -34,7 +34,7 @@ export function initializePortal({ connectGitHub = initializeGitHub, connectSlac
   initializeSpreadsheetSettings();
   const actions = initializeActions();
   connectGmail(actions);
-  connectSlack(actions);
+  connectSlack(actions, catalog);
   connectGitHub(actions);
   const calendar = connectCalendar();
   mountRefreshHints();

@@ -1,6 +1,6 @@
 // Capture the local preview in every theme for visual review. Not part of `npm run check` or CI.
 // First run: npx playwright install chromium
-// Usage: npm run screenshots -- [--themes nord,night] [--views tools,appearance] [--widths 1280,390]
+// Usage: npm run screenshots -- [--themes nord,night] [--views links,appearance] [--widths 1280,390]
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
@@ -11,12 +11,11 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 
 /** Each view is a URL hash, a ready condition, and an optional action before the capture. */
 export const views = {
-  tools: { hash: '', ready: '#directory[aria-busy="false"]' },
+  links: { hash: '#links', ready: '#directory[aria-busy="false"]' },
   list: { hash: '', ready: '#directory[aria-busy="false"]', prepare: (page) => page.locator('label:has(#view-list)').click() },
   actions: { query: '?github=multiple', hash: '#inbox-and-tasks', ready: '#action-items[aria-busy="false"]' },
   appearance: { hash: '#settings/appearance', ready: '#settings-appearance-panel:not([hidden])' },
-  'settings-tools': { hash: '#settings/tools', ready: '#settings-tools-panel:not([hidden])' },
-  'settings-actions': { hash: '#settings/inbox-and-tasks', ready: '#github-connections li' },
+  sources: { hash: '#settings/sources', ready: '#github-connections li' },
 };
 
 /** @param {string[]} argv */

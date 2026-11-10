@@ -1,7 +1,8 @@
-/** Saved-message search using app-issued user tokens. Never expose credentials or raw API bodies. */
+/** Bounded To-do search using app-issued user tokens. Never expose credentials or raw API bodies. */
 /** @typedef {{id: string, token: string, revision: string, workspaceId: string, userId: string, workspace: string, user: string, url: string}} SlackConnection */
-/** @typedef {{id: string, title: string, url: string, context: string, postedAt: string}} SlackItem */
-/** @typedef {{items: SlackItem[], partial: boolean, error: string, hasMore: boolean}} SlackSearch */
+/** @typedef {{id: string, title: string, url: string, context: string, postedAt: string, todoState?: 'to_do' | 'unknown'}} SlackItem */
+/** @typedef {{searchTotal: number | null, received: number, eligible: number, skipped: number, hasMore: boolean | null, remaining: number | null, completed: number, incomplete: number, unknown: number}} SlackDiagnostics */
+/** @typedef {{items: SlackItem[], partial: boolean, error: string, hasMore: boolean, diagnostics: SlackDiagnostics}} SlackSearch */
 
 /** @param {string} id */
 function slackPropertyKey_(id) {
@@ -32,7 +33,7 @@ function slackErrorCode_(error) {
   return ['UNAUTHORIZED', 'MISSING_SCOPE', 'RATE_LIMITED', 'INVALID_CONNECTION', 'CONNECTION_CHANGED', 'INVALID_INPUT', 'CONNECTION_LIMIT', 'DUPLICATE_CONNECTION', 'AUTHORIZATION_REQUIRED'].includes(code) ? code : 'REQUEST_FAILED';
 }
 /** Fixed origin, fixed methods, no redirects. Errors are bounded and never include response bodies.
- * @param {string} token @param {'auth.test' | 'search.messages'} method @param {string} [query] @returns {any}
+ * @param {string} token @param {'auth.test' | 'search.messages' | 'conversations.history' | 'conversations.replies'} method @param {string} [query] @returns {any}
  */
 function slackRequest_(token, method, query = '') {
   let response;
@@ -65,12 +66,13 @@ function withSlackLock_(action) {
   try { return action(); } finally { lock.releaseLock(); }
 }
 /** @param {SlackConnection} connection @param {number} limit */
-function slackCacheKey_(connection, limit) { return 'slack-saved-v2:' + connection.id + ':' + connection.revision + ':' + limit; }
+function slackCacheKey_(connection, limit) { return 'slack-todos-v2:' + connection.id + ':' + connection.revision + ':' + limit; }
 /** @param {SlackConnection} connection */
 function clearSlackCache_(connection) {
   try {
     const cache = CacheService.getUserCache();
-    for (const limit of PortalSlackSettings.choices) cache.remove(slackCacheKey_(connection, limit));
+    cache.remove(slackCacheKey_(connection, PortalSlackSettings.limit));
+    cache.remove(slackBookmarksCacheKey_(connection));
   } catch { /* Cache is optional. */ }
 }
 /** @param {unknown} input */
@@ -116,7 +118,8 @@ function disconnectSlack(id) {
  * @param {any} value @param {SlackConnection} connection @returns {SlackItem | null}
  */
 function slackItem_(value, connection) {
-  if (!value || value.type !== 'message' || typeof value.text !== 'string' || typeof value.ts !== 'string' || !/^\d{10}\.\d{6}$/.test(value.ts) || typeof value.channel?.id !== 'string' || !/^[CGD][A-Z0-9]+$/.test(value.channel.id)) return null;
+  // search.messages may label DM matches as type=im; validate message fields instead.
+  if (!value || typeof value.text !== 'string' || typeof value.ts !== 'string' || !/^\d{10}\.\d{6}$/.test(value.ts) || typeof value.channel?.id !== 'string' || !/^[CGD][A-Z0-9]+$/.test(value.channel.id)) return null;
   const channel = value.channel.id;
   const title = String(value.text).replace(/<https?:\/\/[^>|]+\|([^>]+)>/g, '$1').replace(/&(amp|lt|gt);/g, (_, entity) => entity === 'amp' ? '&' : entity === 'lt' ? '<' : '>').replace(/\s+/g, ' ').trim().slice(0, 500);
   return { id: connection.workspaceId + ':' + channel + ':' + value.ts, title,
@@ -124,52 +127,113 @@ function slackItem_(value, connection) {
     context: connection.workspace + ' · ' + (typeof value.channel.name === 'string' ? value.channel.name.slice(0, 80) : channel),
     postedAt: new Date(Number(value.ts) * 1000).toISOString() };
 }
-/** Per-user setting shared by Slack connections. Existing result snapshots update on the next read.
- * @param {unknown} limit
- */
-function saveSlackBookmarkLimit(limit) {
-  if (!PortalSlackSettings.isChoice(limit)) return { ok: false };
-  try {
-    withSlackLock_(() => PropertiesService.getUserProperties().setProperty('SLACK_BOOKMARK_LIMIT', String(limit)));
-    return { ok: true, limit };
-  } catch { return { ok: false }; }
-}
+/** Retired settings RPC: old clients cannot change the fixed candidate budget. */
+function saveSlackBookmarkLimit() { return { ok: false }; }
 
-/** Search semantics, not a complete Later inventory or a To-do count. At most two pages per refresh.
+/** Resolve only the exact message. Search results do not include personal To-do state.
+ * @param {SlackConnection} connection @param {SlackItem} item @param {string} threadTs
+ * @returns {'to_do' | 'completed' | 'unknown'}
+ */
+function slackTodoState_(connection, item, threadTs) {
+  const parts = item.id.split(':');
+  const channel = parts[1], ts = parts[2];
+  const query = '?channel=' + encodeURIComponent(channel) + '&oldest=' + ts + '&latest=' + ts + '&inclusive=true&limit=2';
+  const data = threadTs
+    ? slackRequest_(connection.token, 'conversations.replies', query + '&ts=' + threadTs)
+    : slackRequest_(connection.token, 'conversations.history', query);
+  if (!Array.isArray(data.messages)) throw new Error('REQUEST_FAILED');
+  const state = data.messages.find((/** @type {any} */ message) => message?.ts === ts)?.saved?.todo_state;
+  return state === 'to_do' || state === 'completed' ? state : 'unknown';
+}
+/** Thread parents may be supplied only in the search permalink. Never fetch that URL.
+ * @param {any} raw @returns {string}
+ */
+function slackThreadTimestamp_(raw) {
+  const direct = raw.thread_ts;
+  if (typeof direct === 'string' && /^\d{10}\.\d{6}$/.test(direct)) return direct === raw.ts ? '' : direct;
+  const match = typeof raw.permalink === 'string' ? /[?&]thread_ts=(\d{10}\.\d{6})(?:&|$)/.exec(raw.permalink) : null;
+  return match && match[1] !== raw.ts ? match[1] : '';
+}
+/** Search candidates are capped before completion filtering; never backfill completed items.
+ * At most two search pages and one detail request per unique candidate.
  * @param {SlackConnection} connection @param {number} limit @returns {SlackSearch}
  */
 function slackSearch_(connection, limit) {
   /** @type {SlackSearch} */
-  const result = { items: [], partial: false, error: '', hasMore: false };
+  const result = { items: [], partial: false, error: '', hasMore: false, diagnostics: { searchTotal: null, received: 0, eligible: 0, skipped: 0, hasMore: null, remaining: null, completed: 0, incomplete: 0, unknown: 0 } };
   const seen = new Set();
+  /** @type {{item: SlackItem, threadTs: string}[]} */
+  const candidates = [];
+  const now = Date.now();
+  const cutoff = now - 31 * 86400000;
+  // Slack dates are day-granular. Search one extra boundary day, then enforce the exact window.
+  const after = new Date(cutoff - 86400000).toISOString().slice(0, 10);
+  const query = encodeURIComponent('is:to-do after:' + after);
+  let scanned = 0;
   const count = Math.min(limit, 100);
   const pages = Math.ceil(limit / count);
   let cursor = '*';
   let total = -1;
+  let consistentTotal = true;
   try {
     for (let page = 1; page <= pages; page++) {
-      const data = slackRequest_(connection.token, 'search.messages', '?query=is%3Asaved&count=' + count + '&sort=timestamp&sort_dir=desc&' + (cursor ? 'cursor=' + encodeURIComponent(cursor) : 'page=' + page));
+      const data = slackRequest_(connection.token, 'search.messages', '?query=' + query + '&count=' + count + '&sort=timestamp&sort_dir=desc&' + (cursor ? 'cursor=' + encodeURIComponent(cursor) : 'page=' + page));
       const messages = data.messages;
       if (!messages || !Array.isArray(messages.matches) || messages.matches.length > count || !Number.isSafeInteger(messages.total) || messages.total < 0) throw new Error('REQUEST_FAILED');
-      if (total >= 0 && total !== messages.total) result.partial = true;
+      if (total >= 0 && total !== messages.total) { result.partial = true; consistentTotal = false; }
       total = messages.total;
       result.hasMore = total > limit;
-      for (const raw of messages.matches) {
+      for (const raw of messages.matches.slice(0, limit - scanned)) {
+        scanned++;
         const item = slackItem_(raw, connection);
         if (!item || seen.has(item.id)) { result.partial = true; continue; }
-        seen.add(item.id); result.items.push(item);
+        seen.add(item.id);
+        const postedAt = Date.parse(item.postedAt);
+        if (postedAt < cutoff || postedAt > now) continue;
+        candidates.push({ item, threadTs: slackThreadTimestamp_(raw) });
       }
       const next = messages.pagination?.next_cursor ?? messages.paging?.next_cursor ?? data.response_metadata?.next_cursor;
       if (next !== undefined && (typeof next !== 'string' || next.length > 4096)) throw new Error('REQUEST_FAILED');
       const more = next !== undefined ? Boolean(next) : page * count < total;
       if (!more || page === pages) {
         result.hasMore = result.hasMore || more;
-        result.partial = result.partial || result.items.length < Math.min(limit, total);
+        result.partial = result.partial || scanned < Math.min(limit, total);
         break;
       }
       cursor = next || '';
     }
   } catch (error) { result.error = slackErrorCode_(error); result.partial = true; }
+  const diagnostics = result.diagnostics;
+  diagnostics.received = scanned;
+  diagnostics.eligible = candidates.length;
+  diagnostics.skipped = scanned - candidates.length;
+  if (total >= 0 && consistentTotal) {
+    diagnostics.searchTotal = total;
+    diagnostics.hasMore = result.hasMore || total > scanned;
+    // Contradictory pagination cannot establish an exact remainder.
+    if (total >= scanned && !(diagnostics.hasMore && total === scanned)) diagnostics.remaining = total - scanned;
+  }
+  // Stop on global failures instead of repeatedly hitting a revoked token or rate limit.
+  let stopped = ['RATE_LIMITED', 'UNAUTHORIZED', 'AUTHORIZATION_REQUIRED'].includes(result.error);
+  const started = Date.now();
+  for (const { item, threadTs } of candidates) {
+    let state = /** @type {'to_do' | 'completed' | 'unknown'} */ ('unknown');
+    if (!stopped && Date.now() - started < 25000) {
+      try { state = slackTodoState_(connection, item, threadTs); }
+      catch (error) {
+        const code = slackErrorCode_(error);
+        if (!result.error) result.error = code;
+        result.partial = true;
+        stopped = ['RATE_LIMITED', 'UNAUTHORIZED', 'AUTHORIZATION_REQUIRED'].includes(code);
+      }
+    } else {
+      result.partial = true;
+    }
+    if (state === 'completed') diagnostics.completed++;
+    else if (state === 'to_do') diagnostics.incomplete++;
+    else diagnostics.unknown++;
+    if (state !== 'completed') result.items.push({ ...item, todoState: state });
+  }
   return result;
 }
 /** @param {unknown} id @param {boolean} [forceRefresh] */
@@ -179,9 +243,11 @@ function getSlackActionItems(id, forceRefresh = false) {
     const connection = slackConnections_().find((item) => item.id === id);
     if (!connection) throw new Error('INVALID_CONNECTION');
     const ttl = normalizeActionsCacheTtl_(PropertiesService.getUserProperties().getProperty('ACTIONS_CACHE_SECONDS'));
-    const limit = PortalSlackSettings.normalize(PropertiesService.getUserProperties().getProperty('SLACK_BOOKMARK_LIMIT'));
+    const limit = PortalSlackSettings.limit;
     const key = slackCacheKey_(connection, limit);
-    if (forceRefresh === true || ttl === 0) clearSlackCache_(connection);
+    if (forceRefresh === true || ttl === 0) {
+      try { CacheService.getUserCache().remove(key); } catch { /* Optional cache. */ }
+    }
     else {
       try {
         const cached = JSON.parse(CacheService.getUserCache().get(key) || 'null');
@@ -192,7 +258,7 @@ function getSlackActionItems(id, forceRefresh = false) {
     const fetchedAt = Date.now();
     return withSlackLock_(() => {
       if (slackConnections_().find((item) => item.id === id)?.revision !== connection.revision) throw new Error('CONNECTION_CHANGED');
-      if (ttl > 0 && !result.error) {
+      if (ttl > 0 && !result.error && !result.partial) {
         try {
           const serialized = JSON.stringify({ connectionId: id, revision: connection.revision, limit, result, fetchedAt });
           if (Utilities.newBlob(serialized).getBytes().length < 95000) CacheService.getUserCache().put(key, serialized, ttl);
@@ -202,3 +268,66 @@ function getSlackActionItems(id, forceRefresh = false) {
     });
   } catch (error) { return { ok: false, error: slackErrorCode_(error) }; }
 }
+
+/** Saved messages are reference links, independent of the To-do candidate window and cache.
+ * @param {unknown} id @param {boolean} [forceRefresh]
+ */
+function getSlackBookmarks(id, forceRefresh = false) {
+  try {
+    if (typeof id !== 'string') throw new Error('INVALID_CONNECTION');
+    const connection = slackConnections_().find((item) => item.id === id);
+    if (!connection) throw new Error('INVALID_CONNECTION');
+    const ttl = normalizeCatalogCacheTtl_(PropertiesService.getUserProperties().getProperty('CATALOG_CACHE_SECONDS'));
+    const key = slackBookmarksCacheKey_(connection);
+    if (forceRefresh === true || ttl === 0) {
+      try { CacheService.getUserCache().remove(key); } catch { /* Optional cache. */ }
+    } else {
+      try {
+        const cached = JSON.parse(CacheService.getUserCache().get(key) || 'null');
+        if (cached?.connectionId === id && cached.revision === connection.revision && Array.isArray(cached.result?.items) && Date.now() - cached.fetchedAt >= 0 && Date.now() - cached.fetchedAt < ttl * 1000) return { ok: true, ...cached.result, fetchedAt: cached.fetchedAt, cached: true };
+      } catch { /* Fall through to live retrieval. */ }
+    }
+    /** @type {SlackItem[]} */
+    const items = [];
+    const seen = new Set();
+    let cursor = '*', hasMore = false, partial = false, error = '', scanned = 0, total = -1;
+    try {
+      for (let page = 1; page <= 2; page++) {
+        const data = slackRequest_(connection.token, 'search.messages', '?query=is%3Asaved&count=100&sort=timestamp&sort_dir=desc&' + (cursor ? 'cursor=' + encodeURIComponent(cursor) : 'page=' + page));
+        const messages = data.messages;
+        if (!messages || !Array.isArray(messages.matches) || messages.matches.length > 100 || !Number.isSafeInteger(messages.total) || messages.total < 0) throw new Error('REQUEST_FAILED');
+        if (total >= 0 && total !== messages.total) partial = true;
+        total = messages.total;
+        for (const raw of messages.matches) {
+          scanned++;
+          const item = slackItem_(raw, connection);
+          if (!item || seen.has(item.id)) { partial = true; continue; }
+          seen.add(item.id); items.push(item);
+        }
+        const next = messages.pagination?.next_cursor ?? messages.paging?.next_cursor ?? data.response_metadata?.next_cursor;
+        if (next !== undefined && (typeof next !== 'string' || next.length > 4096)) throw new Error('REQUEST_FAILED');
+        hasMore = next !== undefined ? Boolean(next) : scanned < total;
+        if (!hasMore || page === 2) {
+          partial = partial || scanned < Math.min(200, total);
+          hasMore = hasMore || scanned < total;
+          break;
+        }
+        cursor = next || '';
+      }
+    } catch (cause) { error = slackErrorCode_(cause); partial = true; }
+    const result = { workspace: connection.workspace, url: connection.url, items, hasMore, partial, error };
+    const fetchedAt = Date.now();
+    return withSlackLock_(() => {
+      if (slackConnections_().find((item) => item.id === id)?.revision !== connection.revision) throw new Error('CONNECTION_CHANGED');
+      if (ttl > 0 && !partial && !error) {
+        try {
+          const serialized = JSON.stringify({ connectionId: id, revision: connection.revision, result, fetchedAt });
+          if (Utilities.newBlob(serialized).getBytes().length < 95000) CacheService.getUserCache().put(key, serialized, ttl);
+        } catch { /* Large results are served without caching. */ }
+      }
+      return { ok: true, ...result, fetchedAt, cached: false };
+    });
+  } catch (error) { return { ok: false, error: slackErrorCode_(error) }; }
+}
+/** @param {SlackConnection} connection */
+function slackBookmarksCacheKey_(connection) { return 'slack-bookmarks-v1:' + connection.id + ':' + connection.revision; }

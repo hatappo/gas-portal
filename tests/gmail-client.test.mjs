@@ -46,8 +46,8 @@ test('Gmail loads lazily into Inbox, keeps mail out of Tasks, and shares forced 
 test('Disabling Gmail removes its rows and discards in-flight results; settings retain user drafts on failure', async t => {
   const app = fixture(t); await initialize(app);
   const pending = app.gmailRequests.at(-1);
-  app.click('tab-settings'); app.click('settings-tab-actions');
-  const headings = [...app.get('settings-actions-panel').querySelectorAll('h2')].map(el => el.textContent).filter(text => ['Gmail', 'Slack', 'GitHub'].includes(text));
+  app.click('tab-settings'); app.click('settings-tab-sources');
+  const headings = [...app.get('settings-sources-panel').querySelectorAll('h2')].map(el => el.textContent).filter(text => ['Gmail', 'Slack', 'GitHub'].includes(text));
   assert.deepEqual(headings, ['Gmail', 'Slack', 'GitHub']);
   app.click('gmail-enabled');
   const form = app.get('gmail-settings-form');
@@ -68,7 +68,7 @@ test('Gmail failures leave other services visible and initialization can be retr
   app.slackRequests[0].success({ ok: true, connections: [] });
   app.gmailRequests[0].failure(); await flush();
   assert.equal(app.get('refresh-actions').disabled, false);
-  app.click('tab-settings'); app.click('settings-tab-actions');
+  app.click('tab-settings'); app.click('settings-tab-sources');
   app.gmailRequests.at(-1).success({ ok: true, settings: { enabled: true, limit: 20 } }); await flush();
   app.dom.window.testPortal.actions.setSources('other', [{ id: 'x', label: 'Other', serviceLabel: 'Other', load(_force, done) { done({ items: [{ service: 'other', serviceLabel: 'Other', id: 'x', title: 'Other task', url: 'https://example.com', context: '', updatedAt: item.receivedAt, reasons: ['Task'] }], notices: [] }); } }]);
   app.click('tab-actions');

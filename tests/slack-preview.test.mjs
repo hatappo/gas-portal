@@ -39,19 +39,14 @@ test('Slack preview shares the Actions duration and supports empty, partial and 
   }
 });
 
-test('Slack preview persists the limit and shows whether more than the selected number exists', t => {
-  const storage = {}, dom = previewPage(t);
-  const { call } = runPreviewMock(dom, { storage, search: '?slack=more' });
-  assert.equal(call('getSlackActionItems', id).items.length, 20);
-  assert.equal(call('getSlackActionItems', id).hasMore, true);
-  assert.equal(call('saveSlackBookmarkLimit', 50).ok, true);
+test('Slack preview uses a fixed 200-item limit without a setting or stored preference', t => {
+  const storage = { 'portal-preview-slack-limit': '10' }, dom = previewPage(t);
+  const { call, document } = runPreviewMock(dom, { storage, search: '?slack=more' });
   const response = call('getSlackActionItems', id);
-  assert.equal(response.cached, false); assert.equal(response.items.length, 50); assert.equal(response.hasMore, true);
-  assert.equal(call('saveSlackBookmarkLimit', 100).ok, true);
-  assert.equal(call('getSlackActionItems', id).hasMore, false);
-  assert.equal(call('getSlackActionItems', id).items.length, 55);
-  assert.equal(call('saveSlackBookmarkLimit', 0).ok, false);
-  const reloaded = runPreviewMock(previewPage(t), { storage, search: '?slack=more' });
-  assert.equal(reloaded.document.querySelector('#slack-bookmark-limit').dataset.savedValue, '100');
-  assert.equal(reloaded.call('getSlackActionItems', id).items.length, 55);
+  assert.equal(response.items.length, 200);
+  assert.equal(response.hasMore, true);
+  assert.equal(document.querySelector('#slack-bookmark-limit'), null);
+  assert.equal(call('saveSlackBookmarkLimit', 20).ok, false);
+  assert.equal(call('getSlackActionItems', id).items.length, 200);
+  assert.equal(storage['portal-preview-slack-limit'], '10');
 });

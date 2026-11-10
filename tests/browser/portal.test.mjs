@@ -44,8 +44,8 @@ test('Tabs preserve drafts and history; defaults only apply after saving', async
   await page.waitForFunction(() => document.activeElement.id === 'tab-actions');
   await selectPortalTab(page, 'settings');
   await page.locator('#setting-name').fill('Draft portal');
-  await page.locator('#settings-tab-tools').click();
-  await page.locator('#settings-tools-panel').waitFor({ state: 'visible' });
+  await page.locator('#settings-tab-sources').click();
+  await page.locator('#settings-sources-panel').waitFor({ state: 'visible' });
   await page.goBack();
   await page.locator('#settings-appearance-panel').waitFor({ state: 'visible' });
   assert.equal(await page.locator('#setting-name').inputValue(), 'Draft portal');
@@ -67,7 +67,7 @@ test('Tabs preserve drafts and history; defaults only apply after saving', async
 test('Disclosure keyboard operation keeps closed content inert and respects reduced motion', async t => {
   const page = await pageFor(t);
   await selectPortalTab(page, 'settings');
-  await page.locator('#settings-tab-actions').click();
+  await page.locator('#settings-tab-sources').click();
   const trigger = page.locator('.github-pat-help .disclosure-trigger');
   const content = page.locator('.github-pat-help .disclosure-content');
   const body = page.locator('.github-pat-help .disclosure-body');
@@ -125,8 +125,8 @@ test('GitHub and Slack share one refresh control; Slack settings work on a narro
   assert.equal(await page.locator('.action-service', { hasText: 'Slack' }).count(), 2);
   await page.waitForSelector('#refresh-actions[aria-busy="false"]');
   await selectPortalTab(page, 'settings');
-  await page.locator('#settings-tab-actions').click();
-  await page.locator('#settings-actions-panel').waitFor({ state: 'visible' });
+  await page.locator('#settings-tab-sources').click();
+  await page.locator('#settings-sources-panel').waitFor({ state: 'visible' });
   const disclosure = page.locator('.slack-token-help .disclosure-trigger');
   await disclosure.focus(); await page.keyboard.press('Enter');
   assert.match(await page.locator('.slack-token-help').textContent(), /User Token Scopes/);
@@ -151,25 +151,18 @@ test('GitHub and Slack share one refresh control; Slack settings work on a narro
   assert.equal(await page.locator('.action-service', { hasText: 'Slack' }).count(), 2);
 });
 
-test('Slack limit changes update results and show more-results information without an error', async t => {
+test('Slack uses a fixed 200-item limit and shows remaining-results information without a setting', async t => {
   const page = await pageFor(t, { viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
   await page.goto(base + '/?github=empty&slack=more#inbox-and-tasks');
   await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
-  assert.equal(await page.locator('.action-item-list > li').count(), 20);
-  assert.equal(await page.locator('.action-more-results').count(), 1);
+  assert.equal(await page.locator('.action-item-list > li').count(), 200);
+  assert.match(await page.locator('.action-more-results').textContent(), /200-item check limit/);
   assert.equal(await page.locator('#actions-status').isVisible(), false);
   await selectPortalTab(page, 'settings');
-  await page.locator('#settings-tab-actions').click();
-  await page.locator('#slack-bookmark-limit').selectOption('100');
-  await page.waitForFunction(() => document.getElementById('slack-bookmark-limit').dataset.savedValue === '100');
-  await selectPortalTab(page, 'actions');
-  await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
-  assert.equal(await page.locator('.action-item-list > li').count(), 55);
-  assert.equal(await page.locator('.action-more-results').count(), 0);
+  await page.locator('#settings-tab-sources').click();
+  assert.equal(await page.locator('#slack-bookmark-limit').count(), 0);
+  assert.match(await page.locator('.slack-settings').textContent(), /200 To-do posts/);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-  await page.reload();
-  await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
-  assert.equal(await page.locator('.action-item-list > li').count(), 55);
 });
 
 test('Task reason badges remain readable across light and dark themes without type filters', async t => {
@@ -291,7 +284,7 @@ test('Action search filters locally and remains usable at narrow widths', async 
 test('Connection editors show masked suffixes and require an explicit switch to password entry', async t => {
   const page = await pageFor(t);
   await selectPortalTab(page, 'settings');
-  await page.locator('#settings-tab-actions').click();
+  await page.locator('#settings-tab-sources').click();
   for (const service of ['github', 'slack']) {
     await page.locator('#' + service + '-connections button').first().click();
     const field = page.locator('#' + service + '-token');
@@ -888,8 +881,8 @@ test('Restored Calendar checkboxes stay visible and focused when unchecked, incl
 test('Gmail settings persist and the shared search filters Inbox and Tasks', async t => {
   const page = await pageFor(t);
   await selectPortalTab(page, 'settings');
-  await page.locator('#settings-tab-actions').click();
-  const settings = page.locator('#settings-actions-panel');
+  await page.locator('#settings-tab-sources').click();
+  const settings = page.locator('#settings-sources-panel');
   const headings = await settings.locator('h2').allTextContents();
   assert.deepEqual(headings.filter(text => ['Gmail', 'Slack', 'GitHub'].includes(text)), ['Gmail', 'Slack', 'GitHub']);
   await page.getByLabel('Show unread Gmail in Inbox', { exact: true }).check();
@@ -941,9 +934,9 @@ test('Service logos are embedded, accessible, and visible in Actions and Setting
     }
   }
   await selectPortalTab(page, 'settings');
-  await page.locator('#settings-tab-actions').click();
+  await page.locator('#settings-tab-sources').click();
   for (const service of ['gmail', 'slack', 'github']) assert.equal(await page.locator('#' + service + '-settings-title .service-logo[aria-hidden="true"]').count(), 1);
-  await page.locator('#settings-tab-tools').click();
+  await page.locator('#settings-tab-sources').click();
   assert.equal(await page.locator('#spreadsheet-settings-title .service-logo-drive').isVisible(), true);
   await page.locator('#settings-tab-calendar').click();
   await page.locator('.calendar-settings h2 .service-logo-calendar').waitFor();
@@ -960,7 +953,7 @@ test('Service logos are embedded, accessible, and visible in Actions and Setting
 test('Cache settings lead each panel and advanced Tools controls preserve nested disclosure state', async t => {
   const page = await pageFor(t, { reducedMotion: 'reduce' });
   await selectPortalTab(page, 'settings');
-  await page.locator('#settings-tab-tools').click();
+  await page.locator('#settings-tab-sources').click();
   const before = async (a, b) => assert.ok((await page.locator(a).boundingBox()).y < (await page.locator(b).boundingBox()).y);
   await before('#catalog-cache-seconds', '#spreadsheet-settings-title');
   const offset = async selector => (await page.locator(selector).boundingBox()).y - (await page.locator('.settings-tabs').boundingBox()).y;
@@ -986,13 +979,27 @@ test('Cache settings lead each panel and advanced Tools controls preserve nested
   await advanced.click();
   assert.equal(await scheme.isChecked(), false);
   assert.equal(await page.locator('#favicon-finder-code').isVisible(), true);
-  await page.locator('#settings-tab-actions').click();
+  await page.locator('#settings-tab-sources').click();
   await before('#actions-cache-seconds', '#gmail-settings-title');
   assert.equal(await page.locator('#actions-cache-help').textContent(), common);
-  assert.ok(Math.abs(await offset('#actions-cache-seconds') - cacheOffset) <= 1);
+  const catalogBox = await page.locator('#catalog-cache-seconds').boundingBox();
+  const actionsBox = await page.locator('#actions-cache-seconds').boundingBox();
+  assert.ok(Math.abs(catalogBox.y - actionsBox.y) < 1, 'Cache controls align in two columns');
+  assert.ok(actionsBox.x > catalogBox.x + catalogBox.width);
+  assert.equal(await page.locator('.sources-cache-settings').evaluate(el => getComputedStyle(el).borderBottomWidth), '1px');
+  assert.equal(await page.locator('#links-spreadsheet-settings .tools-advanced-settings').count(), 1);
+  assert.equal(await page.locator('.sources-cache-settings br').count(), 0);
+  for (const width of [760, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await before('#catalog-cache-seconds', '#actions-cache-seconds');
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  }
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await before('#actions-cache-seconds', '#spreadsheet-settings-title');
   await page.locator('#settings-tab-calendar').click();
   await before('[aria-labelledby="calendar-cache-label"]', '#calendar-settings-title');
-  assert.equal(await page.locator('#calendar-cache-help').textContent(), common);
+  assert.ok((await page.locator('#calendar-cache-help').textContent()).startsWith('Reuse data for this duration. Fetch latest bypasses the cache.'));
+  assert.match(await page.locator('#calendar-cache-help').textContent(), /Use Save changes to apply/);
   assert.ok(Math.abs(await offset('[aria-labelledby="calendar-cache-label"]') - cacheOffset) <= 1);
   await page.locator('[aria-labelledby="calendar-cache-label"]').selectOption('900');
   await page.locator('.calendar-settings button[type="submit"]').click();
@@ -1002,7 +1009,7 @@ test('Cache settings lead each panel and advanced Tools controls preserve nested
   assert.equal(await page.locator('[aria-labelledby="calendar-cache-label"]').inputValue(), '900');
   await page.setViewportSize({ width: 390, height: 1000 });
   await page.screenshot({ path: '/tmp/cache-settings-calendar.png', fullPage: true });
-  await page.locator('#settings-tab-tools').click();
+  await page.locator('#settings-tab-sources').click();
   assert.equal(await page.locator('#catalog-cache-seconds').inputValue(), '3600');
   await page.getByRole('button', { name: 'Advanced settings', exact: true }).click();
   assert.equal(await scheme.isChecked(), false);
@@ -1097,15 +1104,15 @@ test('Setup guidance links open their settings section by keyboard and preserve 
   for (const host of ['#inbox-services', '#action-items']) {
     const link = page.locator(host + ' a.settings-guidance-link');
     await link.waitFor();
-    assert.equal(await link.getAttribute('href'), '#settings/inbox-and-tasks');
+    assert.equal(await link.getAttribute('href'), '#settings/sources');
     await link.focus(); await page.keyboard.press('Enter');
-    await page.locator('#settings-actions-panel').waitFor({ state: 'visible' });
-    assert.ok(page.url().endsWith('#settings/inbox-and-tasks'));
-    assert.equal(await page.evaluate(() => document.activeElement.id), 'settings-tab-actions');
+    await page.locator('#settings-sources-panel').waitFor({ state: 'visible' });
+    assert.ok(page.url().endsWith('#settings/sources'));
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'settings-tab-sources');
     await page.goBack();
     await page.locator('#actions-panel').waitFor({ state: 'visible' });
   }
-  await page.goto(base + '/?calendar=partial#tools');
+  await page.goto(base + '/?calendar=partial#links');
   await page.locator('#toggle-calendar').click();
   const calendarLink = page.locator('#calendar-panel a.settings-guidance-link');
   await calendarLink.waitFor();
@@ -1184,9 +1191,9 @@ test('Compact header replaces tabs with an accessible menu and preserves drafts 
   assert.equal(await page.locator('.preview-label.badge-warning').isVisible(), true);
   assert.ok((await page.locator('.site-header').boundingBox()).height <= 53);
   const trigger = page.locator('#compact-nav-trigger');
-  assert.match(await trigger.getAttribute('aria-label'), /Tools & Links/);
+  assert.match(await trigger.getAttribute('aria-label'), /Links/);
   await trigger.focus(); await page.keyboard.press('Enter');
-  await page.getByRole('menuitemradio', { name: 'Tools & Links', exact: true }).focus();
+  await page.getByRole('menuitemradio', { name: 'Links', exact: true }).focus();
   await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter');
   await page.locator('#actions-panel').waitFor({ state: 'visible' });
   assert.ok(page.url().endsWith('#inbox-and-tasks'));
@@ -1230,7 +1237,7 @@ test('Compact mode follows the calendar viewport breakpoint and closes an open m
   await page.locator('html[data-compact="false"]').waitFor();
   await page.setViewportSize({ width: 390, height: 900 });
   await page.locator('#compact-nav-trigger').click();
-  await page.getByRole('menuitemradio', { name: 'Tools & Links', exact: true }).focus();
+  await page.getByRole('menuitemradio', { name: 'Links', exact: true }).focus();
   await page.setViewportSize({ width: 1280, height: 1000 });
   await page.locator('html[data-compact="false"]').waitFor();
   await page.locator('.compact-nav-menu').waitFor({ state: 'hidden' });
@@ -1323,4 +1330,69 @@ test('Compact settings temporarily hide the calendar without changing its open p
   assert.equal(await panel.isVisible(), false);
   assert.equal(await toggle.isVisible(), true);
   assert.equal(await toggle.getAttribute('aria-expanded'), 'false');
+});
+
+
+test('Slack To-dos show unknown state and explain bounded checks and scopes in Settings', async t => {
+  const page = await pageFor(t);
+  await page.goto(base + '/?github=disconnected&slack=unknown#inbox-and-tasks');
+  await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
+  assert.equal(await page.locator('.action-item-list > li').count(), 2);
+  assert.match(await page.locator('.action-item-list').textContent(), /To-do \(status unknown\)/);
+  await selectPortalTab(page, 'settings');
+  await page.locator('#settings-tab-sources').click();
+  assert.match(await page.locator('.slack-settings').textContent(), /31 days/);
+  assert.equal(await page.locator('#slack-bookmark-limit').count(), 0);
+  await page.locator('.slack-token-help .disclosure-trigger').click();
+  await page.locator('#slack-token-permissions').waitFor({ state: 'visible' });
+  for (const scope of ['search:read', 'channels:history', 'groups:history', 'im:history', 'mpim:history']) assert.ok((await page.locator('#slack-token-permissions').textContent()).includes(scope));
+  await page.screenshot({ path: '/tmp/slack-todo-settings.png', fullPage: true });
+  await page.setViewportSize({ width: 390, height: 900 });
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+});
+
+
+test('Diagnostics are collapsed below Tasks and remain readable on narrow screens', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  await page.goto(base + '/?github=disconnected&slack=unknown#inbox-and-tasks');
+  await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
+  const host = page.locator('#action-diagnostics');
+  const trigger = host.locator('.disclosure-trigger');
+  assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
+  assert.equal(await host.locator('.disclosure-content').getAttribute('inert'), '');
+  await trigger.click();
+  assert.match(await host.textContent(), /Completed To-dos/);
+  assert.equal(await host.locator('.diagnostics-metrics > li').count(), 8);
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await host.scrollIntoViewIfNeeded();
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  }
+  await page.screenshot({ path: '/tmp/portal-diagnostics-mobile.png', fullPage: true });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.screenshot({ path: '/tmp/portal-diagnostics-desktop.png', fullPage: true });
+});
+
+test('Links saved-message card and unified Sources work on desktop and compact screens', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  await page.locator('.tool-card.is-saved-links').waitFor();
+  assert.match(await page.locator('.tool-card').first().textContent(), /Example workspace/);
+  const child = page.locator('.is-saved-links .related-links a').first();
+  assert.equal(await child.getAttribute('target'), '_blank');
+  assert.match(await child.locator('.related-label').textContent(), /…$/);
+  await child.hover();
+  await page.getByRole('tooltip').filter({ hasText: 'everyone joining the project' }).waitFor();
+  await page.mouse.move(0, 0);
+  await page.screenshot({ path: '/tmp/portal-slack-links-desktop.png', fullPage: true });
+  await selectPortalTab(page, 'settings');
+  await page.locator('#settings-tab-sources').click();
+  assert.ok(page.url().endsWith('#settings/sources'));
+  assert.deepEqual(await page.locator('#settings-sources-panel h2').allTextContents(), ['Links spreadsheet', 'Gmail', 'Slack', 'GitHub']);
+  assert.equal(await page.locator('#settings-sources-panel #slack-settings-form').count(), 1);
+  await page.screenshot({ path: '/tmp/portal-sources-desktop.png', fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await selectPortalTab(page, 'tools');
+  assert.ok(page.url().endsWith('#links'));
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  await page.screenshot({ path: '/tmp/portal-slack-links-mobile.png', fullPage: true });
 });
