@@ -1940,3 +1940,62 @@ test('Calendar header controls fit one row in both languages at sidebar and comp
     await page.locator('#calendar-panel').waitFor({ state: 'hidden' });
   }
 });
+
+
+test('Calendar opens from its icon, returns on close, and settles safely after interruptions', async t => {
+  const page = await calendarPage(t, 'overlap');
+  await page.waitForFunction(() => !document.getElementById('calendar-panel').dataset.calendarMotion);
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    const closing = await page.evaluate(() => {
+      document.querySelector('.calendar-panel-close').click();
+      const panel = document.getElementById('calendar-panel');
+      const animation = panel.getAnimations()[0];
+      animation.pause();
+      const frames = animation.effect.getKeyframes();
+      return { hidden: panel.hidden, inert: panel.inert, state: panel.dataset.calendarMotion,
+        duration: animation.effect.getTiming().duration, destination: frames.at(-1).transform,
+        focus: document.activeElement.id };
+    });
+    assert.equal(closing.hidden, false, 'Keep the panel visible until it reaches the icon');
+    assert.equal(closing.inert, true);
+    assert.equal(closing.state, 'closing');
+    assert.equal(closing.duration, 240);
+    assert.match(closing.destination, /translate\(.+\) scale\(0\./);
+    assert.equal(closing.focus, 'toggle-calendar');
+    await page.evaluate(() => document.getElementById('calendar-panel').getAnimations()[0].finish());
+    await page.locator('#calendar-panel').waitFor({ state: 'hidden' });
+    const opening = await page.evaluate(() => {
+      document.getElementById('toggle-calendar').click();
+      const panel = document.getElementById('calendar-panel');
+      const animation = panel.getAnimations()[0];
+      animation.pause();
+      animation.currentTime = 100;
+      const frame = animation.effect.getKeyframes()[0];
+      const box = panel.getBoundingClientRect();
+      return { state: panel.dataset.calendarMotion, duration: animation.effect.getTiming().duration,
+        origin: frame.transform, visible: box.width > 24 && box.height > 24 };
+    });
+    assert.equal(opening.state, 'opening');
+    assert.equal(opening.duration, 340);
+    assert.match(opening.origin, /translate\(.+\) scale\(0\./);
+    assert.equal(opening.visible, true);
+    await page.screenshot({ path: `/tmp/portal-calendar-opening-${width}.png` });
+    // Reverse an unfinished opening, then reopen before closing finishes.
+    await page.evaluate(() => {
+      document.getElementById('toggle-calendar').click();
+      document.getElementById('toggle-calendar').click();
+    });
+    await page.waitForFunction(() => !document.getElementById('calendar-panel').dataset.calendarMotion);
+    assert.equal(await page.locator('#calendar-panel').evaluate(el => el.hidden || el.inert), false);
+  }
+  await page.evaluate(() => document.getElementById('toggle-calendar').click());
+  await page.setViewportSize({ width: 1000, height: 900 });
+  await page.locator('#calendar-panel').waitFor({ state: 'hidden' });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.locator('#toggle-calendar').click();
+  assert.equal(await page.locator('#calendar-panel').evaluate(el => el.getAnimations().length), 0);
+  assert.equal(await page.locator('#calendar-panel').evaluate(el => el.hidden || el.inert), false);
+  await page.locator('.calendar-panel-close').click();
+  assert.equal(await page.locator('#calendar-panel').evaluate(el => el.hidden), true);
+});

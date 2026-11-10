@@ -701,3 +701,6 @@ h2 .service-logo { width: 24px; height: 24px; }
   white-space: nowrap;
   pointer-events: none;
 }
+
+/* Allow the moving panel to travel above adjacent content toward its header icon. */
+.calendar-panel[data-calendar-motion] { z-index: 20; pointer-events: none; will-change: transform, opacity; }
