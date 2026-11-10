@@ -552,10 +552,15 @@ test('Calendar uses Lucide pin actions, stronger Next badges and vertical detail
   await pin.click();
   assert.equal(await pin.locator('path[d="m2 2 20 20"]').count(), 1);
   await pin.click();
+  await page.waitForFunction(() => document.querySelector('.calendar-all-day').dataset.expanded === 'false');
   const current = page.locator('.calendar-event[data-state="current"]:not(.is-gap)').first();
-  const title = await current.locator('.calendar-event-trigger').boundingBox();
-  const detail = await current.locator('.calendar-event-detail').boundingBox();
-  assert.ok(detail.y >= title.y + title.height - 1);
+  // Measure together so a surrounding card's layout cannot change between reads.
+  const layout = await current.evaluate(el => {
+    const title = el.querySelector('.calendar-event-trigger').getBoundingClientRect();
+    const detail = el.querySelector('.calendar-event-detail').getBoundingClientRect();
+    return { titleBottom: title.bottom, detailTop: detail.top };
+  });
+  assert.ok(layout.detailTop >= layout.titleBottom - 1);
   assert.ok(await page.locator('.calendar-next-badge').evaluate(el => parseFloat(getComputedStyle(el).fontSize)) >= 11);
   for (const width of [1440, 1280, 1000, 700]) {
     await page.setViewportSize({ width, height: 1100 });
