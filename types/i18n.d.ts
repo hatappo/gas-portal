@@ -32,9 +32,4 @@ declare var PortalCatalogRules: {
   isIconUrl(icon: string): boolean;
 };
 
-declare var PortalSlackSettings: {
-  choices: readonly number[];
-  defaultLimit: number;
-  normalize(value: unknown): number;
-  isChoice(value: unknown): boolean;
-};
+declare var PortalSlackSettings: { readonly limit: number };

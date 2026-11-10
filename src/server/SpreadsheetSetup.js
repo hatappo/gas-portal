@@ -82,7 +82,7 @@ function createPortalSpreadsheet(browserLanguage) {
         properties: { title: name },
         sheets: [{
           // Create only the defined columns; unused ones do not exist, rather than being hidden.
-          properties: { sheetId: 0, title: 'Tools', gridProperties: { rowCount: 101, columnCount: columns.length, frozenRowCount: 1 } },
+          properties: { sheetId: 0, title: 'Links', gridProperties: { rowCount: 101, columnCount: columns.length, frozenRowCount: 1 } },
           data: [{
             startRow: 0, startColumn: 0,
             columnMetadata: columns.map((column) => ({ pixelSize: column.width })),

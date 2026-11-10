@@ -38,7 +38,6 @@ function getPortalContent_(properties) {
     language,
     languagePreference,
     cacheSeconds: String(normalizeCatalogCacheTtl_(properties.CATALOG_CACHE_SECONDS)),
-    slackBookmarkLimit: String(PortalSlackSettings.normalize(properties.SLACK_BOOKMARK_LIMIT)),
     actionsCacheSeconds: String(normalizeActionsCacheTtl_(properties.ACTIONS_CACHE_SECONDS)),
     unblockedUrlSchemes: PortalUrlSchemes.normalizeUnblocked(properties.UNBLOCKED_URL_SCHEMES).join(','),
     defaultsJson: JSON.stringify(defaults),

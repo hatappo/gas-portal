@@ -92,7 +92,7 @@ test('Save checkbox changes, re-render links, and restore choices after failure'
   t.after(() => dom.window.close());
   requests[0].success(mixed);
   const fieldset = document.querySelector('#url-scheme-settings');
-  assert.ok(fieldset.closest('#settings-tools-panel'));
+  assert.ok(fieldset.closest('#settings-sources-panel'));
   const boxes = Object.fromEntries([...fieldset.querySelectorAll('input')].map((box) => [box.value, box]));
   assert.deepEqual(Object.keys(boxes), ['data', 'file', 'blob', 'about', 'filesystem', 'ms-msdt', 'search-ms', 'ms-officecmd']);
   assert.ok(Object.values(boxes).every((box) => box.checked), 'All optional schemes start blocked');

@@ -150,10 +150,10 @@ test('Tasks retain service and reason badges without type-filter controls', t =>
   const app = fixture(t);
   const assigned = { ...item, id: 'issue', title: 'Assigned', reasons: ['Assigned issue'] };
   const review = { ...item, id: 'review', title: 'Review', reasons: ['Direct review', 'Team review'] };
-  const bookmark = { ...item, service: 'slack', serviceLabel: 'Slack', id: 'saved', title: 'Saved', reasons: ['Bookmark'] };
+  const bookmark = { ...item, service: 'slack', serviceLabel: 'Slack', id: 'saved', title: 'Saved', reasons: ['To-do'] };
   app.api.setSources('demo', [app.source('all')]); app.start();
   app.calls[0].done(result([assigned, review, bookmark]));
-  assert.deepEqual([...app.document.querySelectorAll('.action-item-kind')].map(node => node.textContent), ['GitHub 担当 Issue', 'GitHub 直接のレビュー依頼', 'GitHub チームへのレビュー依頼', 'Slack ブックマーク']);
+  assert.deepEqual([...app.document.querySelectorAll('.action-item-kind')].map(node => node.textContent), ['GitHub 担当 Issue', 'GitHub 直接のレビュー依頼', 'GitHub チームへのレビュー依頼', 'Slack ToDo']);
   assert.equal(app.rows().length, 3);
   assert.equal(app.document.getElementById('action-filters'), null);
 });
@@ -178,7 +178,7 @@ test('Tools and Actions share count and retrieval copy in both languages while k
 
 test('Action search matches loaded titles and context and survives refresh', t => {
   const app = fixture(t);
-  const bookmark = { ...item, service: 'slack', serviceLabel: 'Slack', id: 'saved', title: 'REVIEW 資料の確認', reasons: ['Bookmark'] };
+  const bookmark = { ...item, service: 'slack', serviceLabel: 'Slack', id: 'saved', title: 'REVIEW 資料の確認', reasons: ['To-do'] };
   app.api.setSources('demo', [app.source('all')]); app.start();
   app.calls[0].done({ ...result([item, bookmark]), hasMore: true });
   const search = app.document.getElementById('actions-search');

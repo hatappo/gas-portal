@@ -23,7 +23,7 @@ test("Initialize display defaults independently of Script Properties and preserv
 });
 
 test("Save and reset only four display fields without reading Script Properties", () => {
-  const properties = { PORTAL_NAME: 'Old Portal', SPREADSHEET_ID: 'sheet', SHEET_NAME: 'Tools' };
+  const properties = { PORTAL_NAME: 'Old Portal', SPREADSHEET_ID: 'sheet', SHEET_NAME: 'Links' };
   const userProperties = { PORTAL_THEME: 'emerald', OTHER: 'keep' };
   const { context } = server({ properties, userProperties });
   assert.deepEqual(plain(context.savePortalSettings(values())), { ok: true, settings: values() });
@@ -35,7 +35,7 @@ test("Save and reset only four display fields without reading Script Properties"
   assert.equal(userProperties.PORTAL_NAME, 'My Portal');
   assert.equal(userProperties.PORTAL_THEME, 'emerald');
   assert.equal(userProperties.OTHER, 'keep');
-  assert.deepEqual(properties, { PORTAL_NAME: 'Old Portal', SPREADSHEET_ID: 'sheet', SHEET_NAME: 'Tools' });
+  assert.deepEqual(properties, { PORTAL_NAME: 'Old Portal', SPREADSHEET_ID: 'sheet', SHEET_NAME: 'Links' });
 });
 
 test("Default blank settings, preserve text, and reject extra keys, invalid types, or excessive length", () => {

@@ -8,7 +8,7 @@ for (const service of ['github', 'slack']) test(`${service} masks stored tokens,
   t.after(() => app.dom.window.close());
   const get = id => app.document.getElementById(id);
   const connection = { id: '11111111-1111-4111-8111-111111111111', label: 'Demo@alex', login: 'alex', owner: '', tokenSuffix: 'aZ' };
-  get('tab-settings').click(); get('settings-tab-actions').click();
+  get('tab-settings').click(); get('settings-tab-sources').click();
   app.githubRequests[0].success({ ok: true, connections: service === 'github' ? [connection] : [] });
   app.slackRequests[0].success({ ok: true, connections: service === 'slack' ? [connection] : [] });
   const requests = service === 'github' ? app.githubRequests : app.slackRequests;

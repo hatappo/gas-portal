@@ -12,7 +12,7 @@ const response = { ok: true, fetchedAt: Date.now(), cached: false, groups: [
 function appFor(t, setup) { const app = browser(setup); t.after(() => app.dom.window.close()); return app; }
 function open(app, tab = 'actions') {
   app.document.getElementById('tab-' + tab).click();
-  if (tab === 'settings') app.document.getElementById('settings-tab-actions').click();
+  if (tab === 'settings') app.document.getElementById('settings-tab-sources').click();
   app.githubRequests[0].success({ ok: true, connections: [connection] });
 }
 function submit(app, value) {
@@ -123,7 +123,7 @@ test('Edit an unscoped connection without requiring a name or replacement token'
   app.githubRequests[0].success({ ok: true, connections: [{ ...connection, label: '*@octocat', owner: '' }] });
   assert.equal(app.document.querySelector('#github-connections strong').textContent, '*@octocat');
   assert.match(app.document.getElementById('github-connections').textContent, /アクセス可能なすべてのリポジトリ/);
-  app.document.getElementById('settings-tab-actions').click();
+  app.document.getElementById('settings-tab-sources').click();
   app.document.querySelector('#github-connections button').click();
   assert.equal(app.document.getElementById('github-token').required, false);
   assert.equal(app.document.activeElement.id, 'github-token');
@@ -210,7 +210,7 @@ test('Use the same empty-state presentation for Tools, disconnected Actions, and
 });
 
 test('Show only a spinner while initial Settings connections load and clear it on failure and retry', (t) => {
-  const app = appFor(t, (window) => window.history.replaceState(null, '', '#settings/inbox-and-tasks'));
+  const app = appFor(t, (window) => window.history.replaceState(null, '', '#settings/sources'));
   const spinner = app.document.getElementById('github-settings-loading');
   const status = app.document.getElementById('github-settings-status');
   assert.equal(spinner.hidden, false);

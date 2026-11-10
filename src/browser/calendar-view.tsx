@@ -208,8 +208,7 @@ export function CalendarSettingsForm(props: { state: CalendarViewState; draft: A
       <fieldset disabled={props.state.saving || !props.state.initialized}>
         <div class="cache-settings">
           <label class="settings-field"><span id="calendar-cache-label">{t('Calendar cache duration')}</span><select class="select" aria-labelledby="calendar-cache-label" aria-describedby="calendar-cache-help" value={props.draft().cacheSeconds} onChange={event => change({ cacheSeconds: Number(event.currentTarget.value) })}><For each={PortalCacheDurations.actions.choices}>{seconds => <option value={seconds}>{t(PortalCacheDurations.label('actions', seconds))}</option>}</For></select></label>
-          <p id="calendar-cache-help">{t('Reuse data for this duration. Fetch latest bypasses the cache.')}</p>
-          <p>{t('Refreshes automatically while the calendar is visible.')} {t('Use Save changes to apply.')}</p>
+          <p id="calendar-cache-help">{t('Reuse data for this duration. Fetch latest bypasses the cache.')} {t('Refreshes automatically while the calendar is visible.')} {t('Use Save changes to apply.')}</p>
         </div>
         <section aria-labelledby="calendar-settings-title">
           <h2 id="calendar-settings-title"><ServiceLogo service="calendar" label="Google Calendar" decorative/>Google Calendar</h2><p class="settings-help">{t('Show today’s schedule in a side panel using the Google account running this app. Calendar access is read-only.')}</p>

@@ -8,7 +8,7 @@ interface PortalTab { hash: string; button: HTMLElement; panel: HTMLElement }
 export function mountCompactNavigation(tabs: PortalTab[], selected: Accessor<number>, select: (index: number) => void) {
   const host = document.getElementById('compact-navigation')!;
   const icons = tabs.map(tab => tab.button.querySelector('svg')!.cloneNode(true));
-  const labels = ['Tools & Links', 'Inbox & Tasks', 'Settings'];
+  const labels = ['Links', 'Inbox & Tasks', 'Settings'];
   render(() => {
     const language = useLanguage();
     const label = (index: number) => PortalI18n.t(labels[index], language());

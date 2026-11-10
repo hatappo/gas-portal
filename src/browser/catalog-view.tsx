@@ -5,9 +5,11 @@ import { ToolCard, ToolRow } from './tool-view';
 import { ToggleGroup } from '@kobalte/core/toggle-group';
 import { SegmentedControl } from '@kobalte/core/segmented-control';
 import { Hint } from './ui';
+import { SettingsGuidance } from './settings-guidance';
 
 interface CatalogView {
   disabled: boolean;
+  notices: {label: string; message: string}[];
   tools: CatalogTool[];
   tags: string[];
   selected: Set<string>;
@@ -19,7 +21,7 @@ interface CatalogView {
 
 // Own only the dynamic lists; the GAS-rendered shell and settings retain their DOM.
 export function mountCatalogView(selectTags: (tags: string[]) => void, selectView: (view: 'cards' | 'list') => void) {
-  const [state, setState] = createSignal<CatalogView>({ disabled: true, tools: [], tags: [], selected: new Set(), issues: [], view: 'cards', language: 'en', unblocked: [] });
+  const [state, setState] = createSignal<CatalogView>({ notices: [], disabled: true, tools: [], tags: [], selected: new Set(), issues: [], view: 'cards', language: 'en', unblocked: [] });
   const colors = createMemo(() => new Map(state().tags.map((tag, index) => [tag, tagPalette[index % tagPalette.length]])));
   const tagColor = (tag: string) => colors().get(tag);
   const target = (id: string) => document.getElementById(id)!;
@@ -54,5 +56,8 @@ export function mountCatalogView(selectTags: (tags: string[]) => void, selectVie
   render(() => <For each={state().issues}>{(issue) => <li>{issue.row > 0 ?
     PortalI18n.t('Row {row}: {message}', state().language, { row: issue.row, message: PortalI18n.translate(issue.message, state().language) }) :
     PortalI18n.translate(issue.message, state().language)}</li>}</For>, target('warning-list'));
+  render(() => <For each={state().notices}>{notice => <p class="action-notice alert alert-warning">
+    <Show when={notice.label}><span>{notice.label}: </span></Show><span><SettingsGuidance message={notice.message} language={state().language} /></span>
+  </p>}</For>, target('links-notices'));
   return setState;
 }

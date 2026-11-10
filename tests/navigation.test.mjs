@@ -5,7 +5,7 @@ import { browser, catalog } from './helpers.mjs';
 const selected = (document) => document.querySelector('[role="tab"][aria-selected="true"]').id;
 
 test('Open each tab directly from the hash and fall back safely for absent or unknown routes', (t) => {
-  for (const [hash, tab] of [['#tools', 'tools'], ['#inbox-and-tasks', 'actions'], ['#settings', 'settings'], ['', 'tools'], ['#unknown', 'tools'], ['#%ZZ', 'tools']]) {
+  for (const [hash, tab] of [['#links', 'tools'], ['#inbox-and-tasks', 'actions'], ['#settings', 'settings'], ['', 'tools'], ['#unknown', 'tools'], ['#%ZZ', 'tools']]) {
     const app = browser((window) => window.history.replaceState(null, '', '/?state=empty' + hash));
     t.after(() => app.dom.window.close());
     assert.equal(selected(app.document), 'tab-' + tab);
@@ -17,7 +17,7 @@ test('Open each tab directly from the hash and fall back safely for absent or un
 });
 
 test('Local tab navigation supports back and forward, retains queries and drafts, and avoids duplicate entries', async (t) => {
-  const app = browser((window) => window.history.replaceState(null, '', '/?state=empty#tools'));
+  const app = browser((window) => window.history.replaceState(null, '', '/?state=empty#links'));
   t.after(() => app.dom.window.close());
   const { window } = app.dom;
   const doc = app.document;
@@ -74,7 +74,7 @@ test('GAS reads and updates the outer web app URL while retaining query paramete
   app.document.getElementById('tab-actions').click();
   assert.deepEqual(JSON.parse(JSON.stringify(app.pushes)), [[null, null, 'inbox-and-tasks']]);
   assert.equal(app.dom.window.location.hash, '#unrelated', 'Never route the sandbox iframe URL');
-  app.pop('tools');
+  app.pop('links');
   assert.equal(selected(app.document), 'tab-tools');
   app.pop('settings');
   assert.equal(selected(app.document), 'tab-settings');
@@ -103,7 +103,7 @@ test('The skip link hash keeps the current tab and unavailable history does not 
 });
 
 test('Settings subroutes open the correct panel and safely handle unknown section links', (t) => {
-  for (const [hash, section] of [['settings', 'appearance'], ['settings/appearance', 'appearance'], ['settings/tools', 'tools'], ['settings/inbox-and-tasks', 'actions'], ['settings/missing', 'appearance']]) {
+  for (const [hash, section] of [['settings', 'appearance'], ['settings/appearance', 'appearance'], ['settings/sources', 'sources'], ['settings/missing', 'appearance']]) {
     const app = browser((window) => window.history.replaceState(null, '', '#' + hash));
     t.after(() => app.dom.window.close());
     assert.equal(selected(app.document), 'tab-settings');
@@ -121,23 +121,23 @@ test('Settings keyboard navigation and history preserve drafts and keep parent t
   doc.getElementById('setting-name').value = 'Draft title';
   doc.getElementById('settings-tab-appearance').focus();
   doc.getElementById('settings-tab-appearance').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
-  assert.equal(window.location.hash, '#settings/tools');
-  assert.equal(doc.activeElement.id, 'settings-tab-tools');
+  assert.equal(window.location.hash, '#settings/sources');
+  assert.equal(doc.activeElement.id, 'settings-tab-sources');
   assert.equal(selected(doc), 'tab-settings');
   doc.getElementById('setting-sheet-name').value = 'Draft sheet';
-  doc.getElementById('settings-tab-tools').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+  doc.getElementById('settings-tab-sources').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'End', bubbles: true }));
   assert.equal(window.location.hash, '#settings/calendar');
   const length = window.history.length;
   doc.getElementById('settings-tab-calendar').click();
   assert.equal(window.history.length, length);
   const back = new Promise((resolve) => window.addEventListener('popstate', resolve, { once: true }));
   window.history.back(); await back;
-  assert.equal(doc.getElementById('settings-tools-panel').hidden, false);
+  assert.equal(doc.getElementById('settings-sources-panel').hidden, false);
   assert.equal(doc.getElementById('setting-name').value, 'Draft title');
   assert.equal(doc.getElementById('setting-sheet-name').value, 'Draft sheet');
   doc.getElementById('tab-tools').click(); doc.getElementById('tab-settings').click();
-  assert.equal(window.location.hash, '#settings/tools');
-  doc.getElementById('settings-tab-tools').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+  assert.equal(window.location.hash, '#settings/sources');
+  doc.getElementById('settings-tab-sources').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
   assert.equal(window.location.hash, '#settings/appearance');
   doc.getElementById('settings-tab-appearance').focus();
   doc.getElementById('settings-tab-appearance').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
@@ -146,13 +146,13 @@ test('Settings keyboard navigation and history preserve drafts and keep parent t
 
 test('GAS settings subtabs use the outer history bridge', (t) => {
   const app = gasBrowser(t);
-  app.initial('settings/tools');
-  assert.equal(app.document.getElementById('settings-tools-panel').hidden, false);
+  app.initial('settings/sources');
+  assert.equal(app.document.getElementById('settings-sources-panel').hidden, false);
   app.document.getElementById('tab-actions').click();
   app.document.getElementById('tab-settings').click();
-  app.document.getElementById('settings-tab-actions').click();
-  assert.equal(app.document.getElementById('settings-actions-panel').hidden, false);
-  assert.equal(app.pushes.at(-1)[2], 'settings/inbox-and-tasks');
+  app.document.getElementById('settings-tab-sources').click();
+  assert.equal(app.document.getElementById('settings-sources-panel').hidden, false);
+  assert.equal(app.pushes.at(-1)[2], 'settings/sources');
   const count = app.pushes.length;
   app.pop('settings/appearance');
   assert.equal(app.document.getElementById('settings-appearance-panel').hidden, false);

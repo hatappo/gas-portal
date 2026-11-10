@@ -16,12 +16,12 @@ export function initializeNavigation(motion) {
   motion.onReduce(() => panelAnimation?.cancel());
 
   const portalTabs = [
-    { hash: 'tools', button: element('tab-tools'), panel: element('directory') },
+    { hash: 'links', button: element('tab-tools'), panel: element('directory') },
     { hash: 'inbox-and-tasks', button: element('tab-actions'), panel: element('actions-panel') },
     { hash: 'settings', button: element('tab-settings'), panel: element('settings-panel') },
   ];
-  const settingsTabs = ['appearance', 'tools', 'actions', 'calendar'].map((id) => ({
-    hash: id === 'actions' ? 'inbox-and-tasks' : id, button: element('settings-tab-' + id), panel: element('settings-' + id + '-panel'),
+  const settingsTabs = ['appearance', 'sources', 'calendar'].map((id) => ({
+    hash: id, button: element('settings-tab-' + id), panel: element('settings-' + id + '-panel'),
   }));
   const [activeSettingsTab, setActiveSettingsTab] = createSignal(0);
   /** @param {number} index */

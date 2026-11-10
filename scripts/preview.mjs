@@ -53,9 +53,6 @@ export function renderPreview(html, root, options = {}) {
       ${readFileSync(path.join(root, 'src/shared/slack-settings.js'), 'utf8')}
       ${readFileSync(path.join(root, 'src/shared/calendar.js'), 'utf8')}
       ${readFileSync(path.join(root, 'src/shared/gmail-settings.js'), 'utf8')}
-      let previewSlackLimit = PortalSlackSettings.defaultLimit;
-      try { previewSlackLimit = PortalSlackSettings.normalize(localStorage.getItem('portal-preview-slack-limit')); } catch { /* Use the default. */ }
-      document.getElementById('slack-bookmark-limit').dataset.savedValue = String(previewSlackLimit);
       let previewPreference = 'auto';
       try { previewPreference = PortalI18n.preference(localStorage.getItem('portal-preview-language')); } catch { /* Storage may be unavailable. */ }
       const browserLanguages = typeof navigator === 'undefined' ? [] : navigator.languages?.length ? navigator.languages : [navigator.language];
@@ -158,7 +155,7 @@ export function renderPreview(html, root, options = {}) {
         ...createGitHubPreview(new URLSearchParams(location.search).get('github'), () => previewActionsCacheSeconds),
         ...createGmailPreview(new URLSearchParams(location.search).get('gmail'), () => previewActionsCacheSeconds),
         ...createCalendarPreview(new URLSearchParams(location.search).get('calendar')),
-        ...createSlackPreview(new URLSearchParams(location.search).get('slack'), () => previewActionsCacheSeconds, () => previewSlackLimit),
+        ...createSlackPreview(new URLSearchParams(location.search).get('slack'), () => previewActionsCacheSeconds, () => previewCacheSeconds),
         withSuccessHandler(fn) {return {...this, success: fn};},
         withFailureHandler(fn) {return {...this, failure: fn};},
         savePortalSettings(input, browserLanguage) {setTimeout(() => {
@@ -203,14 +200,7 @@ export function renderPreview(html, root, options = {}) {
             this.success({ok:true, theme});
           } catch { this.failure(); }
         }, 200);},
-        saveSlackBookmarkLimit(limit) {setTimeout(() => {
-          if (!PortalSlackSettings.isChoice(limit)) return this.success({ok:false});
-          try {
-            localStorage.setItem('portal-preview-slack-limit', String(limit));
-            previewSlackLimit = limit;
-            this.success({ok:true, limit});
-          } catch { this.failure(); }
-        }, 200);},
+        saveSlackBookmarkLimit() { this.success({ok:false}); },
         saveActionsCacheTtl(seconds) {setTimeout(() => {
           if (!PortalCacheDurations.isChoice('actions', seconds)) return this.success({ok:false});
           try {

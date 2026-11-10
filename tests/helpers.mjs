@@ -91,6 +91,7 @@ export function browser(setupWindow = () => {}, client = browserClient, source =
   const creationRequests = [];
   const githubRequests = [];
   const slackRequests = [];
+  const slackBookmarkRequests = [];
   const calendarRequests = [];
   const gmailRequests = [];
   const urlSchemeRequests = [];
@@ -103,6 +104,7 @@ export function browser(setupWindow = () => {}, client = browserClient, source =
     getCalendarChoices() { calendarRequests.push({kind: 'choices', success: this.success, failure: this.failure}); },
     getCalendarEvents(force, timeZone) { calendarRequests.push({kind: 'events', force, timeZone, success: this.success, failure: this.failure}); },
     saveSlackBookmarkLimit(limit) { slackRequests.push({ kind: 'limit', limit, success: this.success, failure: this.failure }); },
+    getSlackBookmarks(id, force) { slackBookmarkRequests.push({ id, force, success: this.success, failure: this.failure }); },
     getSlackConnections() { slackRequests.push({ kind: 'connections', success: this.success, failure: this.failure }); },
     saveSlackConnection(input) { slackRequests.push({ kind: 'save', input, success: this.success, failure: this.failure }); },
     disconnectSlack(id) { slackRequests.push({ kind: 'disconnect', id, success: this.success, failure: this.failure }); },
@@ -127,7 +129,7 @@ export function browser(setupWindow = () => {}, client = browserClient, source =
   setupWindow(dom.window);
   for (const file of sharedSources) dom.window.eval(readFileSync(file, 'utf8'));
   dom.window.eval(client);
-  return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests, cacheSettingsRequests, sourceSettingsRequests, creationRequests, githubRequests, slackRequests, calendarRequests, gmailRequests, urlSchemeRequests };
+  return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests, cacheSettingsRequests, sourceSettingsRequests, creationRequests, githubRequests, slackRequests, slackBookmarkRequests, calendarRequests, gmailRequests, urlSchemeRequests };
 }
 
 export const catalog = {

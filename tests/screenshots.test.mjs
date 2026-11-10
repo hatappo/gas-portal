@@ -14,9 +14,9 @@ test('Default to every theme, view, and both widths', () => {
 });
 
 test('Narrow themes, views, widths, and output directory from flags', () => {
-  const options = parseOptions(['--themes', 'night, nord', '--views', 'tools,appearance', '--widths', '390', '--out', 'screenshots/night'], themes);
+  const options = parseOptions(['--themes', 'night, nord', '--views', 'links,appearance', '--widths', '390', '--out', 'screenshots/night'], themes);
   assert.deepEqual(options.themes, ['night', 'nord']);
-  assert.deepEqual(options.views, ['tools', 'appearance']);
+  assert.deepEqual(options.views, ['links', 'appearance']);
   assert.deepEqual(options.widths, [390]);
   assert.equal(options.out, path.resolve('screenshots/night'));
 });

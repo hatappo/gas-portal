@@ -28,6 +28,8 @@ export function initializeActions() {
     const notices = [];
     const timestamps = [];
     const moreSources = [];
+    /** @type {ActionDiagnostic[]} */
+    const diagnostics = [];
     /** @type {Map<string, InboxGroup>} */
     const inboxes = new Map();
     let tasksConnected = false;
@@ -44,6 +46,7 @@ export function initializeActions() {
         inboxes.set(id, group);
       } else tasksConnected = true;
       if (!result) continue;
+      if (result.diagnostics) diagnostics.push({ id: key, label: source.serviceLabel + ' · ' + source.label, fetchedAt: result.fetchedAt, cached: result.cached, metrics: result.diagnostics });
       if (result.hasMore && !source.inboxService) moreSources.push(source.serviceLabel + ' · ' + source.label);
       if (result.fetchedAt !== undefined) timestamps.push(result.fetchedAt);
       result.notices.forEach((notice) => notices.push({ label: source.serviceLabel + ' · ' + source.label, notice }));
@@ -64,7 +67,7 @@ export function initializeActions() {
     const inboxGroups = [...inboxes.values()].map(group => ({ ...group,
       items: [...new Map(group.items.map(item => [item.service + ':' + item.id, item])).values()].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)),
     }));
-    updateView({ items, inboxes: inboxGroups, notices, moreSources, pending, hasResults: results.size > 0, connected: tasksConnected, language: document.documentElement.lang });
+    updateView({ diagnostics, items, inboxes: inboxGroups, notices, moreSources, pending, hasResults: results.size > 0, connected: tasksConnected, language: document.documentElement.lang });
   }
 
   function cancelBatch() {

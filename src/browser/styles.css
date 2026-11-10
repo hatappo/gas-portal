@@ -233,7 +233,7 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 /* Quiet, compact work queue; existing theme tokens keep all palettes consistent. */
 :is(.github-connection, .slack-connection) { display: flex; align-items: center; gap: 12px; }
 .action-text-button { font-size: 12px; font-weight: 500; }
-:is(.github-connections, .slack-connections) { list-style: none; padding: 0; margin: 12px 0 0; }
+:is(.github-connections, .slack-connections) { list-style: none; padding: 0; margin: 12px 0; }
 :is(.github-connection, .slack-connection) { justify-content: space-between; border-bottom: 1px solid var(--color-base-300); padding: 8px 0; }
 :is(.github-connection, .slack-connection) strong { font-size: 14px; overflow-wrap: anywhere; }
 :is(.github-connection, .slack-connection) p { margin: 4px 0; }
@@ -518,7 +518,7 @@ h2 .service-logo { width: 24px; height: 24px; }
 .tools-advanced-settings .url-scheme-settings { margin-top: 16px; }
 
 .calendar-settings .cache-settings { margin-top: 0; }
-.tools-advanced-settings .settings-heading h2, .tools-advanced-settings .url-scheme-settings legend { font-size: 14px; font-weight: 600; color: var(--color-base-content); }
+.tools-advanced-settings .settings-heading h3, .tools-advanced-settings .url-scheme-settings legend { font-size: 14px; font-weight: 600; color: var(--color-base-content); }
 
 /* Inbox previews stay compact until inspected; task filters never hide unread mail. */
 /* One shared inbox surface keeps additional services on the same compact row. */
@@ -601,3 +601,23 @@ h2 .service-logo { width: 24px; height: 24px; }
 .compact-nav-selected { margin-inline-start: auto; }
 
 #toggle-calendar[aria-disabled="true"] { pointer-events: auto; --nav-icon-stroke: 1.75; color: color-mix(in srgb, var(--color-base-content) 50%, transparent); cursor: help; }
+
+/* Quiet, optional diagnostics sit below Tasks without competing with its rows. */
+.action-diagnostics { margin-top: 24px; color: color-mix(in srgb, var(--color-base-content) 65%, transparent); font-size: 12px; }
+.action-diagnostics p { margin: 6px 0 12px; }
+.diagnostics-source + .diagnostics-source { margin-top: 16px; }
+.diagnostics-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 4px 16px; flex-wrap: wrap; }
+.diagnostics-heading strong { color: var(--color-base-content); font-weight: 500; overflow-wrap: anywhere; }
+.diagnostics-metrics { list-style: disc; padding-inline-start: 20px; margin: 6px 0 0; }
+.diagnostics-metrics li { padding: 2px 0; }
+.diagnostic-value { color: var(--color-base-content); font-variant-numeric: tabular-nums; }
+
+/* Saved messages remain one compact card even in a busy workspace. */
+.is-saved-links .related-links { display: block; max-height: 20rem; overflow-y: auto; scrollbar-width: thin; }
+.is-saved-links .related-links li + li { border-top: 1px solid color-mix(in srgb, var(--color-base-300) 50%, transparent); }
+.links-notices { margin-block: 12px; }
+.sources-cache-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-bottom: 36px; padding-bottom: 24px; border-bottom: 1px solid var(--color-base-300); }
+.sources-cache-settings > .cache-settings { margin: 0; min-width: 0; }
+.sources-cache-settings [role="status"]:empty { margin: 0; }
+#links-spreadsheet-settings > .tools-advanced-settings { margin-top: 24px; }
+@media (max-width: 760px) { .sources-cache-settings { grid-template-columns: minmax(0, 1fr); } }

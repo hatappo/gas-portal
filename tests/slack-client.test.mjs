@@ -4,7 +4,7 @@ import { browser, bundleBrowser } from './helpers.mjs';
 
 const client = await bundleBrowser({ connectSlack: true });
 const connection = { id: '33333333-3333-4333-8333-333333333333', label: 'Demo@alex' };
-const item = { id: 'TDEMO:CDEMO:1793987462.000001', title: '<img src=x onerror=alert(1)> Saved message', url: 'https://demo.slack.com/archives/CDEMO/p1793987462000001', context: 'Demo · team', postedAt: '2026-11-06T18:00:00Z' };
+const item = { id: 'TDEMO:CDEMO:1793987462.000001', title: '<img src=x onerror=alert(1)> Saved message', url: 'https://demo.slack.com/archives/CDEMO/p1793987462000001', context: 'Demo · team', todoState: 'to_do', postedAt: '2026-11-06T18:00:00Z' };
 const response = (items = [item], overrides = {}) => ({ ok: true, items, error: '', partial: false, fetchedAt: 1793990000000, cached: false, ...overrides });
 function fixture(t) {
   const app = browser(() => {}, client); t.after(() => app.dom.window.close());
@@ -16,9 +16,9 @@ function connect(app, connections = [connection]) {
   app.slackRequests[0].success({ ok: true, connections });
 }
 
-test('Slack initializes lazily, waits for both providers, and renders safe posted-message rows', t => {
+test('Slack shares eager connection metadata with Links and waits for both task providers', t => {
   const app = fixture(t);
-  assert.equal(app.slackRequests.length, 0);
+  assert.equal(app.slackRequests.length, 1);
   app.click('tab-actions');
   assert.equal(app.slackRequests.length, 1);
   app.slackRequests[0].success({ ok: true, connections: [connection] });
@@ -29,7 +29,7 @@ test('Slack initializes lazily, waits for both providers, and renders safe poste
   assert.equal(app.get('refresh-actions').getAttribute('aria-busy'), 'true');
   app.slackRequests[1].success(response());
   assert.equal(app.get('refresh-actions').getAttribute('aria-busy'), 'false');
-  assert.match(app.get('action-items').textContent, /ブックマーク/);
+  assert.match(app.get('action-items').textContent, /ToDo/);
   assert.match(app.get('action-items').textContent, /投稿/);
   assert.equal(app.get('action-items').querySelector('img'), null);
   assert.equal(app.get('action-items').querySelector('a').target, '_blank');
@@ -63,7 +63,7 @@ test('A single refresh starts GitHub and Slack together and commits only after b
 
 test('Slack settings save and clear passwords, edit without revealing credentials, and disconnect', t => {
   const app = fixture(t); app.click('tab-settings'); connect(app, []);
-  app.click('settings-tab-actions'); app.click('add-slack');
+  app.click('settings-tab-sources'); app.click('add-slack');
   app.get('slack-token').value = 'xoxp-TEST-SECRET';
   app.get('slack-settings-form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true }));
   assert.equal(app.slackRequests[1].input.token, 'xoxp-TEST-SECRET');
@@ -124,38 +124,78 @@ test('Refresh preserves force intent while failed provider metadata is retried',
   assert.equal(app.get('refresh-actions').disabled, false);
 });
 
-test('Slack limit autosaves, rolls back failures, and invalidates the old snapshot for the next tab visit', t => {
-  const app = fixture(t); app.click('tab-actions'); connect(app);
-  app.slackRequests[1].success(response());
-  app.click('tab-settings'); app.click('settings-tab-actions');
-  const limit = app.get('slack-bookmark-limit');
-  assert.equal(limit.value, '20');
-  assert.deepEqual([...limit.options].map(option => option.value), ['10', '20', '50', '100', '200']);
-  limit.value = '50'; limit.dispatchEvent(new app.dom.window.Event('change'));
-  assert.equal(app.slackRequests[2].kind, 'limit');
-  assert.equal(app.slackRequests[2].limit, 50);
-  assert.equal(limit.disabled, true);
-  app.slackRequests[2].success({ ok: false });
-  assert.equal(limit.value, '20'); assert.equal(limit.disabled, false);
-  limit.value = '50'; limit.dispatchEvent(new app.dom.window.Event('change'));
-  app.slackRequests[3].success({ ok: true, limit: 50 });
-  assert.equal(limit.dataset.savedValue, '50');
-  assert.equal(app.slackRequests.length, 4, 'Do not fetch messages from Settings');
-  app.click('tab-actions');
-  assert.equal(app.slackRequests[4].kind, 'actions');
-  app.slackRequests[4].success(response());
-});
-
 test('More Slack results are informational, separate from errors, and survive refresh and language changes', t => {
   const app = fixture(t); app.click('tab-actions'); connect(app);
   app.slackRequests[1].success(response([item], { hasMore: true }));
   assert.equal(app.get('actions-status').hidden, true);
-  assert.match(app.get('action-items').querySelector('.action-more-results').textContent, /Demo@alex.*このほかにも検索結果/);
+  assert.match(app.get('action-items').querySelector('.action-more-results').textContent, /Demo@alex.*確認上限の200件/);
   app.document.documentElement.lang = 'en';
   app.document.dispatchEvent(new app.dom.window.Event('portal:languagechange'));
-  assert.match(app.get('action-items').querySelector('.action-more-results').textContent, /More search results/);
+  assert.match(app.get('action-items').querySelector('.action-more-results').textContent, /200-item check limit/);
   app.click('refresh-actions');
   assert.ok(app.get('action-items').querySelector('.action-more-results'));
   app.slackRequests[2].success(response([item], { hasMore: false }));
   assert.equal(app.get('action-items').querySelector('.action-more-results'), null);
+});
+
+
+test('Slack labels unknown completion state in both languages and explains required scopes', t => {
+  const app = fixture(t); app.click('tab-actions'); connect(app);
+  app.slackRequests[1].success(response([{ ...item, todoState: 'unknown' }]));
+  assert.match(app.get('action-items').textContent, /ToDo（状態不明）/);
+  assert.equal(app.get('slack-token-permissions').querySelectorAll('ul > li').length, 5);
+  assert.match(app.get('slack-token-permissions').textContent, /公開チャンネルの投稿/);
+  app.document.documentElement.lang = 'en';
+  app.document.dispatchEvent(new app.dom.window.Event('portal:languagechange'));
+  assert.match(app.get('action-items').textContent, /To-do \(status unknown\)/);
+  for (const scope of ['search:read', 'channels:history', 'groups:history', 'im:history', 'mpim:history']) assert.ok(app.get('slack-token-permissions').textContent.includes(scope));
+  app.click('refresh-actions');
+  app.slackRequests[2].success(response([], { hasMore: true }));
+  assert.match(app.get('action-items').textContent, /No tasks in the checked results/);
+});
+
+
+test('Diagnostics start collapsed, follow snapshots rather than filters, and update in both languages', t => {
+  const app = fixture(t); app.click('tab-actions'); connect(app);
+  const diagnostics = { searchTotal: 250, received: 200, eligible: 200, skipped: 0, hasMore: true, remaining: 50, completed: 198, incomplete: 1, unknown: 1, token: 'DO-NOT-RENDER' };
+  app.slackRequests[1].success(response([item], { diagnostics, cached: true }));
+  const host = app.get('action-diagnostics');
+  const trigger = host.querySelector('.disclosure-trigger');
+  assert.equal(trigger.getAttribute('aria-expanded'), 'false');
+  assert.match(host.textContent, /診断情報/);
+  assert.match(host.textContent, /キャッシュ/);
+  assert.doesNotMatch(host.textContent, /DO-NOT-RENDER/);
+  trigger.click();
+  assert.equal(trigger.getAttribute('aria-expanded'), 'true');
+  const values = () => Object.fromEntries([...host.querySelectorAll('.diagnostics-metrics > li')].map(row => [row.querySelector('.diagnostic-label').textContent, row.querySelector('.diagnostic-value').textContent]));
+  assert.equal(values()['完了'], '198');
+  assert.equal(values()['未取得'], '50件');
+  const search = app.get('actions-search'); search.value = 'no-match'; search.dispatchEvent(new app.dom.window.Event('input'));
+  assert.equal(values()['対象ToDo件数'], '200');
+  app.click('refresh-actions');
+  assert.equal(values()['完了'], '198', 'Keep diagnostics with the visible snapshot while refreshing');
+  app.slackRequests[2].success(response([], { diagnostics: { ...diagnostics, searchTotal: null, hasMore: null, remaining: null, completed: 0 }, cached: false }));
+  assert.equal(trigger.getAttribute('aria-expanded'), 'true');
+  assert.equal(values()['未取得'], '不明');
+  app.document.documentElement.lang = 'en';
+  app.document.dispatchEvent(new app.dom.window.Event('portal:languagechange'));
+  assert.match(host.textContent, /Diagnostics/);
+  assert.equal(values()['Not retrieved'], 'Unknown');
+  assert.equal(values()['Completed To-dos'], '0');
+  app.click('refresh-actions'); app.slackRequests[3].success({ ok: false, error: 'UNAUTHORIZED' });
+  assert.equal(host.querySelectorAll('.diagnostics-metrics').length, 0, 'Do not retain stale counts after a failed batch');
+});
+
+
+test('Diagnostics combine the remaining flag and count without guessing an unknown quantity', t => {
+  const app = fixture(t); app.click('tab-actions'); connect(app);
+  const cases = [[50, true, '50件'], [0, false, '0件'], [null, false, '0件'], [null, true, 'あり（件数不明）'], [null, null, '不明']];
+  for (let i = 0; i < cases.length; i++) {
+    if (i) app.click('refresh-actions');
+    const [remaining, hasMore, expected] = cases[i];
+    app.slackRequests[i + 1].success(response([], { diagnostics: { remaining, hasMore } }));
+    const rows = [...app.get('action-diagnostics').querySelectorAll('.diagnostics-metrics > li')];
+    assert.equal(rows.length, 8);
+    assert.equal(rows.find(row => row.querySelector('.diagnostic-label').textContent === '未取得').querySelector('.diagnostic-value').textContent, expected);
+  }
 });

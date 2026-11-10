@@ -8,8 +8,10 @@ import { ServiceLogo } from './service-logo';
 import { tagPalette } from './tag-palette.js';
 import { formatListCount } from './list-presentation.js';
 import { Disclosure } from './disclosure';
+import { ActionDiagnostics } from './action-diagnostics';
 
 interface ActionView {
+  diagnostics: ActionDiagnostic[];
   inboxes: InboxGroup[];
   items: ActionItem[];
   notices: { label: string; notice: ActionNotice }[];
@@ -41,7 +43,7 @@ function ActionRow(props: { item: ActionItem; language: string }) {
   </li>;
 }
 export function mountActionView() {
-  const [state, setState] = createStore<ActionView>({ inboxes: [], items: [], notices: [], moreSources: [], pending: true, hasResults: false, connected: false, language: 'en' });
+  const [state, setState] = createStore<ActionView>({ diagnostics: [], inboxes: [], items: [], notices: [], moreSources: [], pending: true, hasResults: false, connected: false, language: 'en' });
   const search = document.getElementById('actions-search') as HTMLInputElement;
   const [query, setQuery] = createSignal('');
   const normalize = (text: string) => text.normalize('NFKC').toLocaleLowerCase('ja').trim();
@@ -70,10 +72,11 @@ export function mountActionView() {
     </ul></Disclosure>
   </Show>, document.getElementById('actions-status')!);
   render(() => <><Show when={filtered().length} fallback={
-    <Show when={!state.pending && !state.notices.length}><div class="status" role="status"><h3>{t('No items to display', state.language)}</h3><p><SettingsGuidance message={hasFilters() ? 'No items match your filters.' : state.connected ? 'No tasks right now.' : 'Connect a task service in Settings.'} language={state.language}/></p><Show when={hasFilters()}><button type="button" class="reset-button btn btn-sm" onClick={clearFilters}>{t('Clear filters', state.language)}</button></Show></div></Show>
+    <Show when={!state.pending && !state.notices.length}><div class="status" role="status"><h3>{t('No items to display', state.language)}</h3><p><SettingsGuidance message={hasFilters() ? 'No items match your filters.' : state.connected ? (state.moreSources.length ? 'No tasks in the checked results.' : 'No tasks right now.') : 'Connect a task service in Settings.'} language={state.language}/></p><Show when={hasFilters()}><button type="button" class="reset-button btn btn-sm" onClick={clearFilters}>{t('Clear filters', state.language)}</button></Show></div></Show>
   }><ul class="action-item-list"><For each={filtered()}>{(item) => <ActionRow item={item} language={state.language} />}</For></ul></Show>
-    <For each={state.moreSources}>{(source) => <p class="settings-help action-more-results">{source + ' · '}<SettingsGuidance message="More search results are available. Increase the limit in Settings to show more." language={state.language}/></p>}</For>
+    <For each={state.moreSources}>{(source) => <p class="settings-help action-more-results">{source + ' · '}<SettingsGuidance message="The 200-item check limit was reached. Older results have not been checked." language={state.language}/></p>}</For>
   </>, document.getElementById('action-items')!);
+  render(() => <ActionDiagnostics entries={state.diagnostics} language={state.language}/>, document.getElementById('action-diagnostics')!);
   // Keep row identity through refreshes and language changes, including IDs shared by services.
   return (snapshot: ActionView) => setState(reconcile({ ...snapshot, inboxes: snapshot.inboxes.map(group => ({ ...group, key: 'inbox:' + group.id, items: group.items.map(item => ({ ...item, key: item.service + ':' + item.id })) })), items: snapshot.items.map((item) => ({ ...item, key: item.service + ':' + item.id })) }, { key: 'key' }));
 }

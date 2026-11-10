@@ -10,7 +10,7 @@ function choose(app, language) {
 
 test('Persist only supported languages in User Properties without changing other settings', () => {
   const userProperties = { PORTAL_THEME: 'forest', PORTAL_NAME: 'Custom', PORTAL_HEADLINE: '独自の見出し' };
-  const properties = { SPREADSHEET_ID: 'sheet', SHEET_NAME: 'Tools' };
+  const properties = { SPREADSHEET_ID: 'sheet', SHEET_NAME: 'Links' };
   const app = server({ userProperties, properties });
   assert.equal(app.context.getPortalLanguage_(), 'en');
   for (const value of ['en', 'ja', 'auto']) {
@@ -20,7 +20,7 @@ test('Persist only supported languages in User Properties without changing other
   const before = { ...userProperties };
   for (const value of ['fr', 'EN', '', null, {}, '<script>']) assert.equal(app.context.saveLanguage(value).ok, false);
   assert.deepEqual(userProperties, before);
-  assert.deepEqual(properties, { SPREADSHEET_ID: 'sheet', SHEET_NAME: 'Tools' });
+  assert.deepEqual(properties, { SPREADSHEET_ID: 'sheet', SHEET_NAME: 'Links' });
   assert.equal(server().context.getPortalLanguage_(), 'en');
 });
 
@@ -99,7 +99,7 @@ test('Switch labels, accessibility text, warnings, and default content without l
   assert.equal(doc.getElementById('tab-settings').getAttribute('aria-selected'), 'true');
   assert.equal(doc.getElementById('setting-headline').value, 'Unsaved custom headline');
   assert.equal(doc.getElementById('page-title').textContent, 'One place to start your workday.');
-  assert.match(doc.querySelector('#table-view thead').textContent, /Tool.*Description.*Tags.*Related links/);
+  assert.match(doc.querySelector('#table-view thead').textContent, /Link.*Description.*Tags.*Related links/);
   assert.match(doc.getElementById('tool-rows').textContent, /Guide/);
   assert.match(doc.getElementById('warning-list').textContent, /Row 4: Enter a valid URL/);
   assert.match(doc.getElementById('warning-summary').textContent, /Entries not displayed: 1/);
@@ -112,7 +112,7 @@ test('Switch labels, accessibility text, warnings, and default content without l
   assert.equal(doc.getElementById('refresh-actions').title, '', 'Kobalte supplies the tooltip without a duplicate native title');
   assert.equal(doc.getElementById('refresh-actions').getAttribute('aria-label'), '最新データを取得');
   assert.equal(doc.getElementById('setting-headline').value, 'Unsaved custom headline');
-  assert.match(doc.querySelector('#table-view thead').textContent, /ツール.*説明.*Tags.*関連リンク/);
+  assert.match(doc.querySelector('#table-view thead').textContent, /リンク.*説明.*Tags.*関連リンク/);
 });
 
 test('Keep the saved language after failure and ignore late responses after timeout', (t) => {

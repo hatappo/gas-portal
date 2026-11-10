@@ -22,8 +22,8 @@ for (const gas of [false, true]) test(`Setup guidance opens the matching setting
   app.get('setting-name').value = 'Unsaved portal';
   app.requests[0].success({ ok: false, error: 'Set a spreadsheet ID or Google Sheets URL in Settings.' });
   app.get('tab-actions').click();
-  for (const [host, section] of [['inbox-services', 'actions'], ['action-items', 'actions'], ['status-description', 'tools']]) {
-    const route = section === 'actions' ? 'inbox-and-tasks' : section;
+  for (const [host, section] of [['inbox-services', 'sources'], ['action-items', 'sources'], ['status-description', 'sources']]) {
+    const route = section;
     const link = app.get(host).querySelector('a.settings-guidance-link');
     assert.ok(link, host);
     assert.equal(link.textContent, '設定');

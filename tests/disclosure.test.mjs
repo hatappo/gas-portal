@@ -7,7 +7,7 @@ test('Disclosure panels retain controller nodes and exclude closed content from 
   t.after(() => app.dom.window.close());
   const doc = app.document;
   assert.equal(doc.querySelectorAll('details').length, 0);
-  assert.equal(doc.querySelectorAll('.portal-disclosure').length, 5);
+  assert.equal(doc.querySelectorAll('.portal-disclosure').length, 6);
   const advanced = doc.querySelector('.tools-advanced-settings > .disclosure-trigger');
   assert.equal(advanced.getAttribute('aria-expanded'), 'false');
   advanced.click();
@@ -42,7 +42,7 @@ test('Warnings update while closed and translated help preserves the open state 
   warningTrigger.click();
   assert.equal(warningTrigger.getAttribute('aria-expanded'), 'true');
   doc.getElementById('tab-settings').click();
-  doc.getElementById('settings-tab-actions').click();
+  doc.getElementById('settings-tab-sources').click();
   const help = doc.querySelector('.github-pat-help .disclosure-trigger');
   help.click(); help.focus();
   const language = doc.getElementById('portal-language');

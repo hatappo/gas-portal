@@ -73,7 +73,7 @@ export function initializeGmail(actions: Actions) {
     finally { setBusy(false); }
   }
   render(() => <>
-    <div class="settings-heading"><h2 id="gmail-settings-title"><ServiceLogo service="gmail" label="Gmail" decorative/>Gmail</h2><p>{t('Show unread mail for the Google account running this app. Open Gmail to read or reply.')}</p></div>
+    <div class="settings-heading"><h2 id="gmail-settings-title"><ServiceLogo service="gmail" label="Gmail" decorative/>Gmail</h2><p>{t('Show unread mail in the Inbox section of Inbox & Tasks using the Google account running this app. Read or reply in Gmail.')}</p></div>
     <p class="settings-help">{t('Only subjects, senders, labels and dates are read. Bodies and attachments are not accessed. Spam and trash are excluded; archived unread mail is included.')}</p>
     <Show when={busy()}><div class="refresh-catalog actions-loading" role="status" aria-label={t('Loading…')} aria-busy="true">{document.querySelector<HTMLTemplateElement>('#gmail-refresh-icon')!.content.cloneNode(true)}</div></Show>
     <form id="gmail-settings-form" onSubmit={event => { event.preventDefault(); void save(); }}>

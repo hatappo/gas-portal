@@ -58,8 +58,8 @@ test('Use User Properties and resolve the first tab by index, not array order or
 test('Save only validated source fields, preserve unrelated preferences, and keep storage errors private', () => {
   const userProperties = { PORTAL_NAME: 'Mine', PORTAL_THEME: 'dim', CATALOG_CACHE_SECONDS: '300', OTHER: 'keep' };
   const { context } = server({ userProperties });
-  const response = plain(context.saveSpreadsheetSettings(settings(' https://docs.google.com/spreadsheets/d/new-id/edit ', '  Tools  ')));
-  assert.deepEqual(response, { ok: true, settings: settings('new-id', 'Tools') });
+  const response = plain(context.saveSpreadsheetSettings(settings(' https://docs.google.com/spreadsheets/d/new-id/edit ', '  Links  ')));
+  assert.deepEqual(response, { ok: true, settings: settings('new-id', 'Links') });
   assert.equal(userProperties.PORTAL_NAME, 'Mine');
   assert.equal(userProperties.OTHER, 'keep');
   const before = { ...userProperties };

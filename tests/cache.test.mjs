@@ -199,7 +199,7 @@ test('Keep filters and List view during forced refresh, prevent duplicate reques
   assert.equal(document.querySelectorAll('#tool-rows tr').length, 1);
 });
 
-test('Save cache duration separately, group cache under Tools & Links, and restore failed or timed-out choices', (t) => {
+test('Save cache duration separately, group cache under Links, and restore failed or timed-out choices', (t) => {
   let timeout;
   const { dom, document, cacheSettingsRequests } = browser((window) => {
     const original = window.setTimeout.bind(window);
@@ -212,7 +212,7 @@ test('Save cache duration separately, group cache under Tools & Links, and resto
   const appearance = document.querySelector('#settings-appearance-panel');
   assert.equal(appearance.lastElementChild.className, 'language-settings');
   assert.ok(appearance.contains(theme));
-  assert.ok(document.querySelector('#settings-tools-panel .cache-settings'));
+  assert.ok(document.querySelector('#settings-sources-panel .cache-settings'));
   assert.equal(appearance.querySelector('.cache-settings'), null);
   assert.equal(theme.querySelector('.cache-settings, .language-settings'), null);
   assert.equal(document.querySelector('#catalog-cache-seconds').closest('form'), null, 'Automatic preferences must remain independent of the display form submit');
@@ -317,7 +317,7 @@ test('Automatically save Action Items cache duration with independent controls a
   const app = browser(); t.after(() => app.dom.window.close());
   const { document, dom, cacheSettingsRequests } = app;
   const select = document.getElementById('actions-cache-seconds');
-  assert.equal(select.closest('[role="tabpanel"]').id, 'settings-actions-panel');
+  assert.equal(select.closest('[role="tabpanel"]').id, 'settings-sources-panel');
   assert.equal(select.closest('form'), null);
   assert.equal(select.value, '300');
   select.value = '60'; select.dispatchEvent(new dom.window.Event('change'));
