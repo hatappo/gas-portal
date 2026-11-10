@@ -382,7 +382,7 @@ test('Calendar settings persist, narrow screens remain usable and in-page notice
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   }
   await page.keyboard.press('Escape');
-  assert.equal(await page.locator('#calendar-panel').isVisible(), false);
+  await page.locator('#calendar-panel').waitFor({ state: 'hidden' });
 });
 
 test('Calendar empty and partial states never imply false free time', async t => {
