@@ -18,6 +18,7 @@ import { initializeGitHub } from './github.js';
 import { initializeSlack } from './slack.js';
 import { mountDisclosures } from './disclosure';
 import { mountRefreshHints } from './ui';
+import { initializeSearchShortcuts } from './search-shortcuts.js';
 
 /** @param {{connectGitHub?: typeof initializeGitHub, connectSlack?: typeof initializeSlack, connectCalendar?: typeof initializeCalendar, connectGmail?: typeof initializeGmail}} [options] */
 export function initializePortal({ connectGitHub = initializeGitHub, connectSlack = initializeSlack, connectCalendar = initializeCalendar, connectGmail = initializeGmail } = {}) {
@@ -38,5 +39,6 @@ export function initializePortal({ connectGitHub = initializeGitHub, connectSlac
   connectGitHub(actions);
   const calendar = connectCalendar();
   mountRefreshHints();
+  initializeSearchShortcuts();
   return { actions, calendar };
 }

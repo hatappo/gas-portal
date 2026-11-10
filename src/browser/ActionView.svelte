@@ -8,18 +8,18 @@
   import { tagPalette } from './tag-palette.js';
   import { formatListCount } from './list-presentation.js';
   import type { Cell } from './view';
+  import { hasActionFilters, matchesAction, type ActionFilters } from './action-search';
   import type { ActionView } from './action-view';
   let {
     state,
-    query,
+    filters,
     clearFilters,
     part,
-  }: { state: Cell<ActionView>; query: Cell<string>; clearFilters: () => void; part: string } =
+  }: { state: Cell<ActionView>; filters: Cell<ActionFilters>; clearFilters: () => void; part: string } =
     $props();
   const t = (key: string) => PortalI18n.t(key, $state.language);
-  const normalize = (text: string) => text.normalize('NFKC').toLocaleLowerCase('ja').trim();
-  const matches = (item: ActionItem) =>
-    normalize([item.title || t(item.titleFallback || ''), item.context].join(' ')).includes($query);
+  const matches = (item: ActionItem) => matchesAction(item, $filters, t(item.titleFallback || ''));
+  let filtering = $derived(hasActionFilters($filters));
   let filtered = $derived($state.items.filter(matches));
   let inboxItems = $derived($state.inboxes.flatMap((group) => group.items));
   const typeColor = (service: string, reason: string) => {
@@ -42,7 +42,7 @@
     pending={$state.pending}
     language={$state.language}
     {matches}
-    filtering={!!$query}
+    {filtering}
   />
 {:else if part === 'inboxCount'}{($state.hasResults || !$state.pending) &&
   $state.inboxes.every((group) => group.loaded && (!group.failed || group.items.length > 0))
@@ -107,7 +107,7 @@
       <h3>{t('No items to display')}</h3>
       <p>
         <SettingsGuidance
-          message={$query
+          message={filtering
             ? 'No items match your filters.'
             : $state.connected
               ? $state.moreSources.length
@@ -117,7 +117,7 @@
           language={$state.language}
         />
       </p>
-      {#if $query}<button type="button" class="reset-button btn btn-sm" onclick={clearFilters}>
+      {#if filtering}<button type="button" class="reset-button btn btn-sm" onclick={clearFilters}>
           {t('Clear filters')}
         </button>{/if}
     </div>{/if}

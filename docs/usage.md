@@ -348,3 +348,14 @@ Preview enables a fictional calendar by default and never contacts Google. Its r
 | `?calendar=error` | Retrieval failure |
 
 UI interactions can be reviewed locally. Actual consent, calendar selection, event colors and data access must be verified after deploying with your Google account.
+
+
+## Inbox & Tasks type filters
+
+The search field filters loaded titles and context (such as senders, repositories, and workspaces). Type `is:` at the end of the search text to choose a type, or narrow the suggestions with a service name, translated label, or token such as `is:todo`. Select with the arrow keys and Enter, or click a suggestion. Each selected type stays in the field as a service-icon chip.
+
+Supported types are GitHub assigned issues (`issue`), direct reviews (`review`), team reviews (`team-review`), changes requested (`changes`), Slack To-dos (`todo`, including unknown completion states), and unread Gmail (`mail`). Multiple types match with OR; the remaining search text combines with them using AND. Inbox and Tasks counters follow the same filters. Suggestions and filtering use no additional API calls and cover only the already loaded results.
+
+Click a chip to remove it. With an empty text field, Backspace focuses the last chip; Backspace or Delete then removes it. Escape closes suggestions. Filters survive tab changes and refreshes during the current page session, but are not saved as user settings.
+
+Press **⌘K** on macOS or **Ctrl+K** on Windows/Linux to focus the current tab's search field. Existing text and filter chips are preserved. The shortcut does nothing in Settings or while the search field is disabled. It works while focus is inside the portal page.

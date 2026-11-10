@@ -1,5 +1,7 @@
 import { createCell, mountView } from './view';
 import Actions from './ActionView.svelte';
+import ActionSearch from './ActionSearch.svelte';
+import type { ActionFilters } from './action-search';
 export interface ActionView {
   diagnostics: ActionDiagnostic[];
   inboxes: InboxGroup[];
@@ -23,15 +25,13 @@ export function mountActionView() {
     connected: false,
     language: 'en',
   });
-  const search = document.getElementById('actions-search') as HTMLInputElement;
-  const [query, setQuery] = createCell('');
-  search.addEventListener('input', () =>
-    setQuery(search.value.normalize('NFKC').toLocaleLowerCase('ja').trim()),
-  );
+  const [filters, setFilters] = createCell<ActionFilters>({ text: '', types: [] });
+  const searchHost = document.getElementById('actions-search-host')!;
+  searchHost.replaceChildren();
+  mountView(ActionSearch, searchHost, { filters, update: setFilters });
   const clearFilters = () => {
-    search.value = '';
-    setQuery('');
-    search.focus();
+    setFilters({ text: '', types: [] });
+    document.getElementById('actions-search')?.focus();
   };
   const hosts = {
     inbox: 'inbox-services',
@@ -44,7 +44,7 @@ export function mountActionView() {
   for (const [part, id] of Object.entries(hosts)) {
     const host = document.getElementById(id)!;
     host.replaceChildren();
-    mountView(Actions, host, { state, query, clearFilters, part });
+    mountView(Actions, host, { state, filters, clearFilters, part });
   }
   state.subscribe((value) => {
     document
