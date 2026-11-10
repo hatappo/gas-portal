@@ -1804,7 +1804,7 @@ test('Type search supports Japanese, IME, dismissal, duplicate prevention and co
   await search.fill('release is:');
   await page.getByRole('option').first().waitFor();
   await search.press('Escape');
-  assert.equal(await page.getByRole('listbox').isVisible(), false);
+  await page.getByRole('listbox').waitFor({ state: 'hidden' });
   assert.equal(await search.inputValue(), 'release is:');
   await search.fill('is:nosuchtype');
   await page.getByText('No matching types', { exact: true }).waitFor();
