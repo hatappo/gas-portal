@@ -208,3 +208,25 @@ test('Action search matches loaded titles and context and survives refresh', t =
   enter('   ');
   assert.equal(app.rows().length, 2);
 });
+
+test('Type chips filter loaded results without requesting providers and Clear filters resets text and types', async t => {
+  const app = fixture(t);
+  app.api.setSources('github', [app.source('a')]); app.start();
+  app.calls[0].done(result([item, { ...item, service: 'slack', serviceLabel: 'Slack', id: 'todo', reasons: ['To-do (status unknown)'] }]));
+  const search = app.document.getElementById('actions-search');
+  search.value = 'is:todo';
+  search.dispatchEvent(new app.dom.window.Event('input', { bubbles: true }));
+  await new Promise(resolve => setTimeout(resolve, 0));
+  app.document.querySelector('.action-type-option[data-value="todo"]').click();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.equal(app.rows().length, 1);
+  assert.ok(app.rows()[0].querySelector('.service-logo-slack'));
+  assert.equal(app.calls.length, 1);
+  search.value = 'missing';
+  search.dispatchEvent(new app.dom.window.Event('input', { bubbles: true }));
+  app.document.querySelector('#action-items .reset-button').click();
+  assert.equal(search.value, '');
+  assert.equal(app.document.querySelectorAll('.action-type-chip').length, 0);
+  assert.equal(app.rows().length, 2);
+  assert.equal(app.calls.length, 1);
+});

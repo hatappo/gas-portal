@@ -128,7 +128,7 @@
 .input, .select, .textarea { --field-size: 14px; }
 .textarea { line-height: 1.6; }
 /* Only the search wrapper owns the border and focus ring. */
-.search-box input { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.search-box input { outline: none; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 @media (max-width: 760px) {
   /* Keep text entry large enough to avoid automatic zoom on mobile browsers. */
   .input, .select, .textarea { --field-size: 16px; }

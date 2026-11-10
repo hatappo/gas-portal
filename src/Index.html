@@ -35,6 +35,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
               <label class="visually-hidden" for="search"><span data-i18n="Search links by name, description, or tags">Search links by name, description, or tags</span></label>
               <input type="search" id="search" placeholder="Search by name, description, or tags" data-i18n-placeholder="Search by name, description, or tags" autocomplete="off" disabled>
+              <kbd class="kbd search-shortcut" data-search-shortcut aria-hidden="true"></kbd>
             </div>
           </div>
           <div class="filter-toolbar">
@@ -79,7 +80,7 @@
       </section>
       <section class="action-items" role="tabpanel" aria-labelledby="tab-actions" id="actions-panel" tabindex="0" hidden>
         <div class="actions-toolbar inbox-tasks-toolbar">
-          <div class="search-controls">
+          <div class="search-controls" id="actions-search-host">
             <div class="search-box input">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
               <label class="visually-hidden" for="actions-search" data-i18n="Search inbox and tasks">Search inbox and tasks</label>

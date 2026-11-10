@@ -266,7 +266,7 @@ test('Action search filters locally and remains usable at narrow widths', async 
   await selectPortalTab(page, 'actions');
   await page.locator('.action-item-list > li').first().waitFor();
   const titles = await page.locator('.action-item-title').allTextContents();
-  const search = page.getByRole('searchbox', { name: 'Search inbox and tasks' });
+  const search = page.getByRole('combobox', { name: 'Search inbox and tasks' });
   await search.fill(titles[0]);
   assert.ok((await page.locator('.action-item-title').allTextContents()).every(title => title.toLowerCase().includes(titles[0].toLowerCase())));
   assert.equal(await search.evaluate(node => node === document.activeElement), true);
@@ -382,7 +382,7 @@ test('Calendar settings persist, narrow screens remain usable and in-page notice
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   }
   await page.keyboard.press('Escape');
-  assert.equal(await page.locator('#calendar-panel').isVisible(), false);
+  await page.locator('#calendar-panel').waitFor({ state: 'hidden' });
 });
 
 test('Calendar empty and partial states never imply false free time', async t => {
@@ -917,7 +917,7 @@ test('Gmail settings persist and the shared search filters Inbox and Tasks', asy
   await card.locator('.inbox-message-list').waitFor();
   assert.equal(await card.locator('.inbox-message-list > li').count(), 3);
   assert.equal(await page.locator('.action-item-list > li').count(), 7);
-  await page.getByRole('searchbox', { name: 'Search inbox and tasks', exact: true }).fill('proposal');
+  await page.getByRole('combobox', { name: 'Search inbox and tasks', exact: true }).fill('proposal');
   assert.equal(await page.locator('.action-item-list > li').count(), 0);
   assert.equal(await card.locator('.inbox-count').textContent(), '1');
   assert.equal(await card.locator('.inbox-message-list li').count(), 1);
@@ -1745,4 +1745,257 @@ test('Next countdown is visible before alerts and shares the current countdown t
   assert.deepEqual(await typography(next), await typography(page.locator('.calendar-remaining-label').first()));
   await page.evaluate(() => { document.documentElement.lang = 'ja'; document.dispatchEvent(new Event('portal:languagechange')); });
   assert.equal(await next.textContent(), '次の予定 40分後');
+});
+
+test('Type suggestions show service icons, combine OR chips with text, and filter both queue counts', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  await page.goto(base + '/?gmail=ready#inbox-and-tasks');
+  await page.locator('#refresh-actions[aria-busy="false"]').waitFor();
+  const search = page.locator('#actions-search');
+  const rows = page.locator('.action-item-list > li');
+  const total = await rows.count();
+  assert.ok(total > 1);
+  await search.fill('is:');
+  await page.getByRole('option', { name: 'Slack · To-do', exact: true }).waitFor();
+  assert.equal(await page.getByRole('option').count(), 6);
+  assert.equal(await page.locator('.action-type-option .service-logo').count(), 6);
+  await page.getByRole('option', { name: 'Slack · To-do', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('.action-type-chip[data-filter-type="todo"]'));
+  assert.equal(await search.inputValue(), '');
+  const slackCount = await rows.count();
+  assert.ok(slackCount > 0 && slackCount < total);
+  assert.equal(await rows.locator('.service-logo:not(.service-logo-slack)').count(), 0);
+  assert.match(await page.locator('#inbox-total-count').textContent(), /^0 \/ /);
+  await search.fill('is:mail');
+  await page.getByRole('option', { name: 'Gmail · Unread mail', exact: true }).waitFor();
+  await search.press('ArrowDown');
+  await search.press('Enter');
+  await page.locator('.action-type-chip[data-filter-type="mail"]').waitFor();
+  assert.equal(await page.locator('.action-type-chip .service-logo').count(), 2);
+  assert.equal(await rows.count(), slackCount);
+  assert.doesNotMatch(await page.locator('#inbox-total-count').textContent(), /^0 \/ /);
+  const title = (await rows.first().locator('.action-item-title').textContent()).trim();
+  await search.fill(title);
+  await page.waitForFunction(() => document.querySelectorAll('.action-item-list > li').length === 1);
+  await page.locator('#refresh-actions').click();
+  await page.locator('#refresh-actions[aria-busy="false"]').waitFor();
+  assert.equal(await search.inputValue(), title);
+  assert.equal(await page.locator('.action-type-chip').count(), 2);
+  await selectPortalTab(page, 'tools');
+  await selectPortalTab(page, 'actions');
+  assert.equal(await search.inputValue(), title);
+  await search.fill('');
+  await search.press('Backspace');
+  assert.equal(await page.locator('.action-type-chip[data-filter-type="mail"]').evaluate(el => el === document.activeElement), true);
+  await page.keyboard.press('Backspace');
+  assert.equal(await page.locator('.action-type-chip').count(), 1);
+  await page.locator('.action-type-chip').click();
+  assert.equal(await rows.count(), total);
+  await search.fill('release is:issue');
+  await page.getByRole('option', { name: 'GitHub · Assigned issue', exact: true }).click();
+  assert.equal(await search.inputValue(), 'release');
+  assert.equal(await page.locator('.action-type-chip[data-filter-type="issue"]').count(), 1);
+});
+
+test('Type search supports Japanese, IME, dismissal, duplicate prevention and compact themes', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  await selectPortalTab(page, 'actions');
+  const search = page.locator('#actions-search');
+  await search.fill('release is:');
+  await page.getByRole('option').first().waitFor();
+  await search.press('Escape');
+  await page.getByRole('listbox').waitFor({ state: 'hidden' });
+  assert.equal(await search.inputValue(), 'release is:');
+  await search.fill('is:nosuchtype');
+  await page.getByText('No matching types', { exact: true }).waitFor();
+  await search.press('Enter');
+  assert.equal(await page.locator('.action-type-chip').count(), 0);
+  await search.fill('is:issue');
+  await page.getByRole('option', { name: 'GitHub · Assigned issue', exact: true }).waitFor();
+  await search.dispatchEvent('compositionstart');
+  await search.dispatchEvent('keydown', { key: 'Enter', isComposing: true });
+  assert.equal(await page.locator('.action-type-chip').count(), 0);
+  await search.dispatchEvent('compositionend');
+  await page.evaluate(() => { document.documentElement.lang = 'ja'; document.dispatchEvent(new Event('portal:languagechange')); });
+  await search.fill('is:レビュー');
+  await page.getByRole('option').first().waitFor();
+  assert.equal(await page.getByRole('option').count(), 2);
+  await page.getByRole('option', { name: 'GitHub · チームへのレビュー依頼', exact: true }).click();
+  await search.fill('is:team-review');
+  assert.equal(await page.getByRole('option').count(), 0);
+  for (const scheme of ['light', 'dark']) {
+    await page.evaluate(scheme => { document.documentElement.dataset.colorScheme = scheme; }, scheme);
+    for (const width of [1280, 760, 390, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      await search.fill('is:');
+      await page.getByRole('option').first().waitFor();
+      await page.waitForFunction(() => {
+        const box = document.querySelector('.action-type-options')?.getBoundingClientRect();
+        return box && box.x >= 0 && box.right <= innerWidth + 1;
+      });
+      const box = await page.getByRole('listbox').boundingBox();
+      assert.ok(box.x >= 0 && box.x + box.width <= width + 1);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    }
+  }
+  await selectPortalTab(page, 'settings');
+  assert.equal(await page.getByRole('listbox').isVisible(), false);
+});
+
+
+test('Search shortcut focuses the visible field without clearing text or type chips', async t => {
+  const page = await pageFor(t);
+  const shortcut = await page.evaluate(() => /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? 'Meta+k' : 'Control+k');
+  await page.locator('#search').fill('portal');
+  await page.locator('#tab-tools').focus();
+  await page.keyboard.press(shortcut);
+  assert.equal(await page.locator('#search').evaluate(el => el === document.activeElement), true);
+  assert.equal(await page.locator('#search').inputValue(), 'portal');
+  await selectPortalTab(page, 'actions');
+  await page.locator('#actions-search').fill('is:todo');
+  await page.getByRole('option', { name: /Slack.*To-do/ }).click();
+  await page.locator('#actions-search').fill('draft');
+  await page.locator('#tab-actions').focus();
+  await page.keyboard.press(shortcut);
+  assert.equal(await page.locator('#actions-search').evaluate(el => el === document.activeElement), true);
+  assert.equal(await page.locator('#actions-search').inputValue(), 'draft');
+  assert.equal(await page.locator('[data-filter-type="todo"]').count(), 1);
+  for (const width of [1280, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    assert.equal(await page.locator('.action-search-control').evaluate(el => el.scrollWidth <= el.clientWidth + 1), true);
+    assert.ok(await page.locator('.action-search-control .search-shortcut').textContent());
+  }
+  await selectPortalTab(page, 'settings');
+  await page.locator('#setting-name').focus();
+  assert.equal(await page.evaluate(() => {
+    const mac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+    const event = new KeyboardEvent('keydown', { key: 'k', metaKey: mac, ctrlKey: !mac, bubbles: true, cancelable: true });
+    document.activeElement.dispatchEvent(event);
+    return event.defaultPrevented;
+  }), false);
+  assert.equal(await page.locator('#setting-name').evaluate(el => el === document.activeElement), true);
+});
+
+
+test('Search fields share focus and placeholder styles with compact keyboard hints', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  for (const scheme of ['light', 'dark']) {
+    await selectPortalTab(page, 'settings');
+    await page.getByRole('radio', { name: scheme === 'dark' ? 'Dark' : 'Light', exact: true }).focus();
+    await page.keyboard.press('Space');
+    await page.locator(`html[data-color-scheme="${scheme}"]`).waitFor();
+    const snapshots = [];
+    for (const [tab, id] of [['tools', 'search'], ['actions', 'actions-search']]) {
+      await selectPortalTab(page, tab);
+      const input = page.locator('#' + id);
+      await page.waitForFunction(id => !document.getElementById(id).disabled, id);
+      await input.focus();
+      assert.equal(await input.evaluate(el => el === document.activeElement), true);
+      snapshots.push(await input.evaluate(el => {
+        const style = getComputedStyle(el);
+        const placeholder = getComputedStyle(el, '::placeholder');
+        const wrapper = el.closest('.search-box');
+        const focused = getComputedStyle(wrapper);
+        return {
+          outline: style.outlineStyle, shadow: style.boxShadow,
+          placeholder: ['color', 'fontSize', 'fontWeight', 'fontStyle', 'fontFamily', 'opacity'].map(key => placeholder[key]),
+          input: [style.fontSize, style.lineHeight, style.color],
+          wrapper: [focused.boxShadow, focused.paddingTop, focused.paddingBottom, wrapper.getBoundingClientRect().height],
+        };
+      }));
+      const hint = page.locator('#' + id + ' + .search-shortcut');
+      assert.equal(await hint.evaluate(el => el.tagName), 'KBD');
+      assert.equal(await hint.evaluate(el => getComputedStyle(el).borderTopWidth), '1px');
+      await page.screenshot({ path: `/tmp/portal-search-${tab}-${scheme}.png` });
+    }
+    assert.deepEqual(snapshots[0], snapshots[1]);
+    assert.equal(snapshots[0].outline, 'none');
+    assert.equal(snapshots[0].shadow, 'none');
+    assert.notEqual(snapshots[0].wrapper[0], 'none');
+  }
+});
+
+
+test('Calendar header controls fit one row in both languages at sidebar and compact widths', async t => {
+  for (const locale of ['en-US', 'ja-JP']) {
+    const page = await calendarPage(t, 'overlap', { locale, reducedMotion: 'reduce' });
+    for (const width of [1280, 1100, 900, 761, 760, 390, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      const layout = await page.locator('.calendar-panel-controls').evaluate(el => {
+        const box = el.getBoundingClientRect();
+        const controls = [...el.children].map(child => child.getBoundingClientRect());
+        return {
+          fits: controls.every(rect => rect.left >= box.left - 1 && rect.right <= box.right + 1),
+          separate: controls.every((rect, i) => i === 0 || rect.left >= controls[i - 1].right - 1),
+          centered: controls.every(rect => Math.abs(rect.top + rect.height / 2 - box.top - box.height / 2) < 1),
+          equalGaps: Math.abs((controls[1].left - controls[0].right) - (controls[2].left - controls[1].right)) < 1,
+          anchored: Math.abs(controls[0].left - box.left) < 1 && Math.abs(controls.at(-1).right - box.right) < 1,
+        };
+      });
+      assert.deepEqual(layout, { fits: true, separate: true, centered: true, equalGaps: true, anchored: true }, `${locale}, ${width}px`);
+    }
+    await page.setViewportSize({ width: 900, height: 900 });
+    await page.screenshot({ path: `/tmp/portal-calendar-header-${locale}.png` });
+    await page.locator('.calendar-panel-close').click();
+    await page.locator('#calendar-panel').waitFor({ state: 'hidden' });
+  }
+});
+
+
+test('Calendar opens from its icon, returns on close, and settles safely after interruptions', async t => {
+  const page = await calendarPage(t, 'overlap');
+  await page.waitForFunction(() => !document.getElementById('calendar-panel').dataset.calendarMotion);
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    const closing = await page.evaluate(() => {
+      document.querySelector('.calendar-panel-close').click();
+      const panel = document.getElementById('calendar-panel');
+      const animation = panel.getAnimations()[0];
+      animation.pause();
+      const frames = animation.effect.getKeyframes();
+      return { hidden: panel.hidden, inert: panel.inert, state: panel.dataset.calendarMotion,
+        duration: animation.effect.getTiming().duration, destination: frames.at(-1).transform,
+        focus: document.activeElement.id };
+    });
+    assert.equal(closing.hidden, false, 'Keep the panel visible until it reaches the icon');
+    assert.equal(closing.inert, true);
+    assert.equal(closing.state, 'closing');
+    assert.equal(closing.duration, 240);
+    assert.match(closing.destination, /translate\(.+\) scale\(0\./);
+    assert.equal(closing.focus, 'toggle-calendar');
+    await page.evaluate(() => document.getElementById('calendar-panel').getAnimations()[0].finish());
+    await page.locator('#calendar-panel').waitFor({ state: 'hidden' });
+    const opening = await page.evaluate(() => {
+      document.getElementById('toggle-calendar').click();
+      const panel = document.getElementById('calendar-panel');
+      const animation = panel.getAnimations()[0];
+      animation.pause();
+      animation.currentTime = 100;
+      const frame = animation.effect.getKeyframes()[0];
+      const box = panel.getBoundingClientRect();
+      return { state: panel.dataset.calendarMotion, duration: animation.effect.getTiming().duration,
+        origin: frame.transform, visible: box.width > 24 && box.height > 24 };
+    });
+    assert.equal(opening.state, 'opening');
+    assert.equal(opening.duration, 340);
+    assert.match(opening.origin, /translate\(.+\) scale\(0\./);
+    assert.equal(opening.visible, true);
+    await page.screenshot({ path: `/tmp/portal-calendar-opening-${width}.png` });
+    // Reverse an unfinished opening, then reopen before closing finishes.
+    await page.evaluate(() => {
+      document.getElementById('toggle-calendar').click();
+      document.getElementById('toggle-calendar').click();
+    });
+    await page.waitForFunction(() => !document.getElementById('calendar-panel').dataset.calendarMotion);
+    assert.equal(await page.locator('#calendar-panel').evaluate(el => el.hidden || el.inert), false);
+  }
+  await page.evaluate(() => document.getElementById('toggle-calendar').click());
+  await page.setViewportSize({ width: 1000, height: 900 });
+  await page.locator('#calendar-panel').waitFor({ state: 'hidden' });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.locator('#toggle-calendar').click();
+  assert.equal(await page.locator('#calendar-panel').evaluate(el => el.getAnimations().length), 0);
+  assert.equal(await page.locator('#calendar-panel').evaluate(el => el.hidden || el.inert), false);
+  await page.locator('.calendar-panel-close').click();
+  assert.equal(await page.locator('#calendar-panel').evaluate(el => el.hidden), true);
 });

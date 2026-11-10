@@ -1,5 +1,6 @@
 import { createCell, mountView } from './view';
 import CalendarHost from './CalendarHost.svelte';
+import { createCalendarPanelMotion } from './calendar-panel-motion';
 import { calendarErrorText, type CalendarViewState, type CalendarCommands } from './calendar-types';
 /** Bounded RPCs, without logging upstream responses or exposing authorization tokens. */
 function rpc<T>(send: (runner: GasRunner) => void): Promise<T> {
@@ -59,6 +60,7 @@ function validSnapshot(value: unknown): value is CalendarSnapshot & { ok: true }
 }
 export function initializeCalendar() {
   const panel = document.getElementById('calendar-panel')!;
+  const panelMotion = createCalendarPanelMotion(panel);
   const [model, publish] = createCell<CalendarViewState>({
     settings: PortalCalendar.defaults(),
     initialized: false,
@@ -77,15 +79,16 @@ export function initializeCalendar() {
   });
   let state = model();
   function setState(patch: Partial<CalendarViewState>): void;
-  function setState<K extends keyof CalendarViewState>(key: K, value: CalendarViewState[K]): void;
+  function setState<K extends keyof CalendarViewState>(key: K, value: CalendarViewState[K], animatePanel?: boolean): void;
   function setState(
     key: Partial<CalendarViewState> | keyof CalendarViewState,
     value?: CalendarViewState[keyof CalendarViewState],
+    animatePanel = false,
   ) {
+    const wasOpen = state.open;
     state = { ...state, ...(typeof key === 'string' ? { [key]: value } : key) };
     publish(state);
-    panel.hidden = !state.open;
-    document.body.classList.toggle('calendar-open', state.open);
+    if (state.open !== wasOpen) panelMotion.setOpen(state.open, animatePanel);
   }
   const [draft, setDraft] = createCell<CalendarSettings>(PortalCalendar.defaults());
   let generation = 0,
@@ -219,7 +222,7 @@ export function initializeCalendar() {
   }
   const commands: CalendarCommands = {
     toggle(open) {
-      setState('open', open);
+      setState('open', open, true);
       try {
         localStorage.setItem('portal-calendar-open', String(open));
       } catch {
