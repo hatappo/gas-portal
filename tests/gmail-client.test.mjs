@@ -32,10 +32,10 @@ test('Gmail loads lazily into Inbox, keeps mail out of Tasks, and shares forced 
   assert.equal(inbox.querySelector('a').target, '_blank');
   assert.equal(app.get('action-items').querySelectorAll('.action-item-list > li').length, 0);
   assert.equal(app.get('action-filters'), null);
-  app.get('actions-search').value = 'unmatched'; app.get('actions-search').dispatchEvent(new app.dom.window.Event('input'));
+  app.get('actions-search').value = 'unmatched'; app.get('actions-search').dispatchEvent(new app.dom.window.Event('input', { bubbles: true }));
   assert.equal(inbox.querySelector('.inbox-count').textContent, '0');
   assert.equal(inbox.querySelectorAll('.inbox-message-list li').length, 0);
-  app.get('actions-search').value = ''; app.get('actions-search').dispatchEvent(new app.dom.window.Event('input'));
+  app.get('actions-search').value = ''; app.get('actions-search').dispatchEvent(new app.dom.window.Event('input', { bubbles: true }));
   app.click('refresh-actions'); assert.equal(app.gmailRequests.at(-1).force, true);
   app.gmailRequests.at(-1).success(response([item], { hasMore: true }));
   assert.equal(inbox.querySelector('.inbox-summary'), summary, 'Refreshing preserves the open card');
@@ -51,13 +51,13 @@ test('Disabling Gmail removes its rows and discards in-flight results; settings 
   assert.deepEqual(headings, ['Gmail', 'Slack', 'GitHub']);
   app.click('gmail-enabled');
   const form = app.get('gmail-settings-form');
-  form.dispatchEvent(new app.dom.window.Event('submit', { cancelable: true }));
+  form.dispatchEvent(new app.dom.window.Event('submit', { cancelable: true, bubbles: true }));
   assert.deepEqual(plain(app.gmailRequests.at(-1).input), { enabled: false, limit: 20 });
   app.gmailRequests.at(-1).success({ ok: true, settings: { enabled: false, limit: 20 } }); await flush();
   pending.success(response()); app.click('tab-actions');
   assert.equal(app.get('inbox-services').querySelector('.inbox-card'), null);
   app.click('tab-settings'); app.click('gmail-enabled');
-  form.dispatchEvent(new app.dom.window.Event('submit', { cancelable: true }));
+  form.dispatchEvent(new app.dom.window.Event('submit', { cancelable: true, bubbles: true }));
   app.gmailRequests.at(-1).failure(); await flush();
   assert.equal(app.get('gmail-enabled').checked, true);
   assert.match(app.get('gmail-settings-host').querySelector('[role="alert"]').textContent, /保存結果を確認|保存.*確認/);

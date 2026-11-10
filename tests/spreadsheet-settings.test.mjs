@@ -97,7 +97,7 @@ test('Keep source saving independent, preserve drafts on failure, and ignore lat
   const name = document.querySelector('#setting-sheet-name');
   const fields = document.querySelector('#spreadsheet-settings-fields');
   const reload = document.querySelector('#reload-spreadsheet');
-  const submit = () => form.dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+  const submit = () => form.dispatchEvent(new dom.window.Event('submit', { cancelable: true, bubbles: true }));
   document.querySelector('#setting-name').value = 'Unrelated draft';
   id.value = 'https://docs.google.com/spreadsheets/d/new-id/edit';
   name.value = '';
@@ -176,9 +176,9 @@ test('Always link to the saved spreadsheet, follow saves, and ignore unsaved dra
   assert.equal(link.rel, 'noopener noreferrer');
   assert.match(link.textContent, /スプレッドシートを開く/);
   id.value = 'draft-id';
-  id.dispatchEvent(new dom.window.Event('input'));
+  id.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   assert.equal(link.href, 'https://docs.google.com/spreadsheets/d/saved-id/edit', 'Drafts do not move the link');
-  const submit = () => document.getElementById('spreadsheet-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+  const submit = () => document.getElementById('spreadsheet-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true, bubbles: true }));
   submit();
   sourceSettingsRequests[0].success({ ok: true, settings: { SPREADSHEET_ID: 'draft-id', SHEET_NAME: '' } });
   assert.equal(link.href, 'https://docs.google.com/spreadsheets/d/draft-id/edit');

@@ -169,7 +169,7 @@ test('Create from Settings once, keep unsaved sheet-name text, and offer the cre
   assert.equal(link.hidden, false);
   assert.equal(link.target, '_blank');
   id.value = '';
-  id.dispatchEvent(new dom.window.Event('input'));
+  id.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   assert.equal(create.disabled, true, 'Clearing the draft cannot bypass a saved ID');
 });
 
@@ -183,11 +183,11 @@ test('Do not create with an entered ID; block repeated actions after an uncertai
   const create = document.getElementById('create-spreadsheet');
   const id = document.getElementById('setting-spreadsheet');
   id.value = 'unsaved-id';
-  id.dispatchEvent(new dom.window.Event('input'));
+  id.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   create.click();
   assert.equal(creationRequests.length, 0);
   id.value = '';
-  id.dispatchEvent(new dom.window.Event('input'));
+  id.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   create.click();
   timeout();
   creationRequests[0].success({ ok: true, spreadsheetId: 'late-id' });
@@ -268,11 +268,11 @@ test('Creation cursor distinguishes an unavailable source action from an active 
   const id = document.getElementById('setting-spreadsheet');
   const cursor = () => dom.window.getComputedStyle(create).cursor;
   id.value = 'existing-sheet';
-  id.dispatchEvent(new dom.window.Event('input'));
+  id.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   assert.equal(create.disabled, true);
   assert.equal(cursor(), 'not-allowed');
   id.value = '';
-  id.dispatchEvent(new dom.window.Event('input'));
+  id.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   assert.equal(cursor(), 'pointer');
   create.click();
   assert.equal(cursor(), 'wait');

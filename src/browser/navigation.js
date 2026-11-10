@@ -1,4 +1,4 @@
-import { createSignal } from 'solid-js';
+import { createCell } from './view';
 import { mountTabs } from './tabs';
 import { mountCompactNavigation } from './compact-navigation';
 
@@ -23,12 +23,12 @@ export function initializeNavigation(motion) {
   const settingsTabs = ['appearance', 'sources', 'calendar'].map((id) => ({
     hash: id, button: element('settings-tab-' + id), panel: element('settings-' + id + '-panel'),
   }));
-  const [activeSettingsTab, setActiveSettingsTab] = createSignal(0);
+  const [activeSettingsTab, setActiveSettingsTab] = createCell(0);
   /** @param {number} index */
   function selectSettingsTab(index) {
     setActiveSettingsTab(index);
   }
-  const [activeTab, setActiveTab] = createSignal(0);
+  const [activeTab, setActiveTab] = createCell(0);
   /** @param {number} index */
   function selectPortalTab(index) {
     if (activeTab() === index) return;

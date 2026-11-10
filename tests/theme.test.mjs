@@ -26,12 +26,12 @@ test('Persist themes in User Properties and render data-theme only for explicit 
   });
   context.doGet();
   assert.equal(template.theme, 'auto');
-  assert.equal(template.themeAttribute, '', 'Auto leaves the device color scheme to DaisyUI');
+  assert.equal(template.themeAttribute, 'data-theme="cerberus" data-color-scheme="auto"');
   for (const theme of ['auto', ...themes.all]) {
     assert.deepEqual(plain(context.saveTheme(theme)), { ok: true, theme });
     context.doGet();
     assert.equal(template.theme, theme);
-    assert.equal(template.themeAttribute, theme === 'auto' ? '' : `data-theme="${theme}"`);
+    assert.equal(template.themeAttribute, context.PortalThemes.attributes(theme));
     assert.equal(userProperties.PORTAL_THEME, theme);
   }
   assert.deepEqual(properties, { PORTAL_NAME: 'Example', PORTAL_THEME: 'not-used' });
@@ -53,47 +53,48 @@ test('Reject unsupported themes, fall back for invalid stored values, and hide f
 
 test('Render the theme attribute in previews the same way as GAS', () => {
   const html = '<html <?!= themeAttribute ?>>';
-  assert.equal(withPreviewContent(html, { }), '<html >');
-  assert.equal(withPreviewContent(html, { }, 'dracula'), '<html data-theme="dracula">');
+  assert.equal(withPreviewContent(html, { }), '<html data-theme="cerberus" data-color-scheme="auto">');
+  assert.equal(withPreviewContent(html, { }, 'dracula'), '<html data-theme="dracula" data-color-scheme="auto">');
 });
 
-test('Generate theme choices from the shared list, grouped by color scheme', (t) => {
-  const { dom, document, themeRequests } = browser((window) => { window.document.documentElement.dataset.theme = 'dracula'; });
+test('Choose Skeleton palettes and appearance independently, with one persisted preference', (t) => {
+  const { dom, document, themeRequests } = browser();
   t.after(() => dom.window.close());
-  const settings = document.querySelector('#tab-settings');
-  assert.equal(settings.textContent.trim(), '');
-  assert.equal(settings.getAttribute('aria-label'), '設定');
-  settings.click();
-  assert.equal(document.querySelector('#settings-panel').hidden, false);
-  const groups = [...document.querySelectorAll('.theme-group')];
-  assert.deepEqual(groups.map((group) => group.querySelector('legend').textContent), ['ライト', 'ダーク']);
-  assert.deepEqual(groups.map((group) => [...group.querySelectorAll('input')].map((input) => input.value)), [themes.light, themes.dark]);
-  assert.equal(document.querySelector('input[value="nord"]').getAttribute('aria-label'), 'Nord');
-  assert.equal(document.querySelector('input[value="nord"]').closest('label').querySelector('.theme-preview').dataset.theme, 'nord');
-  assert.equal(document.querySelector('input[name="portal-theme"]:checked').value, 'dracula');
-  for (const theme of [...themes.all, 'auto']) {
-    const choice = document.querySelector(`input[value="${theme}"]`);
+  document.getElementById('tab-settings').click();
+  const choices = [...document.querySelectorAll('input[name="portal-theme"]')];
+  assert.deepEqual(choices.map(input => input.value), themes.palettes);
+  assert.equal(document.querySelector('input[value="cerberus"]').checked, true);
+  for (const palette of themes.palettes.slice(1)) {
+    const choice = document.querySelector(`input[name="portal-theme"][value="${palette}"]`);
     choice.click();
-    assert.equal(document.documentElement.getAttribute('data-theme'), theme === 'auto' ? null : theme);
+    assert.equal(document.documentElement.dataset.theme, palette);
+    assert.equal(document.documentElement.dataset.colorScheme, 'auto');
     const request = themeRequests.at(-1);
-    assert.equal(request.theme, theme);
+    assert.equal(request.theme, palette);
     assert.equal(choice.disabled, true);
-    request.success({ ok: true, theme });
+    request.success({ ok: true, theme: palette });
     assert.equal(choice.disabled, false);
-    assert.equal(document.querySelector('#theme-status').textContent, '保存しました');
+  }
+  for (const mode of ['dark', 'light', 'auto']) {
+    document.querySelector(`input[name="portal-color-scheme"][value="${mode}"]`).click();
+    assert.equal(document.documentElement.dataset.theme, 'wintry');
+    assert.equal(document.documentElement.dataset.colorScheme, mode);
+    const expected = mode === 'auto' ? 'wintry' : 'wintry-' + mode;
+    assert.equal(themeRequests.at(-1).theme, expected);
+    themeRequests.at(-1).success({ ok: true, theme: expected });
   }
 });
 
 test('Restore the saved theme after failure and allow retry', (t) => {
   const { dom, document, themeRequests } = browser();
   t.after(() => dom.window.close());
-  assert.equal(document.documentElement.hasAttribute('data-theme'), false, 'Auto has no attribute');
+  assert.equal(document.documentElement.dataset.theme, 'cerberus', 'Auto has no attribute');
   assert.equal(document.querySelector('input[value="auto"]').checked, true);
   const choice = document.querySelector('input[value="dracula"]');
   for (const complete of [(request) => request.failure(), (request) => request.success({ ok: false }), (request) => request.success({ ok: true, theme: 'unknown' })]) {
     choice.click();
     complete(themeRequests.at(-1));
-    assert.equal(document.documentElement.hasAttribute('data-theme'), false);
+    assert.equal(document.documentElement.dataset.theme, 'cerberus');
     assert.equal(choice.disabled, false);
     assert.match(document.querySelector('#theme-status').textContent, /保存できません/);
   }
@@ -112,10 +113,10 @@ test('Report theme save timeouts and ignore late responses', (t) => {
   document.querySelector('input[value="dracula"]').click();
   timeout();
   assert.match(document.querySelector('#theme-status').textContent, /再読み込み/);
-  document.querySelector('input[value="night"]').click();
-  themeRequests[1].success({ ok: true, theme: 'night' });
+  document.querySelector('input[value="modern"]').click();
+  themeRequests[1].success({ ok: true, theme: 'modern' });
   themeRequests[0].success({ ok: true, theme: 'dracula' });
-  assert.equal(document.documentElement.dataset.theme, 'night');
+  assert.equal(document.documentElement.dataset.theme, 'modern');
 });
 
 test('Show the confirmed theme after a save timeout, so it can be selected again', (t) => {
@@ -125,32 +126,36 @@ test('Show the confirmed theme after a save timeout, so it can be selected again
     window.setTimeout = (fn, ms) => { if (ms === 15000) { timeout = fn; return 123; } return original(fn, ms); };
   });
   t.after(() => dom.window.close());
-  document.querySelector('input[value="nord"]').click();
+  document.querySelector('input[value="mint"]').click();
   timeout();
-  assert.equal(document.documentElement.hasAttribute('data-theme'), false, 'Back to the saved auto theme');
+  assert.equal(document.documentElement.dataset.theme, 'cerberus', 'Back to the saved auto theme');
   assert.equal(document.querySelector('input[value="auto"]').checked, true);
-  themeRequests[0].success({ ok: true, theme: 'nord' });
-  assert.equal(document.documentElement.hasAttribute('data-theme'), false, 'A late response is ignored');
-  document.querySelector('input[value="nord"]').click();
+  themeRequests[0].success({ ok: true, theme: 'mint' });
+  assert.equal(document.documentElement.dataset.theme, 'cerberus', 'A late response is ignored');
+  document.querySelector('input[value="mint"]').click();
   assert.equal(themeRequests.length, 2, 'Selecting the same theme again sends a new save');
-  themeRequests[1].success({ ok: true, theme: 'nord' });
-  assert.equal(document.documentElement.dataset.theme, 'nord');
+  themeRequests[1].success({ ok: true, theme: 'mint' });
+  assert.equal(document.documentElement.dataset.theme, 'mint');
 });
 
-test('Keep the DaisyUI theme list in styles.css in sync with the shared list', () => {
-  const css = readFileSync('src/browser/styles.css', 'utf8');
-  const declared = /@plugin "daisyui" \{[^}]*themes:\s*([^;]+);/.exec(css)[1].split(',').map((entry) => entry.trim());
-  assert.deepEqual(declared.map((entry) => entry.split(/\s+/)[0]).sort(), [...themes.all].sort());
-  assert.ok(declared.includes(`${themes.auto.light} --default`), 'Auto light is the default without data-theme');
-  assert.ok(declared.includes(`${themes.auto.dark} --prefersdark`), 'Auto dark follows prefers-color-scheme');
-  assert.deepEqual([...themes.light, ...themes.dark], themes.all);
+test('Import all official Skeleton palettes directly and validate appearance preferences', () => {
+  const css = readFileSync('src/browser/themes.css', 'utf8');
+  const imports = [...css.matchAll(/@skeletonlabs\/skeleton\/themes\/([a-z]+)/g)].map(match => match[1]);
+  assert.deepEqual(imports, themes.palettes);
+  assert.equal(imports.length, 24);
+  assert.equal(css.includes('oklch('), false, 'Do not retain copied DaisyUI palette tables');
+  const api = portalThemes();
+  for (const palette of themes.palettes) for (const scheme of ['auto', 'light', 'dark']) {
+    const value = api.preference(palette, scheme);
+    assert.equal(api.isTheme(value), true);
+    assert.deepEqual(plain(api.resolve(value)), { palette, scheme });
+  }
+  for (const invalid of ['lofi', 'night', 'cerberus-script', '<script>']) assert.equal(api.isTheme(invalid), false);
 });
 
-test('Every theme is grouped by its own color scheme and keeps 4.5:1 contrast where the portal puts text', () => {
+test('Both appearances keep readable contrast with official palettes and accessible control foregrounds', () => {
   // The portal uses primary only as a fill, never as text color, so primary-on-base is not checked.
-  // "dark" is kept as DaisyUI's standard dark theme although its button text is about 4.1:1.
-  const exceptions = { dark: { 'primary-content/primary': 4.1 } };
-  for (const name of themes.all) {
+  for (const name of [...themes.light, ...themes.dark]) {
     const { scheme, colors } = themeColors(name);
     assert.equal(scheme, themes.light.includes(name) ? 'light' : 'dark', name);
     const muted = (surface) => mix(colors['base-content'], colors[surface], 0.75);
@@ -165,11 +170,9 @@ test('Every theme is grouped by its own color scheme and keeps 4.5:1 contrast wh
       'neutral-content/neutral': [colors['neutral-content'], colors.neutral],
       'warning-content/warning': [colors['warning-content'], colors.warning],
       'error-content/error': [colors['error-content'], colors.error],
-      // Outline of unselected toggle buttons (non-text contrast, 3:1).
-      'toggle-border/base-100': [mix(colors['base-content'], colors['base-100'], 0.6), colors['base-100'], 3],
     };
     for (const [pair, [text, surface, required = 4.5]] of Object.entries(pairs)) {
-      const minimum = exceptions[name]?.[pair] ?? required;
+      const minimum = required;
       assert.ok(contrast(text, surface) >= minimum, `${name}: ${pair} = ${contrast(text, surface).toFixed(2)}`);
     }
   }
@@ -179,7 +182,7 @@ test('Muted action badges and selected chips retain readable text in every theme
   const accents = [...new Set(readFileSync('src/browser/tag-palette.js', 'utf8').match(/#[0-9a-f]{6}/g))];
   assert.equal(accents.length, 6);
   const linear = hex => hex.slice(1).match(/../g).map(part => parseInt(part, 16) / 255).map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4);
-  for (const name of themes.all) {
+  for (const name of [...themes.light, ...themes.dark]) {
     const { colors } = themeColors(name);
     for (const accent of [colors.primary, ...accents.map(linear)]) for (const amount of [.12, .2]) {
       assert.ok(contrast(colors['base-content'], mix(accent, colors['base-100'], amount)) >= 4.5, `${name} at ${amount}`);

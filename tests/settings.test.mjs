@@ -70,7 +70,7 @@ test("Apply saved names and display content safely as text", (t) => {
   t.after(() => dom.window.close());
   const settings = values({ PORTAL_NAME: '<img src=x> Portal', PORTAL_HEADLINE: '<b>headline</b>', PORTAL_DESCRIPTION: '</textarea><script>alert(1)</script>' });
   for (const [key, value] of Object.entries(settings)) document.querySelector(`[name="${key}"]`).value = value;
-  document.querySelector('#portal-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+  document.querySelector('#portal-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true, bubbles: true }));
   assert.deepEqual(plain(settingsRequests[0].settings), settings);
   assert.equal(document.title, 'My Portal', 'Keep the current display until saving succeeds');
   assert.equal(document.querySelector('#portal-settings-fields').disabled, true);
@@ -100,13 +100,13 @@ test("Reset only form values until the user explicitly saves", (t) => {
   assert.equal(document.querySelector('.intro-copy').textContent, 'リンクとタスク');
   assert.equal(document.documentElement.dataset.theme, 'dracula');
   assert.match(document.querySelector('#portal-settings-status').textContent, /変更を保存/);
-  document.querySelector('#portal-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+  document.querySelector('#portal-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true, bubbles: true }));
   assert.deepEqual(plain(settingsRequests[0].settings), defaults);
   settingsRequests[0].failure();
   assert.equal(document.querySelector('#setting-name').value, 'My Portal');
   assert.equal(document.title, 'Fumi Portal');
   assert.match(document.querySelector('#portal-settings-status').textContent, /入力内容は保持/);
-  document.querySelector('#portal-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+  document.querySelector('#portal-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true, bubbles: true }));
   settingsRequests[1].success({ ok: true, settings: defaults });
   assert.equal(document.title, 'My Portal');
   assert.equal(document.documentElement.dataset.theme, 'dracula');
@@ -119,7 +119,7 @@ test("Ignore late settings responses after timeout and request a reload", (t) =>
     window.setTimeout = (fn, ms) => { if (ms === 15000) { timeout = fn; return 123; } return original(fn, ms); };
   });
   t.after(() => dom.window.close());
-  document.querySelector('#portal-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+  document.querySelector('#portal-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true, bubbles: true }));
   timeout();
   settingsRequests[0].success({ ok: true, settings: values() });
   assert.equal(document.title, 'My Portal');
@@ -153,7 +153,7 @@ test('Hide optional intro elements after saving and restore them only after savi
   const save = (headline, description) => {
     document.querySelector('#setting-headline').value = headline;
     document.querySelector('#setting-description').value = description;
-    document.querySelector('#portal-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+    document.querySelector('#portal-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true, bubbles: true }));
     const request = settingsRequests.at(-1);
     request.success({ ok: true, settings: request.settings });
   };
@@ -171,7 +171,7 @@ test('Hide optional intro elements after saving and restore them only after savi
   assert.equal(intro.hidden, true);
   const language = document.querySelector('#portal-language');
   language.value = 'en';
-  language.dispatchEvent(new dom.window.Event('change'));
+  language.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
   languageRequests.at(-1).success({ ok: true, language: 'en' });
   assert.equal(document.querySelector('#setting-headline').value, '');
   assert.equal(intro.hidden, true);
@@ -201,7 +201,7 @@ test('Show the normalized icon returned by a successful save in the form and hea
   const { dom, document, settingsRequests } = browser();
   t.after(() => dom.window.close());
   document.querySelector('#setting-icon').value = 't';
-  document.querySelector('#portal-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true }));
+  document.querySelector('#portal-settings-form').dispatchEvent(new dom.window.Event('submit', { cancelable: true, bubbles: true }));
   const request = settingsRequests.at(-1);
   request.success(plain(server().context.savePortalSettings(request.settings)));
   assert.equal(document.querySelector('#setting-icon').value, 'T');
@@ -215,7 +215,7 @@ test('Keep the icon field to the one character just typed, including emoji and c
   const type = (value, caret = value.length, options = {}) => {
     input.value = value;
     input.setSelectionRange(caret, caret);
-    input.dispatchEvent(new dom.window.InputEvent('input', options));
+    input.dispatchEvent(new dom.window.InputEvent('input', { ...options, bubbles: true }));
     return input.value;
   };
   assert.equal(type('AB'), 'B', 'Typing after a letter replaces it');
@@ -226,7 +226,7 @@ test('Keep the icon field to the one character just typed, including emoji and c
   assert.equal(type('A '), 'A', 'Whitespace is ignored');
   assert.equal(type(' '), '');
   assert.equal(type('あい', 2, { isComposing: true }), 'あい', 'Wait while an IME is composing');
-  input.dispatchEvent(new dom.window.CompositionEvent('compositionend'));
+  input.dispatchEvent(new dom.window.CompositionEvent('compositionend', { bubbles: true }));
   assert.equal(input.value, 'い');
   assert.equal(Number(input.getAttribute('maxlength')) >= 2, true, 'Leave room for surrogate pairs');
 });

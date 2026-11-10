@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
-import solid from 'vite-plugin-solid';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { gasPreview } from './scripts/preview.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
@@ -13,7 +13,7 @@ export default defineConfig({
   root: path.join(root, 'src'),
   publicDir: false,
   appType: 'mpa',
-  plugins: [solid(), tailwindcss(), gasPreview(root)],
+  plugins: [svelte({ configFile: false }), tailwindcss(), gasPreview(root)],
   server: {
     host: '127.0.0.1',
     port,

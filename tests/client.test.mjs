@@ -13,10 +13,10 @@ test("Search and filter automatic GAS tags in both views", (t) => {
   assert.equal(document.querySelectorAll('#tools a').length, 2);
   const search = document.querySelector('#search');
   search.value = 'gas';
-  search.dispatchEvent(new dom.window.Event('input'));
+  search.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   assert.equal(document.querySelectorAll('#tools a').length, 1);
   search.value = '';
-  search.dispatchEvent(new dom.window.Event('input'));
+  search.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   [...document.querySelectorAll('#tags button')].find((button) => button.textContent === 'GAS').click();
   assert.equal(document.querySelectorAll('#tools a').length, 1);
   assert.match(document.querySelector('#tools').textContent, /GAS/);
@@ -35,7 +35,7 @@ test("Preserve tags and search when switching views", (t) => {
   assert.equal(document.querySelector('#scopes'), null, 'The internal/external filter is gone');
   [...document.querySelectorAll('#tags button')].find((button) => button.textContent === '経理').click();
   document.querySelector('#search').value = 'guide';
-  document.querySelector('#search').dispatchEvent(new dom.window.Event('input'));
+  document.querySelector('#search').dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   document.querySelector('#view-list').click();
   assert.equal(document.querySelector('#tools').hidden, true);
   assert.equal(document.querySelector('#table-view').hidden, false);
@@ -70,7 +70,7 @@ test("Combine tags with AND logic and support deselection and clearing all filte
   assert.equal(document.querySelectorAll('#tools a').length, 2);
   tag('経理').click();
   document.querySelector('#search').value = 'Guide';
-  document.querySelector('#search').dispatchEvent(new dom.window.Event('input'));
+  document.querySelector('#search').dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   assert.equal(document.querySelectorAll('#tools a').length, 0);
   document.querySelector('#reset').click();
   assert.equal(document.querySelectorAll('#tools a').length, 2);
@@ -93,7 +93,7 @@ test("Search tags without showing labels for tools that have no tags", (t) => {
   assert.equal(document.querySelectorAll('#tool-rows .tool-tags')[1].hidden, true);
   document.querySelector('#view-cards').click();
   document.querySelector('#search').value = '人事';
-  document.querySelector('#search').dispatchEvent(new dom.window.Event('input'));
+  document.querySelector('#search').dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   assert.equal(document.querySelectorAll('#tools a').length, 1);
 });
 
@@ -132,7 +132,7 @@ test("Normalize full-width characters, case, and whitespace while combining tags
   requests[0].success(catalog);
   const search = document.querySelector('#search');
   search.value = ' ＧＵＩＤＥ ';
-  search.dispatchEvent(new dom.window.Event('input'));
+  search.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   assert.equal(document.querySelectorAll('#tools a').length, 1);
   [...document.querySelectorAll('#tags button')].find((button) => button.textContent === '業務').click();
   assert.equal(document.querySelectorAll('#tools a').length, 0);
@@ -146,7 +146,7 @@ test("Search descriptions", (t) => {
   t.after(() => dom.window.close());
   requests[0].success(catalog);
   document.querySelector('#search').value = 'メール';
-  document.querySelector('#search').dispatchEvent(new dom.window.Event('input'));
+  document.querySelector('#search').dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   assert.equal(document.querySelectorAll('#tools a').length, 1);
 });
 
@@ -261,7 +261,7 @@ test("Search children's names and drop only malformed children or icons", (t) =>
   app.requests[0].success({ ...catalog, tools: [{ ...catalog.tools[0], children: [{ id: 'c', name: 'Runbook', url: 'https://example.com/runbook', description: '' }] }, catalog.tools[1]] });
   const search = app.document.querySelector('#search');
   search.value = 'runbook';
-  search.dispatchEvent(new app.dom.window.Event('input'));
+  search.dispatchEvent(new app.dom.window.Event('input', { bubbles: true }));
   const titles = [...app.document.querySelectorAll('#tools .tool-main h3')].map((title) => title.textContent);
   assert.equal(titles.length, 1);
   assert.ok(titles[0].endsWith(catalog.tools[0].name), 'The parent card matches through its child');
@@ -319,7 +319,7 @@ test("Animate changed results while preserving the latest state and focus", (t) 
   search.focus();
   const input = (value) => {
     search.value = value;
-    search.dispatchEvent(new dom.window.Event('input'));
+    search.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   };
   input('guide');
   input('GUIDE');
@@ -371,7 +371,7 @@ test("Preserve filters and view across tabs without extra API calls", (t) => {
   const actionsTab = document.querySelector('#tab-actions');
   const search = document.querySelector('#search');
   search.value = 'guide';
-  search.dispatchEvent(new dom.window.Event('input'));
+  search.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   [...document.querySelectorAll('#tags button')].find((button) => button.textContent === '資料').click();
   document.querySelector('#view-list').click();
   actionsTab.click();
@@ -390,7 +390,7 @@ test("Preserve filters and view across tabs without extra API calls", (t) => {
   assert.equal(requests.length, 1);
 });
 
-test("Support arrow, Home, and End navigation without changing tabs on loading or failure", (t) => {
+test("Support arrow, Home, and End navigation without changing tabs on loading or failure", async (t) => {
   for (const complete of [(request) => request.success(catalog), (request) => request.failure()]) {
     const { dom, document, requests } = browser();
     t.after(() => dom.window.close());
@@ -400,16 +400,20 @@ test("Support arrow, Home, and End navigation without changing tabs on loading o
     const key = (button, value) => button.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: value, bubbles: true }));
     toolsTab.focus();
     key(toolsTab, 'ArrowLeft');
+    await new Promise(resolve => setTimeout(resolve, 60));
     assert.equal(document.activeElement, settingsTab);
     assert.equal(settingsTab.getAttribute('aria-selected'), 'true');
     complete(requests[0]);
     assert.equal(document.querySelector('#directory').hidden, true);
     assert.equal(document.querySelector('#settings-panel').hidden, false);
     key(settingsTab, 'ArrowRight');
+    await new Promise(resolve => setTimeout(resolve, 60));
     assert.equal(document.activeElement, toolsTab);
     key(toolsTab, 'End');
+    await new Promise(resolve => setTimeout(resolve, 60));
     assert.equal(document.activeElement, settingsTab);
     key(settingsTab, 'Home');
+    await new Promise(resolve => setTimeout(resolve, 60));
     assert.equal(document.activeElement, toolsTab);
     assert.equal(toolsTab.getAttribute('aria-selected'), 'true');
     assert.equal(toolsTab.tabIndex, 0);
@@ -437,14 +441,14 @@ test('Show stable filtered and total counts after the filter controls in both la
   assert.equal(count.style.getPropertyValue('--count-digits'), '1');
   const searchBox = document.getElementById('search');
   searchBox.value = 'Alpha';
-  searchBox.dispatchEvent(new dom.window.Event('input'));
+  searchBox.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   assert.equal(count.textContent, '1 / 2 件');
   searchBox.value = '';
-  searchBox.dispatchEvent(new dom.window.Event('input'));
+  searchBox.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   [...document.querySelectorAll('#tags button')].find((button) => button.textContent === 'Work').click();
   assert.equal(count.textContent, '2 / 2 件', 'An active filter is shown even when all items match');
   const search = document.getElementById('search');
-  search.value = 'not-found'; search.dispatchEvent(new dom.window.Event('input'));
+  search.value = 'not-found'; search.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   assert.equal(count.textContent, '0 / 2 件');
   document.documentElement.lang = 'en';
   document.dispatchEvent(new dom.window.Event('portal:languagechange'));
@@ -491,9 +495,9 @@ test('Favicons try the site itself, then Google, sending only the origin or host
   }] });
   const image = document.querySelector('#tools .tool-favicon img');
   assert.equal(image.src, 'https://github.com/favicon.ico');
-  assert.equal(image.loading, 'lazy');
-  assert.equal(image.decoding, 'async');
-  assert.equal(image.referrerPolicy, 'no-referrer');
+  assert.equal(image.getAttribute('loading'), 'lazy');
+  assert.equal(image.getAttribute('decoding'), 'async');
+  assert.equal(image.getAttribute('referrerpolicy'), 'no-referrer');
   assert.equal(image.alt, '');
   assert.equal(image.width, 20);
   assert.equal(image.parentElement.getAttribute('aria-hidden'), 'true');
@@ -503,7 +507,7 @@ test('Favicons try the site itself, then Google, sending only the origin or host
   const related = document.querySelector('#tools .related-favicon img');
   assert.equal(related.src, 'https://example.org/favicon.ico');
   assert.equal(related.width, 14);
-  assert.equal(related.referrerPolicy, 'no-referrer');
+  assert.equal(related.getAttribute('referrerpolicy'), 'no-referrer');
   assert.equal(related.closest('a').textContent.includes('Related'), true);
   related.dispatchEvent(new dom.window.Event('error'));
   assert.equal(related.src, googleFavicon('https://example.org'));
@@ -609,7 +613,7 @@ test('Spreadsheet icons override detection: text replaces the fallback, and an i
     const [text, image] = document.querySelectorAll(`${container} .tool-favicon`);
     assert.equal(text.querySelector('img'), null, 'Text icons make no image request');
     assert.equal(text.classList.contains('is-text'), true);
-    assert.equal(text.textContent, '📘');
+    assert.equal(text.textContent.trim(), '📘');
     assert.equal(text.getAttribute('aria-hidden'), 'true');
     const img = image.querySelector('img');
     assert.equal(img.src, 'https://www.example.com/favicon.ico');
@@ -631,7 +635,7 @@ test('Ignore malformed icons in the browser and keep the tool', (t) => {
   }
 });
 
-test('Solid preserves matching cards, loaded favicons, and tag focus across filters and language changes', (t) => {
+test('Keyed views preserve matching cards, loaded favicons, and tag focus across filters and language changes', (t) => {
   const { dom, document, requests } = browser();
   t.after(() => dom.window.close());
   requests[0].success(catalog);
@@ -667,7 +671,7 @@ test('Tool tags cycle through accents shared by filters, cards and rows without 
   };
   verifyBadges('#tools .tool-tag');
   const search = document.getElementById('search');
-  search.value = 'Tool 7'; search.dispatchEvent(new dom.window.Event('input'));
+  search.value = 'Tool 7'; search.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   assert.equal(document.querySelectorAll('#tools .tool-card').length, 1);
   assert.deepEqual(accents(), colors);
   verifyBadges('#tools .tool-tag');

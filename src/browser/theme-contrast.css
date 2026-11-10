@@ -1,0 +1,121 @@
+/* Foreground-only accessibility adjustments for filled controls. Palette hues remain upstream. */
+[data-theme="cerberus"] {
+  --color-primary-contrast-500: #ffffff;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #000000;
+}
+[data-theme="catppuccin"] {
+  --color-primary-contrast-500: #000000;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #ffffff;
+}
+[data-theme="concord"] {
+  --color-primary-contrast-500: #ffffff;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #000000;
+}
+[data-theme="crimson"] {
+  --color-primary-contrast-500: #ffffff;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #000000;
+}
+[data-theme="dracula"] {
+  --color-primary-contrast-500: #000000;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #000000;
+}
+[data-theme="fennec"] {
+  --color-primary-contrast-500: #000000;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #000000;
+}
+[data-theme="hamlindigo"] {
+  --color-primary-contrast-500: #000000;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #ffffff;
+}
+[data-theme="legacy"] {
+  --color-primary-contrast-500: #000000;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #ffffff;
+}
+[data-theme="mint"] {
+  --color-primary-contrast-500: #000000;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #000000;
+}
+[data-theme="modern"] {
+  --color-primary-contrast-500: #000000;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #000000;
+}
+[data-theme="mona"] {
+  --color-primary-contrast-500: #ffffff;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #000000;
+}
+[data-theme="nosh"] {
+  --color-primary-contrast-500: #ffffff;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #000000;
+}
+[data-theme="nouveau"] {
+  --color-primary-contrast-500: #000000;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #ffffff;
+}
+[data-theme="pine"] {
+  --color-primary-contrast-500: #000000;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #000000;
+}
+[data-theme="reign"] {
+  --color-primary-contrast-500: #000000;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #000000;
+}
+[data-theme="rocket"] {
+  --color-primary-contrast-500: #000000;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #ffffff;
+}
+[data-theme="rose"] {
+  --color-primary-contrast-500: #000000;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #000000;
+}
+[data-theme="rosepine"] {
+  --color-primary-contrast-500: #ffffff;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #000000;
+}
+[data-theme="sahara"] {
+  --color-primary-contrast-500: #000000;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #000000;
+}
+[data-theme="seafoam"] {
+  --color-primary-contrast-500: #000000;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #000000;
+}
+[data-theme="terminus"] {
+  --color-primary-contrast-500: #ffffff;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #000000;
+}
+[data-theme="vintage"] {
+  --color-primary-contrast-500: #000000;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #000000;
+}
+[data-theme="vox"] {
+  --color-primary-contrast-500: #000000;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #000000;
+}
+[data-theme="wintry"] {
+  --color-primary-contrast-500: #000000;
+  --color-warning-contrast-500: #000000;
+  --color-error-contrast-500: #ffffff;
+}

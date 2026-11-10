@@ -242,16 +242,21 @@ test("Display search and theme choices in a source-free packaged preview", async
   const root = fixture(t);
   const html = readFileSync(path.join(buildPreview(root), 'index.html'), 'utf8');
   assert.doesNotMatch(html, /<\?|browser\/main.js|node_modules/);
-  const dom = new JSDOM(html, { url: 'http://localhost:4173/', runScripts: 'dangerously', pretendToBeVisual: true });
+  const dom = new JSDOM(html, { url: 'http://localhost:4173/', runScripts: 'dangerously', pretendToBeVisual: true,
+    beforeParse(window) {
+      // Layout is verified in the browser suite; jsdom has no ResizeObserver.
+      window.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
+    },
+  });
   t.after(() => dom.window.close());
   await new Promise((resolve) => setTimeout(resolve, 400));
   const doc = dom.window.document;
   assert.equal(doc.querySelectorAll('#tools > li').length, 6);
   doc.querySelector('#search').value = 'Expense';
-  doc.querySelector('#search').dispatchEvent(new dom.window.Event('input'));
+  doc.querySelector('#search').dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   assert.equal(doc.querySelectorAll('#tools > li').length, 1);
   // Async persistence is also covered by browser, theme, and settings tests.
-  assert.equal(doc.querySelectorAll('input[name="portal-theme"]').length, 22, 'auto plus 21 themes');
+  assert.equal(doc.querySelectorAll('input[name="portal-theme"]').length, 24, 'Skeleton palettes; appearance is selected separately');
 });
 
 test('Add ship to existing consumers and stop before deployment if push fails', (t) => {

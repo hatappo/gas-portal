@@ -1,23 +1,35 @@
-// Shared by the GAS server, browser bundle, favicon build, and tests.
-// Names are DaisyUI themes. Keep this list in sync with the @plugin "daisyui" list in styles.css.
+// Skeleton's bundled palettes, shared by GAS, the browser and favicon generation.
 globalThis.PortalThemes = (() => {
-  // Each theme passes 4.5:1 for body text, muted text, and filled components when primary
-  // is used only as a fill, never as text color. "dark" is the documented exception.
-  const light = ['lofi', 'light', 'nord', 'fantasy', 'emerald', 'cmyk', 'acid', 'lemonade', 'cyberpunk', 'wireframe'];
-  const dark = ['dracula', 'dark', 'dim', 'night', 'forest', 'halloween', 'synthwave', 'black', 'aqua', 'luxury', 'sunset'];
-  // "auto" follows the device. These two have the strongest text contrast among themes whose
-  // selected (primary) buttons also stand out from the page.
-  const auto = { light: 'lofi', dark: 'dracula' };
+  const palettes = ['cerberus', 'catppuccin', 'concord', 'crimson', 'dracula', 'fennec', 'hamlindigo', 'legacy', 'mint', 'modern', 'mona', 'nosh', 'nouveau', 'pine', 'reign', 'rocket', 'rose', 'rosepine', 'sahara', 'seafoam', 'terminus', 'vintage', 'vox', 'wintry'];
+  const light = palettes.map(name => name + '-light');
+  const dark = palettes.map(name => name + '-dark');
+  const all = [...palettes, ...light, ...dark];
+  const auto = { light: 'cerberus-light', dark: 'cerberus-dark' };
 
   /** @param {unknown} theme */
   function isTheme(theme) {
-    return typeof theme === 'string' && (theme === 'auto' || light.includes(theme) || dark.includes(theme));
+    return typeof theme === 'string' && (theme === 'auto' || all.includes(theme));
   }
-
+  /** @param {unknown} theme */
+  function resolve(theme) {
+    const value = isTheme(theme) && theme !== 'auto' ? String(theme) : 'cerberus';
+    const scheme = value.endsWith('-dark') ? 'dark' : value.endsWith('-light') ? 'light' : 'auto';
+    return { palette: value.replace(/-(light|dark)$/, ''), scheme };
+  }
+  /** @param {string} palette @param {string} scheme */
+  function preference(palette, scheme) {
+    if (!palettes.includes(palette)) return 'auto';
+    return scheme === 'light' || scheme === 'dark' ? palette + '-' + scheme : palette === 'cerberus' ? 'auto' : palette;
+  }
+  /** Values are resolved through the allowlist before inclusion in server-rendered HTML. @param {unknown} theme */
+  function attributes(theme) {
+    const { palette, scheme } = resolve(theme);
+    return 'data-theme="' + palette + '" data-color-scheme="' + scheme + '"';
+  }
   /** @param {string} theme */
   function label(theme) {
-    return theme.charAt(0).toUpperCase() + theme.slice(1);
+    const name = resolve(theme).palette;
+    return name.charAt(0).toUpperCase() + name.slice(1);
   }
-
-  return { light, dark, auto, all: [...light, ...dark], isTheme, label };
+  return { palettes, light, dark, auto, all, isTheme, resolve, preference, attributes, label };
 })();

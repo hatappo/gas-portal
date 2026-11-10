@@ -3,21 +3,21 @@ import vm from 'node:vm';
 import { createHash, randomUUID } from 'node:crypto';
 import { JSDOM } from 'jsdom';
 import { build } from 'vite';
-import solid from 'vite-plugin-solid';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 import path from 'node:path';
 import { withPreviewContent } from '../scripts/preview-project.mjs';
 import { renderPreview } from '../scripts/preview.mjs';
 import { withPortalAssets } from '../scripts/portal-html.mjs';
 import { sharedSources, serverSources } from '../scripts/gas-sources.mjs';
 
-// Compile explicit startup with the production JSX transform. Individual services can be
+// Compile explicit startup with the production Svelte compiler. Individual services can be
 // replaced at the composition boundary without exposing production globals.
 export async function bundleModule(source) {
   const entryId = path.resolve('tests/browser-entry.js');
-  const result = await build({ configFile: false, logLevel: 'silent', plugins: [solid(), {
+  const result = await build({ configFile: false, logLevel: 'silent', plugins: [svelte({ configFile: false }), {
     name: 'browser-test-entry',
     resolveId(id) { if (id === entryId) return id; },
-    load(id) { if (id === entryId) return source; },
+    load(id) { if (id === entryId) return `import { flushSync } from 'svelte'; window.flushSvelte = flushSync;\n` + source; },
   }], build: { write: false, minify: false, lib: { entry: entryId, name: 'PortalTest', formats: ['iife'] } } });
   return (Array.isArray(result) ? result : [result]).flatMap((bundle) => bundle.output).find((file) => file.type === 'chunk').code;
 }
@@ -82,6 +82,17 @@ export function browser(setupWindow = () => {}, client = browserClient, source =
   const html = withPreviewContent(withPortalAssets(source, process.cwd()), server().context.getPortalContent_({ PORTAL_LANGUAGE: 'ja' }))
     .replace(/<\?[\s\S]*?\?>/g, '');
   const dom = new JSDOM(html, { runScripts: 'outside-only', url: 'https://example.com', pretendToBeVisual: true });
+  // Browsers run a microtask checkpoint between animation-frame callbacks. jsdom
+  // batches them in one task, which prevents Zag's focus update reaching selection.
+  dom.window.requestAnimationFrame = callback => dom.window.setTimeout(() => callback(dom.window.performance.now()), 16);
+  dom.window.cancelAnimationFrame = id => dom.window.clearTimeout(id);
+  // jsdom has no layout engine. Real indicator sizing and resize behavior are
+  // covered in Playwright; DOM-only tests need the observer lifecycle API.
+  dom.window.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
   const requests = [];
   const languageRequests = [];
   const themeRequests = [];
@@ -129,6 +140,16 @@ export function browser(setupWindow = () => {}, client = browserClient, source =
   setupWindow(dom.window);
   for (const file of sharedSources) dom.window.eval(readFileSync(file, 'utf8'));
   dom.window.eval(client);
+  // Flush Svelte's microtask-batched DOM writes after each simulated user interaction.
+  // Production keeps normal batching; browser tests exercise real event-loop timing.
+  for (const [prototype, method] of [[dom.window.EventTarget.prototype, 'dispatchEvent'], [dom.window.HTMLElement.prototype, 'click'], [dom.window.HTMLElement.prototype, 'focus']]) {
+    const original = prototype[method];
+    prototype[method] = function (...args) {
+      const result = original.apply(this, args);
+      dom.window.flushSvelte?.();
+      return result;
+    };
+  }
   return { dom, document: dom.window.document, requests, themeRequests, settingsRequests, languageRequests, cacheSettingsRequests, sourceSettingsRequests, creationRequests, githubRequests, slackRequests, slackBookmarkRequests, calendarRequests, gmailRequests, urlSchemeRequests };
 }
 

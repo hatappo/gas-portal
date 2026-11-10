@@ -67,7 +67,7 @@ test('One Inbox mixes services chronologically and shared local search updates b
   assert.equal(doc.querySelectorAll('.inbox-service').length, 2);
   assert.equal(summary.getAttribute('aria-expanded'), 'false');
   assert.deepEqual([...doc.querySelectorAll('.inbox-message-title')].map(el => el.textContent.trim()), ['New proposal', 'Proposal review', 'Old proposal']);
-  const search = text => { doc.getElementById('actions-search').value = text; doc.getElementById('actions-search').dispatchEvent(new app.dom.window.Event('input')); };
+  const search = text => { doc.getElementById('actions-search').value = text; doc.getElementById('actions-search').dispatchEvent(new app.dom.window.Event('input', { bubbles: true })); };
   assert.equal(doc.getElementById('inbox-total-count').textContent, '3 / 3 件');
   search('proposal');
   assert.equal(doc.querySelector('[data-service="gmail"] .inbox-count').textContent, '2', 'Filtering never implies more unseen matching items');

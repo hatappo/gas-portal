@@ -1,5 +1,6 @@
 gas-portal uses the Lucide external-link, refresh-cw, layout-grid, list,
-tool-case, list-checks, settings, calendar-days, pin, pin-off, and bell-off icons.
+tool-case, list-checks, settings, calendar-days, calendar-off, pin, pin-off,
+bell-off, and coffee icons.
 Their ISC and applicable MIT copyright/license notices are retained in
 src/assets/*.svg, the distributed assets/external-link.svg, and the
 generated HTML that embeds these icons.
@@ -36,3 +37,32 @@ src/assets/brands/LICENSE.txt and the distributed assets/brand-logos-LICENSE.txt
 Original SVGs are kept in src/assets/brands and embedded in the generated CSS.
 All logos and trademarks remain the property of their respective owners.
 Source: https://github.com/gilbarbara/logos
+
+Coffee steam animation adapted from Animate UI (default variant):
+https://github.com/imskyleen/animate-ui/blob/main/apps/v2/registry/icons/coffee/index.tsx
+
+MIT + Commons Clause License Condition
+
+Copyright (c) 2025 Elliot Sutton
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, and distribute the Software **as part of an application, website, or product**, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+## Commons Clause Restriction
+
+You may use this Software, including for any commercial purpose, **so long as you do not sell or redistribute the components themselves in their original form—whether alone or in a bundle.**
+
+## No Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

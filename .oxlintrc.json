@@ -68,7 +68,8 @@
     {
       "files": [
         "src/browser/*.js",
-        "src/browser/*.tsx"
+        "src/browser/*.ts",
+        "src/browser/*.svelte"
       ],
       "env": {
         "browser": true
@@ -139,6 +140,14 @@
       "globals": {
         "normalizeActionsCacheTtl_": "readonly",
         "withPortalPropertiesLock_": "readonly"
+      }
+    },
+    {
+      "files": [
+        "src/browser/*.svelte"
+      ],
+      "rules": {
+        "no-undef": "off"
       }
     }
   ]

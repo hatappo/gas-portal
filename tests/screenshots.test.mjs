@@ -3,7 +3,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { contactSheet, parseOptions, views } from '../scripts/screenshots.mjs';
 
-const themes = ['nord', 'night', 'dracula'];
+const themes = ['mint', 'modern', 'dracula'];
 
 test('Default to every theme, view, and both widths', () => {
   const options = parseOptions([], themes);
@@ -14,11 +14,11 @@ test('Default to every theme, view, and both widths', () => {
 });
 
 test('Narrow themes, views, widths, and output directory from flags', () => {
-  const options = parseOptions(['--themes', 'night, nord', '--views', 'links,appearance', '--widths', '390', '--out', 'screenshots/night'], themes);
-  assert.deepEqual(options.themes, ['night', 'nord']);
+  const options = parseOptions(['--themes', 'modern, mint', '--views', 'links,appearance', '--widths', '390', '--out', 'screenshots/modern'], themes);
+  assert.deepEqual(options.themes, ['modern', 'mint']);
   assert.deepEqual(options.views, ['links', 'appearance']);
   assert.deepEqual(options.widths, [390]);
-  assert.equal(options.out, path.resolve('screenshots/night'));
+  assert.equal(options.out, path.resolve('screenshots/modern'));
 });
 
 test('Reject unknown themes, views, widths, flags, and missing values', () => {
@@ -27,7 +27,7 @@ test('Reject unknown themes, views, widths, flags, and missing values', () => {
     [['--views', 'home'], /Unknown views: home/],
     [['--widths', '100'], /Widths must be/],
     [['--widths', 'wide'], /Widths must be/],
-    [['--theme', 'nord'], /Unknown option: --theme/],
+    [['--theme', 'mint'], /Unknown option: --theme/],
     [['--themes'], /Missing value for --themes/],
     [['--themes', '--views'], /Missing value for --themes/],
     [['--out', '.'], /--out must be inside/],
@@ -39,8 +39,8 @@ test('Reject unknown themes, views, widths, flags, and missing values', () => {
 });
 
 test('Label every theme in the contact sheet and escape captions', () => {
-  const html = contactSheet([{ theme: 'nord', src: 'data:image/png;base64,AA' }, { theme: '<b>', src: 'data:image/png;base64,BB' }]);
-  assert.match(html, /<figcaption>nord<\/figcaption><img src="data:image\/png;base64,AA"/);
+  const html = contactSheet([{ theme: 'mint', src: 'data:image/png;base64,AA' }, { theme: '<b>', src: 'data:image/png;base64,BB' }]);
+  assert.match(html, /<figcaption>mint<\/figcaption><img src="data:image\/png;base64,AA"/);
   assert.match(html, /<figcaption>&#60;b&#62;<\/figcaption>/);
   assert.doesNotMatch(html, /<b>/);
 });

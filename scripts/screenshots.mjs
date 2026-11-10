@@ -1,6 +1,6 @@
 // Capture the local preview in every theme for visual review. Not part of `npm run check` or CI.
 // First run: npx playwright install chromium
-// Usage: npm run screenshots -- [--themes nord,night] [--views links,appearance] [--widths 1280,390]
+// Usage: npm run screenshots -- [--themes mint-light,modern-dark] [--views links,appearance] [--widths 1280,390]
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
@@ -19,7 +19,7 @@ export const views = {
 };
 
 /** @param {string[]} argv */
-export function parseOptions(argv, themes = portalThemes().all) {
+export function parseOptions(argv, themes = [...portalThemes().light, ...portalThemes().dark]) {
   const options = { themes: [...themes], views: Object.keys(views), widths: [1280, 390], out: path.join(root, 'screenshots') };
   for (let index = 0; index < argv.length; index += 2) {
     const [flag, value] = [argv[index], argv[index + 1]];

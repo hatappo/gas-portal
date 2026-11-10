@@ -47,13 +47,13 @@ test('Refresh tooltips open on keyboard focus, follow language changes, close wi
 
 test('Theme group has an accessible name and keeps native radio inputs inside clickable preview cards', (t) => {
   const { document: doc, themeRequests } = fixture(t);
-  const choice = doc.querySelector('input[name="portal-theme"][value="nord"]');
+  const choice = doc.querySelector('input[name="portal-theme"][value="mint"]');
   assert.equal(choice.closest('[role="radiogroup"]').getAttribute('aria-labelledby'), 'theme-settings-title');
   choice.closest('label').click();
   assert.equal(themeRequests.length, 1);
-  assert.equal(themeRequests[0].theme, 'nord');
+  assert.equal(themeRequests[0].theme, 'mint');
   themeRequests[0].failure();
-  assert.equal(doc.querySelector('input[name="portal-theme"]:checked').value, 'auto');
+  assert.equal(doc.querySelector('input[name="portal-theme"]:checked').value, 'cerberus');
 });
 
 test('View group labels follow the language even when the catalog failed to load', (t) => {

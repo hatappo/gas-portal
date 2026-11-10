@@ -35,9 +35,9 @@ export function iconFilename(letter) {
   return (/^[A-Z]$/.test(letter) ? letter : 'u' + letter.codePointAt(0).toString(16)) + '.png';
 }
 
-/** Each portal theme's icon uses its DaisyUI primary color, with primary-content for the glyph. */
+/** Each portal theme's icon uses its Skeleton primary-500 color, with primary-contrast-500 for the glyph. */
 export function readThemes() {
-  const names = portalThemes().all;
+  const names = portalThemes().palettes;
   if (new Set(names).size !== names.length) throw new Error('Theme names must be unique.');
   return names.map((name) => {
     const { colors } = themeColors(name);
@@ -83,7 +83,7 @@ export function buildFavicons(destination = path.join(root, 'site')) {
   writeFileSync(path.join(destination, 'index.html'), `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>gas-portal favicons</title>
 <style>body{max-width:960px;margin:48px auto;padding:0 24px;font:16px/1.6 system-ui;background:#f6f9fc;color:#263844}h1{font-size:28px}h2{font-size:16px;margin:28px 0 12px}.icons{display:flex;flex-wrap:wrap;gap:12px}.icons a{display:flex;border-radius:12px}.icons a:focus-visible{outline:3px solid #2b5d89;outline-offset:4px}a{color:#2b5d89}footer{margin-top:40px;font-size:14px}</style></head>
-<body><h1>gas-portal favicons</h1><p>One palette per portal theme (DaisyUI primary colors) with A–Z, hiragana, and katakana, drawn with Libre Baskerville and Shippori Mincho.</p><section><h2>Fallback</h2><p>The 玄 glyph from <a href="https://opentype.jp/kouzansousho.htm">Kouzan Brush Font Sousho by Aoyagi Kouzan</a>, in iron indigo and shared by all themes.</p><a href="favicons/fallback.png"><img src="favicons/fallback.png" alt="Cursive 玄 fallback icon" width="64" height="64"/></a></section>${sections}<footer><a href="https://github.com/hatappo/gas-portal">Source</a> · <a href="FONT-LICENSE.txt">Latin font license</a> · <a href="JAPANESE-FONT-LICENSE.txt">Japanese font license</a></footer></body></html>\n`);
+<body><h1>gas-portal favicons</h1><p>One palette per portal theme (custom Skeleton primary colors) with A–Z, hiragana, and katakana, drawn with Libre Baskerville and Shippori Mincho.</p><section><h2>Fallback</h2><p>The 玄 glyph from <a href="https://opentype.jp/kouzansousho.htm">Kouzan Brush Font Sousho by Aoyagi Kouzan</a>, in iron indigo and shared by all themes.</p><a href="favicons/fallback.png"><img src="favicons/fallback.png" alt="Cursive 玄 fallback icon" width="64" height="64"/></a></section>${sections}<footer><a href="https://github.com/hatappo/gas-portal">Source</a> · <a href="FONT-LICENSE.txt">Latin font license</a> · <a href="JAPANESE-FONT-LICENSE.txt">Japanese font license</a></footer></body></html>\n`);
   return { count: themes.length * letters.length + 1, destination };
 }
 

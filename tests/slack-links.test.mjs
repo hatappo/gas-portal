@@ -20,7 +20,7 @@ test('Saved messages prepend a workspace card, truncate Unicode safely and searc
   assert.equal(doc.querySelector('.related-label').textContent, '📖'.repeat(48) + '…');
   assert.equal(doc.querySelector('.related-links a').getAttribute('aria-description'), title);
   assert.equal(doc.querySelectorAll('.related-links img[src="x"]').length, 0);
-  const input = doc.querySelector('#search'); input.value = 'searchable tail'; input.dispatchEvent(new app.dom.window.Event('input'));
+  const input = doc.querySelector('#search'); input.value = 'searchable tail'; input.dispatchEvent(new app.dom.window.Event('input', { bubbles: true }));
   assert.equal(doc.querySelectorAll('.tool-card').length, 1);
   doc.querySelector('#view-list').click(); assert.equal(doc.querySelectorAll('#tool-rows tr').length, 1);
   assert.match(doc.querySelector('#tool-rows').textContent, /Demo/);

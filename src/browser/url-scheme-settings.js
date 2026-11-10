@@ -11,7 +11,7 @@ export function initializeUrlSchemeSettings() {
     label.className = 'url-scheme-choice';
     const box = document.createElement('input');
     box.type = 'checkbox';
-    box.className = 'checkbox checkbox-sm';
+    box.className = 'checkbox';
     box.value = scheme;
     const name = document.createElement('code');
     name.textContent = scheme + ':';

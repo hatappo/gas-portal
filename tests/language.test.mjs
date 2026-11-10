@@ -5,7 +5,7 @@ import { browser, server, catalog, plain, previewPage, runPreviewMock } from './
 
 function choose(app, language) {
   app.document.getElementById('portal-language').value = language;
-  app.document.getElementById('portal-language').dispatchEvent(new app.dom.window.Event('change'));
+  app.document.getElementById('portal-language').dispatchEvent(new app.dom.window.Event('change', { bubbles: true }));
 }
 
 test('Persist only supported languages in User Properties without changing other settings', () => {
@@ -79,7 +79,7 @@ test('Switch labels, accessibility text, warnings, and default content without l
   app.requests[0].success({ ...catalog, issues: [{ row: 4, message: 'url に有効な URL を入力してください。' }] });
   const { document: doc } = app;
   doc.getElementById('search').value = 'Guide';
-  doc.getElementById('search').dispatchEvent(new app.dom.window.Event('input'));
+  doc.getElementById('search').dispatchEvent(new app.dom.window.Event('input', { bubbles: true }));
   doc.getElementById('view-list').click();
   doc.getElementById('tab-settings').click();
   doc.getElementById('setting-headline').value = 'Unsaved custom headline';
@@ -90,8 +90,8 @@ test('Switch labels, accessibility text, warnings, and default content without l
   assert.equal(doc.documentElement.lang, 'en');
   assert.equal(doc.getElementById('tab-settings').getAttribute('aria-label'), 'Settings');
   assert.equal(doc.getElementById('refresh-catalog').getAttribute('aria-label'), 'Fetch latest');
-  assert.equal(doc.getElementById('refresh-catalog').title, '', 'Kobalte supplies the tooltip without a duplicate native title');
-  assert.equal(doc.getElementById('refresh-actions').title, '', 'Kobalte supplies the tooltip without a duplicate native title');
+  assert.equal(doc.getElementById('refresh-catalog').title, '', 'Skeleton supplies the tooltip without a duplicate native title');
+  assert.equal(doc.getElementById('refresh-actions').title, '', 'Skeleton supplies the tooltip without a duplicate native title');
   assert.equal(doc.getElementById('refresh-actions').getAttribute('aria-label'), 'Fetch latest');
   assert.equal(doc.getElementById('search').placeholder, 'Search by name, description, or tags');
   assert.equal(doc.getElementById('search').value, 'Guide');
@@ -108,8 +108,8 @@ test('Switch labels, accessibility text, warnings, and default content without l
   app.languageRequests[1].success({ ok: true, language: 'ja' });
   assert.equal(doc.getElementById('tab-settings').getAttribute('aria-label'), '設定');
   assert.equal(doc.getElementById('refresh-catalog').getAttribute('aria-label'), '最新データを取得');
-  assert.equal(doc.getElementById('refresh-catalog').title, '', 'Kobalte supplies the tooltip without a duplicate native title');
-  assert.equal(doc.getElementById('refresh-actions').title, '', 'Kobalte supplies the tooltip without a duplicate native title');
+  assert.equal(doc.getElementById('refresh-catalog').title, '', 'Skeleton supplies the tooltip without a duplicate native title');
+  assert.equal(doc.getElementById('refresh-actions').title, '', 'Skeleton supplies the tooltip without a duplicate native title');
   assert.equal(doc.getElementById('refresh-actions').getAttribute('aria-label'), '最新データを取得');
   assert.equal(doc.getElementById('setting-headline').value, 'Unsaved custom headline');
   assert.match(doc.querySelector('#table-view thead').textContent, /リンク.*説明.*Tags.*関連リンク/);
@@ -207,7 +207,7 @@ test('Keep optional intro text empty regardless of resolved or saved language', 
   });
   t.after(() => app.dom.window.close());
   app.document.getElementById('setting-headline').value = '';
-  app.document.getElementById('portal-settings-form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true }));
+  app.document.getElementById('portal-settings-form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true, bubbles: true }));
   const request = app.settingsRequests[0];
   assert.equal(request.browserLanguage, 'ja');
   const api = server({ userProperties: { PORTAL_LANGUAGE: 'auto' } });

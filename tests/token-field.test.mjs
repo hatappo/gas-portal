@@ -15,7 +15,7 @@ for (const service of ['github', 'slack']) test(`${service} masks stored tokens,
   const edit = () => get(service + '-connections').querySelector('button').click();
   const field = get(service + '-token');
   const replace = get('replace-' + service + '-token');
-  const submit = () => get(service + '-settings-form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true }));
+  const submit = () => get(service + '-settings-form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true, bubbles: true }));
   edit();
   assert.equal(field.readOnly, true);
   assert.equal(field.type, 'text');

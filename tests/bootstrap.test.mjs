@@ -41,7 +41,7 @@ test('Render embedded data immediately and issue a forced RPC only when explicit
   assert.equal(document.querySelector('#directory').getAttribute('aria-busy'), 'false');
   assert.match(document.querySelector('#catalog-freshness').title, /キャッシュ/);
   document.querySelector('#search').value = 'guide';
-  document.querySelector('#search').dispatchEvent(new dom.window.Event('input'));
+  document.querySelector('#search').dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   document.querySelector('#view-list').click();
   document.querySelector('#refresh-catalog').click();
   assert.equal(requests.length, 1);
@@ -97,7 +97,7 @@ test('Display retrieval times without dates or day periods in both languages, in
     assert.equal(app.document.getElementById('catalog-freshness').textContent, `${time} 取得`);
     const language = app.document.getElementById('portal-language');
     language.value = 'en';
-    language.dispatchEvent(new app.dom.window.Event('change'));
+    language.dispatchEvent(new app.dom.window.Event('change', { bubbles: true }));
     app.languageRequests[0].success({ ok: true, language: 'en' });
     assert.equal(app.document.getElementById('catalog-freshness').textContent, `Retrieved ${time}`);
   }

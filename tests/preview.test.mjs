@@ -15,7 +15,7 @@ test("Resolve GAS templates and include the mock and Vite module entry", (t) => 
   t.after(() => dom.window.close());
   assert.equal(dom.window.document.title, 'My Portal');
   assert.equal(dom.window.document.querySelector('.intro .preview-label'), null);
-  assert.equal(dom.window.document.querySelector('.site-header > .preview-label.badge-warning').textContent, 'LOCAL PREVIEW');
+  assert.equal(dom.window.document.querySelector('.site-header > .preview-label.preset-filled-warning-500').textContent, 'LOCAL PREVIEW');
   assert.equal(dom.window.document.querySelector('script[type="module"]').getAttribute('src'), '/browser/main.js');
   assert.equal(dom.window.document.querySelectorAll('.external-link-icon').length >= 1, true);
   for (const [tab, icon] of [['tools', 'tool-case'], ['actions', 'list-checks'], ['settings', 'settings']]) {
@@ -52,11 +52,11 @@ test("Restore and save themes without mixing concurrent response handlers", (t) 
   let catalog;
   let theme;
   run.withSuccessHandler((value) => { catalog = value; }).getCatalog();
-  run.withSuccessHandler((value) => { theme = value; }).saveTheme('night');
+  run.withSuccessHandler((value) => { theme = value; }).saveTheme('modern');
   pending.forEach((fn) => fn());
   assert.equal(catalog.tools.length, 6);
-  assert.equal(theme.theme, 'night');
-  assert.equal(stored, 'night');
+  assert.equal(theme.theme, 'modern');
+  assert.equal(stored, 'modern');
 });
 
 test("Save, restore, and reset display settings while preserving the theme", (t) => {
@@ -110,7 +110,7 @@ test('The preview mock checks input with the server code and replies like the se
   };
   const call = create();
   assert.deepEqual(call('saveTheme', 'no-such-theme'), { ok: false });
-  assert.deepEqual(call('saveTheme', 'night'), { ok: true, theme: 'night' });
+  assert.deepEqual(call('saveTheme', 'modern'), { ok: true, theme: 'modern' });
   assert.deepEqual(call('saveLanguage', 'fr'), { ok: false });
   assert.deepEqual(call('saveUnblockedUrlSchemes', ['javascript']), { ok: false });
   assert.deepEqual(call('saveUnblockedUrlSchemes', ['file', 'data', 'file']), { ok: false });

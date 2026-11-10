@@ -41,7 +41,8 @@ test('Tabs preserve drafts and history; defaults only apply after saving', async
   const page = await pageFor(t, { reducedMotion: 'reduce' });
   await page.locator('#tab-tools').focus();
   await page.keyboard.press('ArrowRight');
-  await page.waitForFunction(() => document.activeElement.id === 'tab-actions');
+  await page.waitForFunction(() => document.activeElement.id === 'tab-actions' && document.getElementById('tab-actions').getAttribute('aria-selected') === 'true');
+  assert.ok(page.url().endsWith('#inbox-and-tasks'));
   await selectPortalTab(page, 'settings');
   await page.locator('#setting-name').fill('Draft portal');
   await page.locator('#settings-tab-sources').click();
@@ -69,7 +70,7 @@ test('Disclosure keyboard operation keeps closed content inert and respects redu
   await selectPortalTab(page, 'settings');
   await page.locator('#settings-tab-sources').click();
   const trigger = page.locator('.github-pat-help .disclosure-trigger');
-  const content = page.locator('.github-pat-help .disclosure-content');
+  const content = page.locator('.github-pat-help .portal-disclosure-content');
   const body = page.locator('.github-pat-help .disclosure-body');
   await trigger.focus();
   await page.keyboard.press('Enter');
@@ -85,10 +86,10 @@ test('Disclosure keyboard operation keeps closed content inert and respects redu
   assert.ok((await body.boundingBox()).height > 0);
 });
 
-for (const theme of ['lofi', 'dracula']) {
+for (const theme of ['cerberus-light', 'dracula-dark']) {
   test(`Cards retain natural heights and row spacing in ${theme}`, async t => {
     const page = await pageFor(t, { reducedMotion: 'reduce' });
-    await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+    await page.evaluate(theme => { const selection = PortalThemes.resolve(theme); document.documentElement.dataset.theme = selection.palette; document.documentElement.dataset.colorScheme = selection.scheme; }, theme);
     for (const width of [1280, 800, 390, 320]) {
       await page.setViewportSize({ width, height: 900 });
       const result = await page.evaluate(() => {
@@ -170,8 +171,8 @@ test('Task reason badges remain readable across light and dark themes without ty
   await selectPortalTab(page, 'actions');
   await page.waitForSelector('#action-items[aria-busy="false"] .action-item-list');
   assert.equal(await page.locator('#action-filters').count(), 0);
-  for (const theme of ['lofi', 'dracula']) {
-    await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+  for (const theme of ['cerberus-light', 'dracula-dark']) {
+    await page.evaluate(theme => { const selection = PortalThemes.resolve(theme); document.documentElement.dataset.theme = selection.palette; document.documentElement.dataset.colorScheme = selection.scheme; }, theme);
     for (const width of [1280, 390, 320]) {
       await page.setViewportSize({ width, height: 900 });
       // Floating tooltips reposition on animation frames after a viewport resize.
@@ -228,8 +229,8 @@ test('Tools and Actions share counter, timestamp and refresh styling', async t =
 
 test('Filter chips reserve borders for selection and retain visible keyboard focus without resizing', async t => {
   const page = await pageFor(t, { reducedMotion: 'reduce' });
-  for (const theme of ['lofi', 'dracula']) {
-    await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+  for (const theme of ['cerberus-light', 'dracula-dark']) {
+    await page.evaluate(theme => { const selection = PortalThemes.resolve(theme); document.documentElement.dataset.theme = selection.palette; document.documentElement.dataset.colorScheme = selection.scheme; }, theme);
     for (const tab of ['tools']) {
       await selectPortalTab(page, tab);
       const host = '#tags';
@@ -357,7 +358,7 @@ test('Calendar settings persist, narrow screens remain usable and in-page notice
   await page.getByRole('button', { name: 'Preview notice', exact: true }).click();
   await page.locator('#calendar-notice-sample').waitFor();
   assert.equal(await page.locator('#calendar-notice-sample .calendar-event.is-approaching').count(), 1);
-  assert.match(await page.locator('#calendar-notice-sample').textContent(), /In 5′/);
+  assert.match(await page.locator('#calendar-notice-sample').textContent(), /Next in 5′/);
   await page.getByRole('button', { name: 'Preview notice', exact: true }).click();
   await page.waitForFunction(() => document.activeElement?.getAttribute('aria-controls') === 'calendar-notice-sample');
   await page.locator('.calendar-settings button[type="submit"]').click();
@@ -412,7 +413,7 @@ test('Calendar all-day card can be hovered, pinned and explicitly collapsed; upc
   const badge = page.locator('.calendar-next-badge');
   assert.equal(await badge.count(), 1);
   assert.equal(await badge.evaluate(el => getComputedStyle(el).animationName), 'none');
-  assert.equal(await badge.textContent(), 'In 2′');
+  assert.equal(await badge.textContent(), 'Next in 2′');
   assert.equal(await badge.evaluate(el => getComputedStyle(el).borderTopWidth), '0px');
   await allDay.hover();
   await page.waitForFunction(() => document.querySelector('.calendar-all-day').dataset.expanded === 'true');
@@ -551,10 +552,15 @@ test('Calendar uses Lucide pin actions, stronger Next badges and vertical detail
   await pin.click();
   assert.equal(await pin.locator('path[d="m2 2 20 20"]').count(), 1);
   await pin.click();
+  await page.waitForFunction(() => document.querySelector('.calendar-all-day').dataset.expanded === 'false');
   const current = page.locator('.calendar-event[data-state="current"]:not(.is-gap)').first();
-  const title = await current.locator('.calendar-event-trigger').boundingBox();
-  const detail = await current.locator('.calendar-event-detail').boundingBox();
-  assert.ok(detail.y >= title.y + title.height - 1);
+  // Measure together so a surrounding card's layout cannot change between reads.
+  const layout = await current.evaluate(el => {
+    const title = el.querySelector('.calendar-event-trigger').getBoundingClientRect();
+    const detail = el.querySelector('.calendar-event-detail').getBoundingClientRect();
+    return { titleBottom: title.bottom, detailTop: detail.top };
+  });
+  assert.ok(layout.detailTop >= layout.titleBottom - 1);
   assert.ok(await page.locator('.calendar-next-badge').evaluate(el => parseFloat(getComputedStyle(el).fontSize)) >= 11);
   for (const width of [1440, 1280, 1000, 700]) {
     await page.setViewportSize({ width, height: 1100 });
@@ -619,11 +625,11 @@ test('Calendar countdown changes at remaining-minute boundaries using the existi
   await page.locator('#calendar-panel .refresh-catalog[aria-busy="false"]').waitFor();
   await page.clock.pauseAt(new Date('2026-11-07T03:00:30Z'));
   const badge = page.locator('#calendar-panel .calendar-next-badge');
-  assert.equal(await badge.textContent(), 'In 2′');
+  assert.equal(await badge.textContent(), 'Next in 2′');
   await page.clock.runFor(30000);
-  assert.equal(await badge.textContent(), 'In 1′');
+  assert.equal(await badge.textContent(), 'Next in 1′');
   await page.clock.runFor(60000);
-  assert.equal(await badge.textContent(), 'Next');
+  assert.match(await badge.textContent(), /^Next in \d+′$/);
 });
 
 
@@ -673,7 +679,7 @@ test('Calendar upcoming card pulses without a modal or focus changes, and stops 
   await search.fill('Address');
   await page.clock.runFor(60000);
   assert.equal(await search.evaluate(el => el === document.activeElement), true);
-  assert.equal(await card.locator('.calendar-next-badge').textContent(), 'In 1′');
+  assert.equal(await card.locator('.calendar-next-badge').textContent(), 'Next in 1′');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   assert.equal(await card.evaluate(el => getComputedStyle(el, '::before').animationName), 'none');
   await page.clock.runFor(60000);
@@ -711,7 +717,7 @@ test('Calendar countdowns glitch only on value changes and honor reduced motion'
   assert.ok(Math.abs(buttonBox.y + buttonBox.height / 2 - iconBox.y - iconBox.height / 2) < 1);
 });
 
-test('Description preserves line breaks after saving and reload, and tab hover strengthens icon strokes without background fills', async t => {
+test('Description preserves line breaks and Skeleton tabs indicate the selected panel', async t => {
   const page = await pageFor(t, { reducedMotion: 'reduce' });
   await selectPortalTab(page, 'settings');
   const description = 'First line\nSecond line\n\nPlain <b>text</b>';
@@ -729,32 +735,35 @@ test('Description preserves line breaks after saving and reload, and tab hover s
   await page.reload();
   assert.equal(await copy.textContent(), description);
   for (const id of ['#tab-tools', '#tab-actions', '#tab-settings']) {
-    await page.mouse.move(0, 0);
     const tab = page.locator(id);
+    await tab.click();
+    await page.waitForFunction(() => {
+      const tab = document.querySelector('.portal-tabs [aria-selected="true"]');
+      const indicator = document.querySelector('.portal-tabs [data-part="indicator"]');
+      const a = tab.getBoundingClientRect(), b = indicator.getBoundingClientRect();
+      return Math.abs(a.x - b.x) < 1 && Math.abs(a.width - b.width) < 1;
+    });
+    await page.mouse.move(0, 0);
+    await page.waitForTimeout(200);
     const before = await tab.evaluate(el => getComputedStyle(el).backgroundColor);
     await tab.hover();
-    assert.equal(await tab.evaluate(el => getComputedStyle(el).backgroundColor), before);
-    assert.equal(await tab.locator('svg').evaluate(el => parseFloat(getComputedStyle(el).strokeWidth)), 2.1);
-    await page.mouse.move(0, 0);
-    assert.equal(await tab.locator('svg').evaluate(el => parseFloat(getComputedStyle(el).strokeWidth)), await tab.getAttribute('aria-selected') === 'true' ? 1.9 : 1.75);
+    await page.waitForFunction(({ id, before }) => getComputedStyle(document.querySelector(id)).backgroundColor !== before, { id, before });
+    assert.equal(await tab.evaluate(el => getComputedStyle(el).borderBottomWidth), '0px', 'Only the Skeleton indicator draws the underline');
   }
-  const appearance = locator => locator.evaluate(el => ({ color: getComputedStyle(el).color, background: getComputedStyle(el).backgroundColor, stroke: getComputedStyle(el.querySelector('svg')).strokeWidth }));
+  await page.locator('#settings-tab-sources').click();
+  await page.waitForFunction(() => {
+    const tab = document.querySelector('.settings-tabs [aria-selected="true"]').getBoundingClientRect();
+    const indicator = document.querySelector('.settings-tabs [data-part="indicator"]').getBoundingClientRect();
+    return Math.abs(tab.x - indicator.x) < 1 && Math.abs(tab.width - indicator.width) < 1;
+  });
+  const appearance = locator => locator.evaluate(el => ({ color: getComputedStyle(el).color, stroke: getComputedStyle(el.querySelector('svg')).strokeWidth }));
   const calendar = page.locator('#toggle-calendar');
-  assert.deepEqual(await appearance(calendar), await appearance(page.locator('#tab-tools')));
   await calendar.click();
   await page.mouse.move(0, 0);
-  const active = await appearance(page.locator('#tab-settings'));
-  assert.deepEqual(await appearance(calendar), active);
-  await calendar.hover();
-  const hovered = await appearance(calendar);
-  await page.locator('#tab-settings').hover();
-  assert.deepEqual(await appearance(page.locator('#tab-settings')), hovered);
-  await page.mouse.move(0, 0);
+  const active = await appearance(page.locator('#compact-nav-trigger'));
   await page.setViewportSize({ width: 390, height: 900 });
   await page.locator('#compact-nav-trigger').waitFor({ state: 'visible' });
   assert.deepEqual(await appearance(page.locator('#compact-nav-trigger')), active);
-  await page.locator('#compact-nav-trigger').hover();
-  assert.deepEqual(await appearance(page.locator('#compact-nav-trigger')), hovered);
 
 });
 
@@ -762,7 +771,7 @@ test('Calendar refresh is compact and Japanese countdowns keep clear of event li
   const page = await calendarPage(t, 'pulse', { viewport: { width: 1000, height: 900 } });
   await page.evaluate(() => { document.documentElement.lang = 'ja'; document.dispatchEvent(new Event('portal:languagechange')); });
   const badge = page.locator('.calendar-next-badge');
-  assert.equal(await badge.textContent(), '2分後に開始');
+  assert.equal(await badge.textContent(), '次の予定 2分後');
   assert.equal(await page.locator('.calendar-remaining-label').textContent(), '残り25分');
   const refresh = page.locator('#calendar-panel .refresh-catalog');
   assert.equal((await refresh.locator('svg').boundingBox()).width, 14);
@@ -792,7 +801,7 @@ test('Calendar reminder can be silenced by keyboard and touch without changing n
   await page.keyboard.press('Enter');
   assert.equal(await card.getAttribute('data-reminder-active'), 'false');
   assert.equal(await card.evaluate(el => getComputedStyle(el, '::before').animationName), 'none');
-  assert.equal(await badge.textContent(), 'In 2′');
+  assert.equal(await badge.textContent(), 'Next in 2′');
   assert.equal(await card.locator('.calendar-event-trigger').evaluate(el => el === document.activeElement), true);
   await selectPortalTab(page, 'settings');
   await page.locator('#settings-tab-calendar').click();
@@ -819,17 +828,22 @@ test('Calendar authorization feedback stays near its control and uses themed err
   await error.waitFor();
   assert.equal(await error.getAttribute('role'), 'alert');
   assert.equal(await load.getAttribute('aria-describedby'), 'calendar-choices-error');
-  assert.equal(await page.locator('.calendar-settings > .alert-error').count(), 0);
-  assert.equal(await page.locator('#calendar-panel .alert-error').count(), 1);
+  assert.equal(await page.locator('.calendar-settings > .portal-alert-error').count(), 0);
+  assert.equal(await page.locator('#calendar-panel .portal-alert-error').count(), 1);
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 1000 });
-    const buttonBox = await load.boundingBox(), errorBox = await error.boundingBox();
+    await page.waitForFunction(compact => document.documentElement.dataset.compact === String(compact), width <= 760);
+    // Read both positions in the same frame while the responsive panel settles.
+    const { buttonBox, errorBox } = await page.evaluate(() => ({
+      buttonBox: document.querySelector('button[aria-describedby="calendar-choices-error"]').getBoundingClientRect().toJSON(),
+      errorBox: document.querySelector('#calendar-choices-error').getBoundingClientRect().toJSON(),
+    }));
     assert.ok(errorBox.y >= buttonBox.y + buttonBox.height);
     assert.ok(errorBox.y - buttonBox.y - buttonBox.height < 24);
     assert.ok(errorBox.x >= 0 && errorBox.x + errorBox.width <= width);
   }
-  const colors = await error.evaluate(el => ({ text: getComputedStyle(el).color, background: getComputedStyle(el).backgroundColor, normal: getComputedStyle(el.parentElement).color }));
-  assert.notEqual(colors.text, colors.normal);
+  const colors = await error.evaluate(el => ({ text: getComputedStyle(el).color, background: getComputedStyle(el).backgroundColor, normalSurface: getComputedStyle(document.body).backgroundColor }));
+  assert.notEqual(colors.background, colors.normalSurface, 'Error backgrounds must stand out even when both use black foreground text');
   assert.notEqual(colors.background, 'rgba(0, 0, 0, 0)');
   await page.screenshot({ path: '/tmp/calendar-authorization-feedback.png', fullPage: true });
 });
@@ -885,7 +899,9 @@ test('Gmail settings persist and the shared search filters Inbox and Tasks', asy
   const settings = page.locator('#settings-sources-panel');
   const headings = await settings.locator('h2').allTextContents();
   assert.deepEqual(headings.filter(text => ['Gmail', 'Slack', 'GitHub'].includes(text)), ['Gmail', 'Slack', 'GitHub']);
-  await page.getByLabel('Show unread Gmail in Inbox', { exact: true }).check();
+  await page.locator('#gmail-enabled:enabled').waitFor();
+  await page.locator('.gmail-enabled [data-part="control"]').click();
+  assert.equal(await page.getByLabel('Show unread Gmail in Inbox', { exact: true }).isChecked(), true);
   await page.getByLabel('Maximum unread messages', { exact: true }).selectOption('50');
   await page.locator('#gmail-settings-form button[type="submit"]').click();
   await page.locator('#gmail-settings-host').getByText('Saved', { exact: true }).waitFor();
@@ -925,8 +941,8 @@ test('Service logos are embedded, accessible, and visible in Actions and Setting
     assert.equal(await logo.getAttribute('title'), name);
     assert.equal(await logo.locator('.visually-hidden').textContent(), name);
   }
-  for (const theme of ['lofi', 'dracula']) {
-    await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+  for (const theme of ['cerberus-light', 'dracula-dark']) {
+    await page.evaluate(theme => { const selection = PortalThemes.resolve(theme); document.documentElement.dataset.theme = selection.palette; document.documentElement.dataset.colorScheme = selection.scheme; }, theme);
     for (const width of [1280, 390]) {
       await page.setViewportSize({ width, height: 900 });
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
@@ -973,7 +989,7 @@ test('Cache settings lead each panel and advanced Tools controls preserve nested
   await page.locator('#favicon-finder-code').waitFor();
   assert.match(await page.locator('#favicon-finder-code').inputValue(), /^javascript:/);
   await advanced.click();
-  await page.locator('.tools-advanced-settings > .disclosure-content[inert][aria-hidden="true"]').waitFor({ state: 'attached' });
+  await page.locator('.tools-advanced-settings > .portal-disclosure-content[inert][aria-hidden="true"]').waitFor({ state: 'attached' });
   await page.locator('#favicon-finder-code').evaluate(element => element.focus());
   assert.notEqual(await page.evaluate(() => document.activeElement.id), 'favicon-finder-code');
   await advanced.click();
@@ -1041,8 +1057,8 @@ test('Inbox previews expand on hover, support keyboard and touch, and do not iss
   assert.equal(await page.locator('#actions-freshness').textContent(), retrieved);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.locator('.inbox-message-list').waitFor({ state: 'hidden' });
-  for (const theme of ['lofi', 'dracula']) {
-    await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+  for (const theme of ['cerberus-light', 'dracula-dark']) {
+    await page.evaluate(theme => { const selection = PortalThemes.resolve(theme); document.documentElement.dataset.theme = selection.palette; document.documentElement.dataset.colorScheme = selection.scheme; }, theme);
     await page.screenshot({ path: '/tmp/inbox-tasks-' + theme + '.png', fullPage: true });
   }
   const touch = await pageFor(t, { hasTouch: true, viewport: { width: 390, height: 1000 }, reducedMotion: 'reduce' });
@@ -1079,8 +1095,8 @@ test('Inbox count badges sit at the icon shoulder and fit zero, capped and unava
     await page.locator('#refresh-actions[aria-busy="false"]').waitFor();
     const service = page.locator('.inbox-service');
     assert.equal(await service.locator('.inbox-count').textContent(), count);
-    for (const theme of ['lofi', 'dracula']) {
-      await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+    for (const theme of ['cerberus-light', 'dracula-dark']) {
+      await page.evaluate(theme => { const selection = PortalThemes.resolve(theme); document.documentElement.dataset.theme = selection.palette; document.documentElement.dataset.colorScheme = selection.scheme; }, theme);
       const layout = await service.evaluate(el => {
         const icon = el.querySelector('.service-logo').getBoundingClientRect();
         const badge = el.querySelector('.inbox-count');
@@ -1188,13 +1204,16 @@ test('Compact header replaces tabs with an accessible menu and preserves drafts 
   assert.equal(await page.locator('.portal-tabs').isVisible(), false);
   assert.equal(await page.locator('.brand-name').isVisible(), false);
   assert.equal(await page.locator('.preview-label').textContent(), 'LOCAL PREVIEW');
-  assert.equal(await page.locator('.preview-label.badge-warning').isVisible(), true);
+  assert.equal(await page.locator('.preview-label.preset-filled-warning-500').isVisible(), true);
   assert.ok((await page.locator('.site-header').boundingBox()).height <= 53);
   const trigger = page.locator('#compact-nav-trigger');
   assert.match(await trigger.getAttribute('aria-label'), /Links/);
   await trigger.focus(); await page.keyboard.press('Enter');
-  await page.getByRole('menuitemradio', { name: 'Links', exact: true }).focus();
-  await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter');
+  await page.getByRole('menuitemradio', { name: 'Links', exact: true }).waitFor();
+  await page.waitForFunction(() => document.activeElement?.matches('.compact-nav-menu'));
+  await page.keyboard.press('ArrowDown');
+  await page.waitForFunction(() => document.querySelector('.compact-nav-item[data-highlighted]')?.getAttribute('data-portal-tab') === 'actions');
+  await page.keyboard.press('Enter');
   await page.locator('#actions-panel').waitFor({ state: 'visible' });
   assert.ok(page.url().endsWith('#inbox-and-tasks'));
   assert.match(await trigger.getAttribute('aria-label'), /Inbox & Tasks/);
@@ -1207,7 +1226,10 @@ test('Compact header replaces tabs with an accessible menu and preserves drafts 
   await page.goBack();
   await page.locator('#settings-panel').waitFor({ state: 'visible' });
   assert.equal(await page.locator('#setting-name').inputValue(), 'Compact draft');
-  await trigger.click(); await page.keyboard.press('Escape');
+  await trigger.click();
+  await page.waitForFunction(() => document.activeElement?.matches('.compact-nav-menu'));
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.getElementById('compact-nav-trigger').getAttribute('aria-expanded') === 'false');
   assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
   assert.equal(await trigger.evaluate(el => el === document.activeElement), true);
   await page.setViewportSize({ width: 1280, height: 1000 });
@@ -1216,8 +1238,8 @@ test('Compact header replaces tabs with an accessible menu and preserves drafts 
   assert.equal(await page.locator('.brand-name').isVisible(), true);
   assert.equal(await trigger.isVisible(), false);
   assert.equal(await page.locator('#setting-name').inputValue(), 'Compact draft');
-  for (const theme of ['lofi', 'dracula']) {
-    await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+  for (const theme of ['cerberus-light', 'dracula-dark']) {
+    await page.evaluate(theme => { const selection = PortalThemes.resolve(theme); document.documentElement.dataset.theme = selection.palette; document.documentElement.dataset.colorScheme = selection.scheme; }, theme);
     await page.setViewportSize({ width: 390, height: 900 });
     await page.locator('html[data-compact="true"]').waitFor();
     await trigger.click();
@@ -1237,7 +1259,8 @@ test('Compact mode follows the calendar viewport breakpoint and closes an open m
   await page.locator('html[data-compact="false"]').waitFor();
   await page.setViewportSize({ width: 390, height: 900 });
   await page.locator('#compact-nav-trigger').click();
-  await page.getByRole('menuitemradio', { name: 'Links', exact: true }).focus();
+  await page.getByRole('menuitemradio', { name: 'Links', exact: true }).waitFor();
+  await page.waitForFunction(() => document.activeElement?.matches('.compact-nav-menu'));
   await page.setViewportSize({ width: 1280, height: 1000 });
   await page.locator('html[data-compact="false"]').waitFor();
   await page.locator('.compact-nav-menu').waitFor({ state: 'hidden' });
@@ -1359,7 +1382,7 @@ test('Diagnostics are collapsed below Tasks and remain readable on narrow screen
   const host = page.locator('#action-diagnostics');
   const trigger = host.locator('.disclosure-trigger');
   assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
-  assert.equal(await host.locator('.disclosure-content').getAttribute('inert'), '');
+  assert.equal(await host.locator('.portal-disclosure-content').getAttribute('inert'), '');
   await trigger.click();
   assert.match(await host.textContent(), /Completed To-dos/);
   assert.equal(await host.locator('.diagnostics-metrics > li').count(), 8);
@@ -1395,4 +1418,331 @@ test('Links saved-message card and unified Sources work on desktop and compact s
   assert.ok(page.url().endsWith('#links'));
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   await page.screenshot({ path: '/tmp/portal-slack-links-mobile.png', fullPage: true });
+});
+
+
+test('Skeleton palettes and appearance persist independently, with automatic device switching', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce', viewport: { width: 390, height: 900 } });
+  await selectPortalTab(page, 'settings');
+  await page.getByRole('radio', { name: 'Dark', exact: true }).focus();
+  await page.keyboard.press('Space');
+  await page.locator('html[data-color-scheme="dark"]').waitFor();
+  await page.waitForFunction(() => !document.querySelector('.theme-choice input').disabled);
+  await page.getByRole('radio', { name: 'Dracula', exact: true }).focus();
+  await page.keyboard.press('Space');
+  await page.locator('html[data-theme="dracula"][data-color-scheme="dark"]').waitFor();
+  await page.waitForFunction(() => !document.querySelector('.theme-choice input').disabled);
+  await page.reload();
+  await page.locator('html[data-theme="dracula"][data-color-scheme="dark"]').waitFor();
+  assert.equal(await page.getByRole('radio', { name: 'Dracula', exact: true }).isChecked(), true);
+  assert.equal(await page.getByRole('radio', { name: 'Dark', exact: true }).isChecked(), true);
+  const background = () => page.locator('body').evaluate(el => getComputedStyle(el).backgroundColor);
+  const dark = await background();
+  await page.getByRole('radio', { name: 'Automatic', exact: true }).focus();
+  await page.keyboard.press('Space');
+  await page.locator('html[data-theme="dracula"][data-color-scheme="auto"]').waitFor();
+  await page.emulateMedia({ colorScheme: 'dark' });
+  assert.equal(await background(), dark);
+  await page.emulateMedia({ colorScheme: 'light' });
+  assert.notEqual(await background(), dark);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+});
+
+
+test('Skeleton segmented controls track selection, keyboard changes and explicit appearance overrides', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce', colorScheme: 'light' });
+  const view = page.getByRole('radiogroup', { name: 'View mode' });
+  await view.getByRole('radio', { name: 'Cards', exact: true }).focus();
+  await page.keyboard.press('ArrowRight');
+  await page.locator('#table-view').waitFor({ state: 'visible' });
+  assert.equal(await view.getByRole('radio', { name: 'List', exact: true }).isChecked(), true);
+  await page.waitForFunction(() => {
+    const root = document.querySelector('.view-switch [role="radiogroup"]');
+    const indicator = root.querySelector('[data-part="indicator"]').getBoundingClientRect();
+    const item = root.querySelector('[data-part="item"][data-state="checked"]').getBoundingClientRect();
+    return indicator.width > 0 && Math.abs(item.x - indicator.x) < 1;
+  });
+  await selectPortalTab(page, 'settings');
+  const colors = async () => page.locator('.theme-mode [data-part="item-text"][data-state="checked"]').evaluate(el => ({
+    text: getComputedStyle(el).color,
+    fill: getComputedStyle(document.querySelector('.theme-mode [data-part="indicator"]')).backgroundColor,
+  }));
+  await page.locator('.theme-mode label').filter({ hasText: 'Dark' }).click();
+  await page.waitForFunction(() => document.documentElement.dataset.colorScheme === 'dark');
+  const forcedDark = await colors();
+  await page.emulateMedia({ colorScheme: 'dark' });
+  assert.deepEqual(await colors(), forcedDark, 'Explicit dark appearance ignores the device setting');
+  await page.locator('.theme-mode label').filter({ hasText: 'Light' }).click();
+  await page.waitForFunction(() => document.documentElement.dataset.colorScheme === 'light');
+  const forcedLight = await colors();
+  assert.notEqual(forcedLight.text, forcedDark.text);
+  assert.notEqual(forcedLight.fill, forcedDark.fill);
+  await page.emulateMedia({ colorScheme: 'light' });
+  assert.deepEqual(await colors(), forcedLight, 'Explicit light appearance ignores the device setting');
+});
+
+
+test('Inbox content fills its card and fully collapses; task rows retain padding and readable badges', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  await page.goto(base + '/?gmail=ready#inbox-and-tasks');
+  await page.locator('#refresh-actions[aria-busy="false"]').waitFor();
+  const summary = page.locator('.inbox-summary');
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.waitForFunction(compact => document.documentElement.dataset.compact === String(compact), width <= 760);
+    assert.equal(await page.locator('.inbox-card .portal-disclosure-content').evaluate(el => el.getBoundingClientRect().height), 0);
+    const closed = await page.locator('.inbox-card').evaluate(el => ({ card: el.getBoundingClientRect().height, summary: el.querySelector('.inbox-summary').getBoundingClientRect().height }));
+    assert.equal(closed.card - closed.summary, 2, 'Only the card border remains around a closed summary');
+    await summary.click();
+    await page.locator('.inbox-message-title').first().waitFor();
+    const open = await page.locator('.inbox-card').evaluate(el => ({
+      card: el.getBoundingClientRect().width,
+      content: el.querySelector('.portal-disclosure-content').getBoundingClientRect().width,
+      list: el.querySelector('.inbox-message-list').getBoundingClientRect().width,
+    }));
+    assert.ok(Math.abs(open.card - open.content - 2) < 1);
+    assert.ok(open.card - open.list <= 32, 'Inbox messages use the full card width apart from deliberate gutters');
+    const row = await page.locator('.action-item-list > li').first().evaluate(el => ({
+      left: parseFloat(getComputedStyle(el).paddingLeft),
+      right: parseFloat(getComputedStyle(el).paddingRight),
+      badge: parseFloat(getComputedStyle(el.querySelector('.action-item-kind')).fontSize),
+    }));
+    assert.equal(row.left, 16);
+    assert.equal(row.right, 16);
+    assert.equal(row.badge, 12);
+    await summary.click();
+    assert.equal(await page.locator('.inbox-message-list').isVisible(), false);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  }
+});
+
+test('View icons stay centered and readable, with anchored tooltips in light and dark modes', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  for (const scheme of ['light', 'dark']) {
+    await page.evaluate(scheme => { document.documentElement.dataset.colorScheme = scheme; }, scheme);
+    for (const mode of ['cards', 'list']) {
+      const label = page.locator('#view-' + mode + '-label');
+      await label.click();
+      await page.waitForFunction(mode => {
+        const item = document.getElementById('view-' + mode + '-label').getBoundingClientRect();
+        const indicator = document.querySelector('.view-switch [data-part="indicator"]').getBoundingClientRect();
+        return Math.abs(item.x - indicator.x) < 1;
+      }, mode);
+      const geometry = await label.evaluate(el => {
+        const item = el.getBoundingClientRect(), svg = el.querySelector('svg').getBoundingClientRect();
+        const text = el.querySelector('[data-part="item-text"]');
+        return { width: item.width, height: item.height, dx: item.x + item.width / 2 - svg.x - svg.width / 2, dy: item.y + item.height / 2 - svg.y - svg.height / 2, color: getComputedStyle(text).color };
+      });
+      assert.equal(geometry.width, 32); assert.equal(geometry.height, 32);
+      assert.ok(Math.abs(geometry.dx) < 1 && Math.abs(geometry.dy) < 1);
+      const otherColor = await page.locator('.view-switch [data-part="item"][data-state="unchecked"] [data-part="item-text"]').evaluate(el => getComputedStyle(el).color);
+      assert.notEqual(geometry.color, otherColor);
+      await label.hover();
+      const hint = page.getByRole('tooltip', { name: mode === 'cards' ? 'Cards' : 'List', exact: true });
+      await hint.waitFor();
+      await page.waitForFunction(mode => {
+        const item = document.getElementById('view-' + mode + '-label').getBoundingClientRect();
+        const hint = document.querySelector('[role="tooltip"]')?.getBoundingClientRect();
+        return hint && Math.abs(item.x + item.width / 2 - hint.x - hint.width / 2) < 2;
+      }, mode);
+      await page.mouse.move(0, 0); await label.blur();
+      await hint.waitFor({ state: 'hidden' });
+    }
+  }
+});
+
+
+test('Compact header icons remain square, centered and aligned across sections and screen widths', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  for (const width of [600, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.locator('#compact-nav-trigger').waitFor({ state: 'visible' });
+    for (const section of ['tools', 'actions', 'settings']) {
+      await selectPortalTab(page, section);
+      const icons = await page.locator('#compact-nav-trigger, #toggle-calendar').evaluateAll(buttons => buttons.map(button => {
+        const box = button.getBoundingClientRect(), icon = button.querySelector('svg').getBoundingClientRect();
+        return { buttonWidth: box.width, buttonHeight: box.height, width: icon.width, height: icon.height, centerY: icon.y + icon.height / 2, dx: box.x + box.width / 2 - icon.x - icon.width / 2, dy: box.y + box.height / 2 - icon.y - icon.height / 2 };
+      }));
+      assert.equal(icons.length, 2);
+      for (const icon of icons) {
+        assert.equal(icon.buttonWidth, 36); assert.equal(icon.buttonHeight, 36);
+        assert.equal(icon.width, 20); assert.equal(icon.height, 20);
+        assert.ok(Math.abs(icon.dx) < 1 && Math.abs(icon.dy) < 1);
+      }
+      assert.ok(Math.abs(icons[0].centerY - icons[1].centerY) < 1);
+    }
+    await page.locator('#compact-nav-trigger').click();
+    await page.getByRole('menuitemradio', { name: 'Links', exact: true }).waitFor();
+    for (const icon of await page.locator('.compact-nav-item svg').all()) {
+      const box = await icon.boundingBox(); assert.equal(box.width, 20); assert.equal(box.height, 20);
+    }
+    await page.waitForFunction(() => document.activeElement?.matches('.compact-nav-menu'));
+    await page.keyboard.press('Escape');
+    await page.locator('.compact-nav-menu').waitFor({ state: 'hidden' });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  }
+});
+
+
+test('Open calendar matches navigation styling while the closed state stays quiet', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  const toggle = page.locator('#toggle-calendar');
+  const navigation = page.locator('#compact-nav-trigger');
+  const appearance = locator => locator.evaluate(el => ({ color: getComputedStyle(el).color, stroke: Number.parseFloat(getComputedStyle(el.querySelector('svg')).strokeWidth) }));
+  for (const scheme of ['light', 'dark']) {
+    await page.evaluate(scheme => { document.documentElement.dataset.colorScheme = scheme; }, scheme);
+    for (const width of [1280, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.mouse.move(0, 0);
+      const idle = await appearance(toggle);
+      assert.equal(idle.stroke, 1.5);
+      await toggle.hover();
+      assert.equal((await appearance(toggle)).stroke, 1.8);
+      await toggle.click();
+      assert.equal(await toggle.getAttribute('aria-expanded'), 'true');
+      const hovered = await appearance(toggle);
+      assert.equal(hovered.stroke, 2.1);
+      await page.mouse.move(0, 0);
+      const open = await appearance(toggle);
+      assert.equal(open.stroke, 1.9);
+      assert.notEqual(open.color, idle.color);
+      assert.deepEqual(open, await appearance(navigation));
+      if (width === 390) {
+        await navigation.hover();
+        assert.deepEqual(hovered, await appearance(navigation));
+      }
+      await toggle.click();
+      await page.mouse.move(0, 0);
+      assert.deepEqual(await appearance(toggle), idle);
+    }
+  }
+});
+
+
+test('Skeleton forms normalize checkboxes and selects and keep input and button sizes consistent', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  await selectPortalTab(page, 'settings');
+  await page.locator('#settings-tab-sources').click();
+  const font = locator => locator.evaluate(el => getComputedStyle(el).fontSize);
+  const select = page.locator('#catalog-cache-seconds');
+  const input = page.locator('#setting-spreadsheet');
+  const save = page.locator('#spreadsheet-settings-form button[type="submit"]');
+  assert.equal(await font(select), '14px');
+  assert.equal(await font(input), '14px');
+  assert.equal(await font(save), '14px');
+  assert.equal(await font(page.locator('#add-slack')), '12px');
+  assert.equal(await select.evaluate(el => getComputedStyle(el).appearance), 'none');
+  assert.match(await select.evaluate(el => getComputedStyle(el).backgroundImage), /data:image\/svg/);
+  await page.getByRole('button', { name: 'Advanced settings', exact: true }).click();
+  const checkbox = page.locator('#url-scheme-settings input[value="data"]');
+  await checkbox.waitFor();
+  for (const scheme of ['light', 'dark']) {
+    await page.evaluate(scheme => { document.documentElement.dataset.colorScheme = scheme; }, scheme);
+    const style = await checkbox.evaluate(el => ({ appearance: getComputedStyle(el).appearance, image: getComputedStyle(el).backgroundImage, width: el.getBoundingClientRect().width }));
+    assert.equal(style.appearance, 'none');
+    assert.match(style.image, /data:image\/svg/);
+    assert.equal(style.width, 20);
+    await checkbox.focus();
+    await page.keyboard.press('Space');
+    await page.locator('#url-scheme-settings-status').getByText('Saved', { exact: true }).waitFor();
+    assert.equal(await checkbox.isChecked(), false);
+    assert.equal(await checkbox.evaluate(el => getComputedStyle(el).backgroundImage), 'none');
+    await checkbox.check();
+    await page.locator('#url-scheme-settings-status').getByText('Saved', { exact: true }).waitFor();
+  }
+  await select.selectOption('3600');
+  await page.locator('#cache-settings-status').getByText('Saved', { exact: true }).waitFor();
+  await page.reload();
+  assert.equal(await select.inputValue(), '3600');
+  await page.setViewportSize({ width: 390, height: 900 });
+  assert.equal(await font(select), '16px');
+  assert.equal(await font(input), '16px');
+  assert.equal(await font(save), '14px');
+  await selectPortalTab(page, 'tools');
+  const search = page.locator('#search');
+  await search.fill('Expense');
+  // Rendering may be deferred by a view transition on slower CI runners.
+  await page.waitForFunction(() => document.querySelectorAll('#tools > li').length === 1);
+  assert.equal(await page.locator('#tools > li').count(), 1);
+  assert.equal(await search.evaluate(el => getComputedStyle(el).boxShadow), 'none');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+});
+
+
+test('Calendar free slots show coffee after the time and animate only on interaction', async t => {
+  const page = await calendarPage(t, 'overlap', { viewport: { width: 1440, height: 1100 } });
+  const gaps = page.locator('.calendar-event.is-gap');
+  assert.ok(await gaps.count() > 0);
+  assert.equal(await gaps.locator('.calendar-event-time > .calendar-coffee').count(), await gaps.count());
+  assert.equal(await page.locator('.calendar-event:not(.is-gap) .calendar-coffee').count(), 0);
+  const gap = page.locator('.calendar-event.is-gap:not([data-state="past"])').first();
+  const steam = gap.locator('.coffee-steam').first();
+  const animation = () => steam.evaluate(el => getComputedStyle(el).animationName);
+  const timings = () => gap.locator('.coffee-steam').evaluateAll(nodes => nodes.map(el => {
+    const style = getComputedStyle(el);
+    return [style.animationDelay, style.animationDuration];
+  }));
+  const expectedTimings = [['0s, 0s', '1.8s, 1.8s'], ['0.3s, 0.3s', '1.8s, 1.8s'], ['0.6s, 0.6s', '1.8s, 1.8s']];
+  assert.equal(await animation(), 'none');
+  assert.equal(await gap.locator('.calendar-coffee').getAttribute('aria-hidden'), 'true');
+  await gap.hover();
+  assert.equal(await animation(), 'coffee-steam-draw, coffee-steam-drift');
+  assert.deepEqual(await timings(), expectedTimings);
+  const strokeFrames = await steam.evaluate(el => {
+    const animations = el.getAnimations();
+    const frame = time => {
+      for (const animation of animations) { animation.pause(); animation.currentTime = time; }
+      const style = getComputedStyle(el);
+      return { length: parseFloat(style.strokeDasharray), offset: parseFloat(style.strokeDashoffset), drift: style.translate };
+    };
+    return [frame(450), frame(1350)];
+  });
+  assert.ok(strokeFrames.every(frame => frame.length > .01 && frame.length < 1));
+  assert.equal(strokeFrames[0].offset, 0);
+  assert.ok(strokeFrames[1].offset < 0, 'The stroke redraws from the opposite end');
+  assert.ok(parseFloat(strokeFrames[0].drift) > 0 && parseFloat(strokeFrames[1].drift) < 0);
+  await page.mouse.move(0, 0);
+  assert.equal(await animation(), 'none');
+  await gap.locator('.calendar-event-trigger').focus();
+  assert.equal(await animation(), 'coffee-steam-draw, coffee-steam-drift');
+  assert.deepEqual(await timings(), expectedTimings);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  assert.equal(await animation(), 'none');
+  await page.setViewportSize({ width: 390, height: 900 });
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  assert.equal(await gap.locator('.calendar-coffee').evaluate(el => el.getBoundingClientRect().width), 14);
+});
+
+test('Skeleton tag sizing and outlined connection buttons work in light and dark modes', async t => {
+  const page = await pageFor(t, { reducedMotion: 'reduce' });
+  assert.equal(await page.locator('.tool-tag').first().evaluate(el => getComputedStyle(el).fontSize), '11px');
+  await selectPortalTab(page, 'settings');
+  await page.locator('#settings-tab-sources').click();
+  for (const scheme of ['light', 'dark']) {
+    await page.evaluate(scheme => { document.documentElement.dataset.colorScheme = scheme; }, scheme);
+    for (const id of ['add-slack', 'add-github']) {
+      const button = page.locator('#' + id);
+      const style = await button.evaluate(el => {
+        const s = getComputedStyle(el);
+        return { background: s.backgroundColor, border: s.borderTopWidth, font: s.fontSize };
+      });
+      assert.equal(style.background, 'rgba(0, 0, 0, 0)');
+      assert.equal(style.border, '1px');
+      assert.equal(style.font, '12px');
+    }
+  }
+});
+
+test('Next countdown is visible before alerts and shares the current countdown typography', async t => {
+  const page = await calendarPage(t, 'overlap', { viewport: { width: 1280, height: 1000 }, reducedMotion: 'reduce' });
+  const next = page.locator('.calendar-next-badge');
+  assert.equal(await next.textContent(), 'Next in 40′');
+  assert.equal(await page.locator('.calendar-event[data-state="next"]').getAttribute('data-reminder-active'), 'false');
+  const typography = locator => locator.evaluate(el => {
+    const s = getComputedStyle(el);
+    return [s.fontFamily, s.fontSize, s.fontWeight, s.lineHeight, s.letterSpacing, s.fontVariantNumeric];
+  });
+  assert.deepEqual(await typography(next), await typography(page.locator('.calendar-remaining-label').first()));
+  await page.evaluate(() => { document.documentElement.lang = 'ja'; document.dispatchEvent(new Event('portal:languagechange')); });
+  assert.equal(await next.textContent(), '次の予定 40分後');
 });

@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import { portalThemes } from './theme-colors.mjs';
+const themes = portalThemes();
 
 /** Escape text like GAS output tags so it cannot execute as HTML. */
 export function withPreviewContent(html, portal, theme = 'auto') {
@@ -7,7 +9,7 @@ export function withPreviewContent(html, portal, theme = 'auto') {
     .replace('<? if (!portal.headline && !portal.description) { ?>hidden<? } ?>', !portal.headline && !portal.description ? 'hidden' : '')
     .replace('<? if (!portal.headline) { ?>hidden<? } ?>', !portal.headline ? 'hidden' : '')
     .replace('<? if (!portal.description) { ?>hidden<? } ?>', !portal.description ? 'hidden' : '')
-    .replace('<?!= themeAttribute ?>', () => theme === 'auto' ? '' : 'data-theme="' + theme.replace(/[&<>"']/g, (character) => escapes[character]) + '"')
+    .replace('<?!= themeAttribute ?>', () => themes.attributes(theme))
     .replace(/<\? if \(portal\.spreadsheetUrl\) \{ \?>([\s\S]*?)<\? \} \?>/g,
     (_, content) => portal.spreadsheetUrl ? content : '')
     .replace(/<\?= portal\.(spreadsheetId|sheetName|cacheSeconds|actionsCacheSeconds|unblockedUrlSchemes|languagePreference|language|name|brandLead|brandRest|headline|description|spreadsheetUrl|icon|defaultsJson) \?>/g,

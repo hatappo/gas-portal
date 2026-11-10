@@ -24,8 +24,8 @@ test('Consumer previews use live source when linked and refresh consumer config 
       assert.match(first, /src="\/browser\/main.js"/);
       const client = await (await fetch(base + '/browser/client.js')).text();
       assert.match(client, /mountCatalogView/, 'Serve current source instead of packaged output');
-      const view = await (await fetch(base + '/browser/catalog-view.tsx')).text();
-      assert.match(view, /createComponent/, 'Compile Solid components for linked consumer previews');
+      const view = await (await fetch(base + '/browser/CatalogView.svelte')).text();
+      assert.match(view, /svelte/, 'Compile Svelte components for linked consumer previews');
       assert.doesNotMatch(view, /<ToolCard/);
       const events = [];
       const send = server.ws.send.bind(server.ws);
