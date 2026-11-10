@@ -75,6 +75,10 @@
       }}
       onkeydowncapture={event => {
         if (event.isComposing || composing) { event.stopPropagation(); return; }
+        // Dismiss immediately, even before the combobox's popup listeners are installed.
+        if (event.key === 'Escape' && open) {
+          event.preventDefault(); event.stopPropagation(); open = false; return;
+        }
         if (event.key === 'Backspace' && !$filters.text && selected.length) {
           event.preventDefault(); event.stopPropagation();
           document.querySelector<HTMLButtonElement>('.action-type-chip:last-of-type')?.focus();
