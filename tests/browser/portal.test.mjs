@@ -1656,6 +1656,8 @@ test('Skeleton forms normalize checkboxes and selects and keep input and button 
   await selectPortalTab(page, 'tools');
   const search = page.locator('#search');
   await search.fill('Expense');
+  // Rendering may be deferred by a view transition on slower CI runners.
+  await page.waitForFunction(() => document.querySelectorAll('#tools > li').length === 1);
   assert.equal(await page.locator('#tools > li').count(), 1);
   assert.equal(await search.evaluate(el => getComputedStyle(el).boxShadow), 'none');
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
