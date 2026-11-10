@@ -9,7 +9,7 @@ import { withPreviewProject, withPreviewContent } from './preview-project.mjs';
 import { sharedSources, serverSources } from './gas-sources.mjs';
 import { withPortalAssets } from './portal-html.mjs';
 // Re-exported so a consumer previewing a linked checkout resolves Tailwind from this package.
-export { default as solid } from 'vite-plugin-solid';
+export { svelte } from '@sveltejs/vite-plugin-svelte';
 export { default as tailwindcss } from '@tailwindcss/vite';
 
 // This file and its mock data are not uploaded to GAS.
@@ -44,7 +44,7 @@ export function renderPreview(html, root, options = {}) {
     .replace('placeholder="github_pat_…"', 'placeholder="demo"')
     .replace('placeholder="xoxp-…"', 'placeholder="demo"')
     .replace('<?!= initialCatalogJson ?>', () => context.serializeCatalog_(catalog))
-    .replace('<!-- preview-label -->', '<p class="preview-label badge badge-warning" aria-label="Local preview with mock data" data-i18n-aria-label="Local preview with mock data" title="Local preview with mock data" data-i18n-title="Local preview with mock data">LOCAL PREVIEW</p>')
+    .replace('<!-- preview-label -->', '<p class="preview-label badge preset-filled-warning-500" aria-label="Local preview with mock data" data-i18n-aria-label="Local preview with mock data" title="Local preview with mock data" data-i18n-title="Local preview with mock data">LOCAL PREVIEW</p>')
     .replace('<script type="module" src="/browser/main.js"></script>', () => `<script>
       ${i18n}
       ${urlSchemes}
@@ -121,7 +121,9 @@ export function renderPreview(html, root, options = {}) {
       // Use browser storage locally; production uses GAS User Properties.
       try {
         const theme = localStorage.getItem('portal-preview-theme');
-        if (theme !== 'auto' && PortalThemes.isTheme(theme)) document.documentElement.dataset.theme = theme;
+        const resolved = PortalThemes.resolve(theme);
+        document.documentElement.dataset.theme = resolved.palette;
+        document.documentElement.dataset.colorScheme = resolved.scheme;
       } catch { /* Use defaults when the browser denies storage access. */ }
       function readPreviewCatalog(forceRefresh = false) {
         if (scenario === 'error') return {ok:false, error:'Select Fetch latest to try again. If the problem persists, check the GAS settings.'};

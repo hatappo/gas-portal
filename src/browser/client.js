@@ -2,7 +2,7 @@ import { mountSettingsGuidance } from './settings-guidance';
 import { formatListCount, renderListFreshness } from './list-presentation.js';
 import { mountCatalogView } from './catalog-view';
 
-// Coordinates catalog RPCs and validation; Solid owns the dynamic lists.
+// Coordinates catalog RPCs and validation; Svelte owns the dynamic lists.
 /** @param {ReturnType<typeof import('./motion.js').createMotion>} motion */
 export function initializeCatalog(motion) {
   /** @param {string} key @param {Record<string, string | number>} [values] */

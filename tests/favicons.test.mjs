@@ -13,7 +13,7 @@ test('Generate all supported theme and letter combinations as 64px PNG assets wi
   assert.equal(letters.length, 207);
   assert.equal(new Set(letters).size, 207);
   const themes = readThemes();
-  assert.equal(themes.length, 21);
+  assert.equal(themes.length, 24);
   assert.equal(buildFavicons(destination).count, themes.length * 207 + 1);
   const { context } = server();
   const images = new Set();
@@ -51,14 +51,16 @@ test('Use safe favicon fallbacks and normalize ASCII letters without exposing ar
   const { context } = server();
   const base = 'https://hatappo.github.io/gas-portal/favicons/';
   assert.equal(context.getPortalFaviconUrl_('dracula', 'p'), base + 'dracula/P.png');
-  assert.equal(context.getPortalFaviconUrl_('auto', 'Z'), base + 'lofi/Z.png', 'Auto uses the light default; doGet cannot see the device scheme');
+  assert.equal(context.getPortalFaviconUrl_('dracula-light', 'p'), base + 'dracula/P.png');
+  assert.equal(context.getPortalFaviconUrl_('dracula-dark', 'p'), base + 'dracula/P.png');
+  assert.equal(context.getPortalFaviconUrl_('auto', 'Z'), base + 'cerberus/Z.png', 'Auto uses the default palette; the favicon is shared across light and dark');
   for (const icon of ['漢', '😀', '../secret', '', 'AB', '<', '゙', '・', 'ｱ']) {
     for (const theme of ['auto', ...readThemes().map(({ name }) => name)]) {
       assert.equal(context.getPortalFaviconUrl_(theme, icon), base + 'fallback.png');
     }
   }
-  assert.equal(context.getPortalFaviconUrl_('../invalid', 'P'), base + 'lofi/P.png');
-  assert.equal(context.getPortalFaviconUrl_('tsuyukusa', 'P'), base + 'lofi/P.png', 'Earlier palette names are no longer published');
+  assert.equal(context.getPortalFaviconUrl_('../invalid', 'P'), base + 'cerberus/P.png');
+  assert.equal(context.getPortalFaviconUrl_('tsuyukusa', 'P'), base + 'cerberus/P.png', 'Earlier palette names are no longer published');
 });
 
 test('Set the outer GAS page favicon from the executing user settings', () => {

@@ -93,7 +93,7 @@ test('Changing sources cancels old batches and removed credentials cannot restor
   assert.equal(app.refresh.disabled, true);
 });
 
-test('Solid retains focused rows through loading, language changes and refreshed data', (t) => {
+test('Keyed views retain focused rows through loading, language changes and refreshed data', (t) => {
   const app = fixture(t);
   app.api.setSources('github', [app.source('a')]); app.start();
   app.calls[0].done(result());
@@ -110,7 +110,7 @@ test('Solid retains focused rows through loading, language changes and refreshed
   assert.equal(app.rows()[0], row);
   assert.equal(app.document.activeElement, link);
   assert.match(link.textContent, /New title/);
-  assert.equal(row.querySelector('.action-item-kind').textContent, 'GitHub Changes requested');
+  assert.equal(row.querySelector('.action-item-kind').textContent, 'Changes requested');
 });
 
 test('Reconciled notices update their source label and error text after a connection changes', (t) => {
@@ -146,14 +146,15 @@ test('Error disclosure preserves user toggles and expands when all results becom
   assert.equal(app.document.querySelector('#actions-status .portal-disclosure'), null);
 });
 
-test('Tasks retain service and reason badges without type-filter controls', t => {
+test('Tasks show short reason badges and retain service icons without type-filter controls', t => {
   const app = fixture(t);
   const assigned = { ...item, id: 'issue', title: 'Assigned', reasons: ['Assigned issue'] };
   const review = { ...item, id: 'review', title: 'Review', reasons: ['Direct review', 'Team review'] };
   const bookmark = { ...item, service: 'slack', serviceLabel: 'Slack', id: 'saved', title: 'Saved', reasons: ['To-do'] };
   app.api.setSources('demo', [app.source('all')]); app.start();
   app.calls[0].done(result([assigned, review, bookmark]));
-  assert.deepEqual([...app.document.querySelectorAll('.action-item-kind')].map(node => node.textContent), ['GitHub 担当 Issue', 'GitHub 直接のレビュー依頼', 'GitHub チームへのレビュー依頼', 'Slack ToDo']);
+  assert.deepEqual([...app.document.querySelectorAll('.action-item-kind')].map(node => node.textContent), ['担当 Issue', '直接のレビュー依頼', 'チームへのレビュー依頼', 'ToDo']);
+  assert.deepEqual(app.rows().map(row => row.querySelector('.action-service [role="img"]').getAttribute('aria-label')), ['GitHub', 'GitHub', 'Slack']);
   assert.equal(app.rows().length, 3);
   assert.equal(app.document.getElementById('action-filters'), null);
 });
@@ -182,7 +183,7 @@ test('Action search matches loaded titles and context and survives refresh', t =
   app.api.setSources('demo', [app.source('all')]); app.start();
   app.calls[0].done({ ...result([item, bookmark]), hasMore: true });
   const search = app.document.getElementById('actions-search');
-  const enter = value => { search.value = value; search.dispatchEvent(new app.dom.window.Event('input')); };
+  const enter = value => { search.value = value; search.dispatchEvent(new app.dom.window.Event('input', { bubbles: true })); };
   enter('  ｒｅｖｉｅｗ  ');
   assert.equal(app.rows().length, 2, 'Normalize case and full-width input');
   enter('資料');

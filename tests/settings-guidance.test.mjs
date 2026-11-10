@@ -49,7 +49,7 @@ test('Guidance links survive language changes and never turn arbitrary error tex
   const app = fixture(t);
   app.requests[0].success({ ok: false, error: 'Set a spreadsheet ID or Google Sheets URL in Settings.' });
   const select = app.get('portal-language');
-  select.value = 'en'; select.dispatchEvent(new app.dom.window.Event('change'));
+  select.value = 'en'; select.dispatchEvent(new app.dom.window.Event('change', { bubbles: true }));
   app.languageRequests.at(-1).success({ ok: true, language: 'en' });
   for (const host of ['status-description', 'inbox-services', 'action-items']) {
     const link = app.get(host).querySelector('a.settings-guidance-link');

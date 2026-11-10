@@ -12,8 +12,6 @@
     ],
     "types": [],
     "skipLibCheck": true,
-    "jsx": "preserve",
-    "jsxImportSource": "solid-js",
     "module": "ESNext",
     "moduleResolution": "bundler"
   },
@@ -22,7 +20,8 @@
     "types/browser.d.ts",
     "src/shared/*.js",
     "types/i18n.d.ts",
-    "src/browser/*.tsx",
+    "src/browser/*.ts",
+    "src/browser/*.svelte",
     "types/calendar.d.ts",
     "types/gmail.d.ts"
   ]

@@ -1,0 +1,57 @@
+/* Import the official palettes directly; no copied or reconstructed color tables. */
+@import "@skeletonlabs/skeleton/themes/cerberus";
+@import "@skeletonlabs/skeleton/themes/catppuccin";
+@import "@skeletonlabs/skeleton/themes/concord";
+@import "@skeletonlabs/skeleton/themes/crimson";
+@import "@skeletonlabs/skeleton/themes/dracula";
+@import "@skeletonlabs/skeleton/themes/fennec";
+@import "@skeletonlabs/skeleton/themes/hamlindigo";
+@import "@skeletonlabs/skeleton/themes/legacy";
+@import "@skeletonlabs/skeleton/themes/mint";
+@import "@skeletonlabs/skeleton/themes/modern";
+@import "@skeletonlabs/skeleton/themes/mona";
+@import "@skeletonlabs/skeleton/themes/nosh";
+@import "@skeletonlabs/skeleton/themes/nouveau";
+@import "@skeletonlabs/skeleton/themes/pine";
+@import "@skeletonlabs/skeleton/themes/reign";
+@import "@skeletonlabs/skeleton/themes/rocket";
+@import "@skeletonlabs/skeleton/themes/rose";
+@import "@skeletonlabs/skeleton/themes/rosepine";
+@import "@skeletonlabs/skeleton/themes/sahara";
+@import "@skeletonlabs/skeleton/themes/seafoam";
+@import "@skeletonlabs/skeleton/themes/terminus";
+@import "@skeletonlabs/skeleton/themes/vintage";
+@import "@skeletonlabs/skeleton/themes/vox";
+@import "@skeletonlabs/skeleton/themes/wintry";
+
+@import "./theme-contrast.css";
+
+:root, [data-color-scheme="auto"] { color-scheme: light dark; }
+[data-color-scheme="light"] { color-scheme: light; }
+[data-color-scheme="dark"] { color-scheme: dark; }
+
+/* Portal-specific semantic roles; the palette and all shade ramps remain Skeleton's. */
+:root, [data-theme] {
+  /* Resolve paired tokens locally for palette samples nested inside another theme. */
+  --color-surface-50-950: light-dark(var(--color-surface-50), var(--color-surface-950));
+  --color-surface-100-900: light-dark(var(--color-surface-100), var(--color-surface-900));
+  --color-surface-200-800: light-dark(var(--color-surface-200), var(--color-surface-800));
+  --color-surface-950-50: light-dark(var(--color-surface-950), var(--color-surface-50));
+  --portal-text: light-dark(#000000, #ffffff);
+  --portal-neutral: var(--portal-text);
+  --portal-neutral-content: var(--color-surface-50-950);
+  --portal-border: 1px;
+  --portal-selector-radius: var(--radius-base);
+  --typo-anchor--color-light: inherit;
+  --typo-anchor--color-dark: inherit;
+  --typo-heading--color-light: inherit;
+  --typo-heading--color-dark: inherit;
+}
+
+/* Skeleton component dark variants follow the saved mode, including explicit overrides. */
+@custom-variant dark {
+  &:where([data-color-scheme="dark"], [data-color-scheme="dark"] *) { @slot; }
+  @media (prefers-color-scheme: dark) {
+    &:where([data-color-scheme="auto"], [data-color-scheme="auto"] *) { @slot; }
+  }
+}

@@ -23,7 +23,7 @@
         <h1 id="page-title" <? if (!portal.headline) { ?>hidden<? } ?>><?= portal.headline ?></h1>
         <p class="intro-copy" <? if (!portal.description) { ?>hidden<? } ?>><?= portal.description ?></p>
       </section>
-      <div class="portal-tabs tabs tabs-border" role="tablist" aria-label="Portal sections" data-i18n-aria-label="Portal sections">
+      <div class="portal-tabs" role="tablist" aria-label="Portal sections" data-i18n-aria-label="Portal sections">
         <button type="button" id="tab-tools" class="tab" role="tab" aria-selected="true" aria-controls="directory" tabindex="0"><!-- tool-case-icon --><span>Links</span></button>
         <button type="button" id="tab-actions" class="tab" role="tab" aria-selected="false" aria-controls="actions-panel" tabindex="-1"><!-- list-checks-icon --><span>Inbox &amp; Tasks</span></button>
         <button type="button" id="tab-settings" class="tab settings-tab" role="tab" aria-label="Settings" data-i18n-aria-label="Settings" title="Settings" data-i18n-title="Settings" aria-selected="false" aria-controls="settings-panel" tabindex="-1"><!-- settings-icon --></button>
@@ -43,7 +43,7 @@
               <template id="view-list-icon"><!-- list-icon --></template>
             </div>
             <span id="count" class="count" role="status" aria-live="polite" aria-atomic="true"></span>
-            <button type="button" id="refresh-catalog" class="refresh-catalog btn btn-ghost" aria-label="Fetch latest" data-i18n-aria-label="Fetch latest" aria-describedby="catalog-freshness" title="Fetch latest" data-i18n-title="Fetch latest" aria-busy="true" disabled>
+            <button type="button" id="refresh-catalog" class="refresh-catalog btn button-quiet" aria-label="Fetch latest" data-i18n-aria-label="Fetch latest" aria-describedby="catalog-freshness" title="Fetch latest" data-i18n-title="Fetch latest" aria-busy="true" disabled>
               <!-- refresh-cw-icon -->
               <span id="catalog-freshness" class="catalog-freshness" role="status" aria-live="polite" hidden></span>
             </button>
@@ -53,7 +53,7 @@
           <div class="tag-heading" title="Filter by tags (match all)" data-i18n-title="Filter by tags (match all)">Tags</div>
           <div id="tags" class="tags" role="group" aria-label="Filter by tags" data-i18n-aria-label="Filter by tags"></div>
         </div>
-        <aside id="warnings" class="warnings alert alert-warning" aria-label="Data issues" data-i18n-aria-label="Data issues" hidden>
+        <aside id="warnings" class="warnings alert portal-alert-warning" aria-label="Data issues" data-i18n-aria-label="Data issues" hidden>
           <div data-disclosure>
             <span data-disclosure-title id="warning-summary"></span>
             <div data-disclosure-content><ul id="warning-list"></ul></div>
@@ -90,7 +90,7 @@
             <span class="queue-count">Inbox <span id="inbox-total-count" class="count" role="status" aria-live="polite" aria-atomic="true">—</span></span>
             <span class="queue-count">Tasks <span id="actions-count" class="count" role="status" aria-live="polite" aria-atomic="true">—</span></span>
           </div>
-          <button type="button" id="refresh-actions" class="refresh-catalog btn btn-ghost" aria-describedby="actions-freshness" aria-busy="true" disabled aria-label="Fetch latest" data-i18n-aria-label="Fetch latest" title="Fetch latest" data-i18n-title="Fetch latest">
+          <button type="button" id="refresh-actions" class="refresh-catalog btn button-quiet" aria-describedby="actions-freshness" aria-busy="true" disabled aria-label="Fetch latest" data-i18n-aria-label="Fetch latest" title="Fetch latest" data-i18n-title="Fetch latest">
             <!-- refresh-cw-icon -->
             <span id="actions-freshness" class="catalog-freshness" role="status" aria-live="polite" hidden></span>
           </button>
@@ -108,7 +108,7 @@
         <template id="action-external-icon"><!-- external-link-icon --></template>
       </section>
       <section id="settings-panel" class="settings-panel" role="tabpanel" aria-labelledby="tab-settings" tabindex="0" hidden>
-        <div class="settings-tabs tabs tabs-box" role="tablist" aria-label="Settings sections" data-i18n-aria-label="Settings sections">
+        <div class="settings-tabs" role="tablist" aria-label="Settings sections" data-i18n-aria-label="Settings sections">
           <button type="button" id="settings-tab-appearance" class="tab" role="tab" aria-selected="true" aria-controls="settings-appearance-panel" tabindex="0" data-i18n="Appearance">Appearance</button>
           <button type="button" id="settings-tab-sources" class="tab" role="tab" aria-selected="false" aria-controls="settings-sources-panel" tabindex="-1">Sources</button>
           <button type="button" id="settings-tab-calendar" class="tab" role="tab" aria-selected="false" aria-controls="settings-calendar-panel" tabindex="-1">Calendar</button>
@@ -126,7 +126,7 @@
                 <label class="settings-field"><span data-i18n="Headline">Headline</span><input aria-describedby="intro-help" id="setting-headline" class="input w-full" name="PORTAL_HEADLINE" maxlength="160" value="<?= portal.headline ?>" autocomplete="off"></label>
                 <label class="settings-field"><span data-i18n="Description text">Description text</span><textarea aria-describedby="intro-help" id="setting-description" class="textarea w-full" name="PORTAL_DESCRIPTION" maxlength="500" rows="3"><?= portal.description ?></textarea></label>
                 <p id="intro-help" class="settings-help" data-i18n="Leave the headline or description blank to hide it. Leave both blank to give more space to your content.">Leave the headline or description blank to hide it. Leave both blank to give more space to your content.</p>
-                <div class="settings-form-actions"><button type="submit" class="settings-save btn btn-primary"><span data-i18n="Save changes">Save changes</span></button><button type="button" id="reset-portal-settings" class="settings-reset btn"><span data-i18n="Restore defaults">Restore defaults</span></button></div>
+                <div class="settings-form-actions"><button type="submit" class="settings-save btn preset-filled-primary-500"><span data-i18n="Save changes">Save changes</span></button><button type="button" id="reset-portal-settings" class="settings-reset btn"><span data-i18n="Restore defaults">Restore defaults</span></button></div>
               </fieldset>
               <p id="portal-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
             </form>
@@ -134,7 +134,7 @@
           <section class="theme-settings" aria-labelledby="theme-settings-title">
             <div class="settings-heading"><div><h2 id="theme-settings-title"><span data-i18n="Color theme">Color theme</span></h2><p><span data-i18n="Choose a color theme. Your selection is saved automatically.">Choose a color theme. Your selection is saved automatically.</span></p></div></div>
             <div class="theme-save-status" role="status" aria-live="polite" id="theme-status"></div>
-            <!-- Solid renders choices from src/shared/themes.js. -->
+            <!-- Svelte renders choices from src/shared/themes.js. -->
             <div id="theme-picker"></div>
           </section>
           <section class="language-settings" aria-labelledby="language-settings-title">
@@ -175,7 +175,7 @@
                 <label class="settings-field"><span data-i18n="Spreadsheet ID or URL">Spreadsheet ID or URL</span><input id="setting-spreadsheet" class="input w-full" name="SPREADSHEET_ID" value="<?= portal.spreadsheetId ?>" autocomplete="off" spellcheck="false" aria-describedby="spreadsheet-help"></label>
                 <label class="settings-field"><span data-i18n="Sheet name (optional)">Sheet name (optional)</span><input id="setting-sheet-name" class="input w-full" name="SHEET_NAME" value="<?= portal.sheetName ?>" maxlength="100" autocomplete="off" aria-describedby="spreadsheet-help"></label>
                 <p id="spreadsheet-help" class="settings-help" data-i18n="Leave the sheet name blank to use the first sheet. The tab selected in a pasted URL is ignored. Saving does not change spreadsheet permissions.">Leave the sheet name blank to use the first sheet. The tab selected in a pasted URL is ignored. Saving does not change spreadsheet permissions.</p>
-                <div class="settings-form-actions"><button type="submit" class="settings-save btn btn-primary" data-i18n="Save changes">Save changes</button><button type="button" id="create-spreadsheet" class="settings-reset btn" aria-describedby="create-spreadsheet-help" data-i18n="Create new spreadsheet">Create new spreadsheet</button><button type="button" id="reload-spreadsheet" class="settings-reset btn" hidden data-i18n="Reload portal">Reload portal</button></div>
+                <div class="settings-form-actions"><button type="submit" class="settings-save btn preset-filled-primary-500" data-i18n="Save changes">Save changes</button><button type="button" id="create-spreadsheet" class="settings-reset btn" aria-describedby="create-spreadsheet-help" data-i18n="Create new spreadsheet">Create new spreadsheet</button><button type="button" id="reload-spreadsheet" class="settings-reset btn" hidden data-i18n="Reload portal">Reload portal</button></div>
               </fieldset>
               <p id="create-spreadsheet-help" class="settings-help" data-i18n="Create a new spreadsheet with a ready-to-use table when no spreadsheet ID is saved or entered. Existing spreadsheets are never initialized.">Create a new spreadsheet with a ready-to-use table when no spreadsheet ID is saved or entered. Existing spreadsheets are never initialized.</p>
               <a id="open-spreadsheet-link" class="link footer-link" data-url="<?= portal.spreadsheetUrl ?>" target="_blank" rel="noopener noreferrer" hidden><span data-i18n="Open spreadsheet">Open spreadsheet</span> <!-- external-link-icon --><span class="visually-hidden" data-i18n="(opens in a new tab)">(opens in a new tab)</span></a>
@@ -192,7 +192,7 @@
                 </fieldset>
                 <section class="display-settings favicon-finder" aria-labelledby="favicon-finder-title">
                   <div class="settings-heading"><h3 id="favicon-finder-title" data-i18n="Favicon finder">Favicon finder</h3><p data-i18n="When a tool shows the 🌐 fallback, find the icon URL to put in its icon column.">When a tool shows the 🌐 fallback, find the icon URL to put in its icon column.</p></div>
-                  <p><a id="favicon-finder-link" class="bookmarklet-link btn btn-outline" draggable="true"><span aria-hidden="true">🔍</span> <span data-i18n="Find favicon">Find favicon</span></a></p>
+                  <p><a id="favicon-finder-link" class="bookmarklet-link btn preset-outlined-surface-300-700 bg-transparent" draggable="true"><span aria-hidden="true">🔍</span> <span data-i18n="Find favicon">Find favicon</span></a></p>
                   <p class="settings-help" data-i18n="Drag the link above to your bookmarks bar. Then open the page whose icon you need and click the bookmark to show its icon URL.">Drag the link above to your bookmarks bar. Then open the page whose icon you need and click the bookmark to show its icon URL.</p>
                   <div data-disclosure class="settings-help">
                     <span data-disclosure-title data-i18n="If dragging does not work">If dragging does not work</span>
@@ -236,20 +236,20 @@
             </div>
             <div id="slack-settings-loading" class="refresh-catalog actions-loading" role="status" aria-label="Loading…" data-i18n-aria-label="Loading…" aria-busy="true" hidden><!-- refresh-cw-icon --></div>
             <ul id="slack-connections" class="slack-connections"></ul>
-            <button type="button" id="add-slack" class="action-text-button btn btn-outline btn-sm" data-i18n="Add connection" disabled>Add connection</button>
+            <button type="button" id="add-slack" class="action-text-button btn preset-outlined-surface-300-700 bg-transparent btn-sm" data-i18n="Add connection" disabled>Add connection</button>
             <form id="slack-settings-form" class="portal-settings-form" hidden>
               <fieldset id="slack-settings-fields">
                 <legend class="visually-hidden" data-i18n="Slack connection">Slack connection</legend>
                 <div class="token-input-row">
                   <label class="settings-field"><span data-i18n="Slack User OAuth Token">Slack User OAuth Token</span><input type="password" id="slack-token" class="input w-full" maxlength="512" autocomplete="new-password" spellcheck="false" placeholder="xoxp-…" aria-describedby="slack-token-help slack-token-permissions"></label>
-                  <button type="button" id="replace-slack-token" class="btn btn-ghost btn-sm" data-i18n="Replace token" hidden>Replace token</button>
+                  <button type="button" id="replace-slack-token" class="btn button-quiet btn-sm" data-i18n="Replace token" hidden>Replace token</button>
                 </div>
                 <p id="slack-token-help" class="settings-help" data-i18n="Choose Replace token to enter a new token. Leaving it empty keeps the saved token. Never enter a real token in local preview.">Choose Replace token to enter a new token. Leaving it empty keeps the saved token. Never enter a real token in local preview.</p>
-                <div class="settings-form-actions"><button type="submit" class="settings-save btn btn-primary" data-i18n="Save connection">Save connection</button><button type="button" id="cancel-slack" class="settings-reset btn" data-i18n="Cancel">Cancel</button></div>
+                <div class="settings-form-actions"><button type="submit" class="settings-save btn preset-filled-primary-500" data-i18n="Save connection">Save connection</button><button type="button" id="cancel-slack" class="settings-reset btn" data-i18n="Cancel">Cancel</button></div>
               </fieldset>
             </form>
             <p id="slack-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
-            <button type="button" id="retry-slack-settings" class="action-text-button btn btn-ghost btn-sm" hidden data-i18n="Try again">Try again</button>
+            <button type="button" id="retry-slack-settings" class="action-text-button btn button-quiet btn-sm" hidden data-i18n="Try again">Try again</button>
           </section>
           <section class="display-settings github-settings" aria-labelledby="github-settings-title">
             <div class="settings-heading"><h2 id="github-settings-title"><span class="service-logo service-logo-github" aria-hidden="true"></span>GitHub</h2><p data-i18n="Show assigned issues, review requests, and changes requested on your PRs from GitHub.com in the Tasks section of Inbox & Tasks.">Show assigned issues, review requests, and changes requested on your PRs from GitHub.com in the Tasks section of Inbox & Tasks.</p></div>
@@ -270,22 +270,22 @@
             </div>
             <div id="github-settings-loading" class="refresh-catalog actions-loading" role="status" aria-label="Loading…" data-i18n-aria-label="Loading…" aria-busy="true" hidden><!-- refresh-cw-icon --></div>
             <ul id="github-connections" class="github-connections"></ul>
-            <button type="button" id="add-github" class="action-text-button btn btn-outline btn-sm" data-i18n="Add connection" disabled>Add connection</button>
+            <button type="button" id="add-github" class="action-text-button btn preset-outlined-surface-300-700 bg-transparent btn-sm" data-i18n="Add connection" disabled>Add connection</button>
             <form id="github-settings-form" class="portal-settings-form" hidden>
               <fieldset id="github-settings-fields">
                 <legend class="visually-hidden" data-i18n="GitHub connection">GitHub connection</legend>
                 <div class="token-input-row">
                   <label class="settings-field"><span data-i18n="Fine-grained personal access token">Fine-grained personal access token</span><input type="password" id="github-token" class="input w-full" maxlength="255" autocomplete="new-password" spellcheck="false" placeholder="github_pat_…" aria-describedby="github-token-help github-pat-permissions"></label>
-                  <button type="button" id="replace-github-token" class="btn btn-ghost btn-sm" data-i18n="Replace token" hidden>Replace token</button>
+                  <button type="button" id="replace-github-token" class="btn button-quiet btn-sm" data-i18n="Replace token" hidden>Replace token</button>
                 </div>
                 <p id="github-token-help" class="settings-help" data-i18n="Choose Replace token to enter a new token. Leaving it empty keeps the saved token. Never enter a real token in local preview.">Choose Replace token to enter a new token. Leaving it empty keeps the saved token. Never enter a real token in local preview.</p>
                 <label class="settings-field"><span data-i18n="Organization or owner (optional)">Organization or owner (optional)</span><input id="github-owner" class="input w-full" maxlength="39" autocomplete="off" placeholder="my-organization"></label>
                 <p class="settings-help" data-i18n="Connections are shown as owner@GitHub-user. A blank owner appears as * and searches all accessible repositories, including public repositories owned by others.">Connections are shown as owner@GitHub-user. A blank owner appears as * and searches all accessible repositories, including public repositories owned by others.</p>
-                <div class="settings-form-actions"><button type="submit" class="settings-save btn btn-primary" data-i18n="Save connection">Save connection</button><button type="button" id="cancel-github" class="settings-reset btn" data-i18n="Cancel">Cancel</button></div>
+                <div class="settings-form-actions"><button type="submit" class="settings-save btn preset-filled-primary-500" data-i18n="Save connection">Save connection</button><button type="button" id="cancel-github" class="settings-reset btn" data-i18n="Cancel">Cancel</button></div>
               </fieldset>
             </form>
             <p id="github-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
-            <button type="button" id="retry-github-settings" class="action-text-button btn btn-ghost btn-sm" hidden data-i18n="Try again">Try again</button>
+            <button type="button" id="retry-github-settings" class="action-text-button btn button-quiet btn-sm" hidden data-i18n="Try again">Try again</button>
           </section>
         </div>
         <div id="settings-calendar-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-calendar" tabindex="0" hidden><div id="calendar-settings-host"></div></div>
@@ -306,6 +306,7 @@
     <template id="calendar-pin-off-icon"><!-- pin-off-icon --></template>
     <template id="calendar-off-icon"><!-- calendar-off-icon --></template>
     <template id="calendar-icon"><!-- calendar-days-icon --></template>
+    <template id="calendar-coffee-icon"><!-- coffee-icon --></template>
     <template id="calendar-silence-icon"><!-- bell-off-icon --></template>
     <template id="gmail-refresh-icon"><!-- refresh-cw-icon --></template>
     <template id="calendar-refresh-icon"><!-- refresh-cw-icon --></template>

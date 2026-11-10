@@ -4,9 +4,9 @@ function doGet() {
   const portal = getPortalContent_(getPortalUserProperties_());
   template.portal = portal;
   template.theme = getPortalTheme_();
-  // Without data-theme, DaisyUI follows the device color scheme, so auto needs no script.
+  // Skeleton palettes support both schemes; CSS follows the device for auto.
   // The value is allowlisted by getPortalTheme_, so it is safe to print unescaped.
-  template.themeAttribute = template.theme === 'auto' ? '' : 'data-theme="' + template.theme + '"';
+  template.themeAttribute = PortalThemes.attributes(template.theme);
   template.initialCatalogJson = serializeCatalog_(getCatalog());
   template.projectUrl = 'https://script.google.com/home/projects/' + encodeURIComponent(ScriptApp.getScriptId()) + '/edit';
   return template.evaluate()
@@ -55,7 +55,7 @@ function getPortalContent_(properties) {
  * @param {string} theme @param {string} icon
  */
 function getPortalFaviconUrl_(theme, icon) {
-  const color = theme !== 'auto' && isPortalTheme_(theme) ? theme : PortalThemes.auto.light;
+  const color = PortalThemes.resolve(theme).palette;
   const normalized = normalizePortalIcon_(icon);
   const supported = /^[A-Z\u3041-\u3096\u309d-\u309e\u30a1-\u30fa\u30fc-\u30fe]$/.test(normalized);
   if (!supported) return 'https://hatappo.github.io/gas-portal/favicons/fallback.png';

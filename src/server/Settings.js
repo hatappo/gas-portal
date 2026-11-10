@@ -30,7 +30,7 @@ function isPortalTheme_(theme) {
 /** Settings belong to the executing user; this app is personal and runs as its deployer. */
 function getPortalTheme_() {
   const theme = PropertiesService.getUserProperties().getProperty('PORTAL_THEME');
-  // Names from before the DaisyUI themes (such as tsuyukusa) fall back to auto, without rewriting storage.
+  // Unavailable palette names fall back to the default without rewriting storage.
   return isPortalTheme_(theme) ? /** @type {string} */ (theme) : 'auto';
 }
 

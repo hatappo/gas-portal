@@ -168,7 +168,7 @@ test('Keep filters and List view during forced refresh, prevent duplicate reques
   requests[0].success({ ...catalog, cache: { hit: true, fetchedAt: 1700000000000 } });
   assert.match(document.querySelector('#catalog-freshness').title, /キャッシュ/);
   document.querySelector('#search').value = 'guide';
-  document.querySelector('#search').dispatchEvent(new dom.window.Event('input'));
+  document.querySelector('#search').dispatchEvent(new dom.window.Event('input', { bubbles: true }));
   document.querySelector('#view-list').click();
   [...document.querySelectorAll('#tags button')].find((button) => button.textContent === '資料').click();
   const previousCount = document.querySelector('#count').textContent;
@@ -217,7 +217,7 @@ test('Save cache duration separately, group cache under Links, and restore faile
   assert.equal(theme.querySelector('.cache-settings, .language-settings'), null);
   assert.equal(document.querySelector('#catalog-cache-seconds').closest('form'), null, 'Automatic preferences must remain independent of the display form submit');
   const select = document.querySelector('#catalog-cache-seconds');
-  const change = (value) => { select.value = value; select.dispatchEvent(new dom.window.Event('change')); };
+  const change = (value) => { select.value = value; select.dispatchEvent(new dom.window.Event('change', { bubbles: true })); };
   assert.equal(select.value, '21600');
   change('3600');
   assert.equal(select.disabled, true);
@@ -320,7 +320,7 @@ test('Automatically save Action Items cache duration with independent controls a
   assert.equal(select.closest('[role="tabpanel"]').id, 'settings-sources-panel');
   assert.equal(select.closest('form'), null);
   assert.equal(select.value, '300');
-  select.value = '60'; select.dispatchEvent(new dom.window.Event('change'));
+  select.value = '60'; select.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
   assert.equal(select.disabled, true);
   assert.equal(document.getElementById('catalog-cache-seconds').disabled, false);
   assert.equal(cacheSettingsRequests[0].kind, 'actions');
@@ -328,7 +328,7 @@ test('Automatically save Action Items cache duration with independent controls a
   cacheSettingsRequests[0].success({ ok: true, seconds: 60 });
   assert.equal(select.dataset.savedValue, '60');
   assert.equal(select.disabled, false);
-  select.value = '0'; select.dispatchEvent(new dom.window.Event('change'));
+  select.value = '0'; select.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
   cacheSettingsRequests[1].failure();
   assert.equal(select.value, '60');
   assert.equal(document.getElementById('catalog-cache-seconds').value, '21600');

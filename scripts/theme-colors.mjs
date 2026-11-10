@@ -1,13 +1,11 @@
-// Read DaisyUI theme colors for build-time use (favicons) and contrast tests.
-// DaisyUI defines colors in OKLCH; convert them to sRGB without extra dependencies.
+// Read portal Skeleton palette colors for favicons and contrast tests.
+// Convert OKLCH to sRGB without extra dependencies.
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const require = createRequire(import.meta.url);
 
 /** The theme list shared with the portal (src/shared/themes.js). */
 export function portalThemes() {
@@ -35,15 +33,35 @@ const decode = (value) => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 
 
 /** @returns {{scheme: string, colors: Record<string, number[]>}} colors in linear sRGB */
 export function themeColors(name) {
-  const css = readFileSync(require.resolve(`daisyui/theme/${name}.css`), 'utf8');
-  const scheme = /color-scheme:\s*(light|dark)/.exec(css)?.[1];
-  if (!scheme) throw new Error(`Missing color-scheme for ${name}.`);
-  const colors = {};
-  for (const [, key, value] of css.matchAll(/--color-([a-z0-9-]+):\s*([^;]+);/g)) {
-    const match = /^oklch\(([\d.]+)%\s+([\d.]+)\s+([\d.]+)\)$/.exec(value.trim());
+  const { palette, scheme: preference } = portalThemes().resolve(name);
+  const scheme = preference === 'dark' ? 'dark' : 'light';
+  const css = readFileSync(fileURLToPath(import.meta.resolve('@skeletonlabs/skeleton/themes/' + palette)), 'utf8');
+  const overrides = readFileSync(path.join(root, 'src/browser/theme-contrast.css'), 'utf8').split('[data-theme="' + palette + '"] {')[1]?.split('}')[0] || '';
+  const definitions = Object.fromEntries([...(css + overrides).matchAll(/(--[\w-]+):\s*([^;]+);/g)].map(([, key, value]) => [key, value.trim()]));
+  function color(key, depth = 0) {
+    if (depth > 8) throw new Error('Circular theme color: ' + key);
+    const value = definitions[key.startsWith('--') ? key : '--color-' + key];
+    if (/^#[0-9a-f]{6}$/i.test(value)) return value.slice(1).match(/../g).map(part => decode(parseInt(part, 16) / 255));
+    const reference = /^var\((--[\w-]+)\)$/.exec(value);
+    if (reference) return color(reference[1], depth + 1);
+    const match = /^oklch\(([\d.]+)(%)?\s+([\d.]+)\s+([\d.]+)(?:deg)?(?:\s*\/\s*1)?\)$/.exec(value?.replace(/\bnone\b/g, '0'));
     if (!match) throw new Error(`Unsupported color for ${name} ${key}: ${value}`);
-    colors[key] = oklchToLinear([Number(match[1]) / 100, Number(match[2]), Number(match[3])]);
+    return oklchToLinear([Number(match[1]) / (match[2] ? 100 : 1), Number(match[3]), Number(match[4])]);
   }
+  const colors = {
+    'base-100': color('surface-' + (scheme === 'light' ? 50 : 950)),
+    'base-200': color('surface-' + (scheme === 'light' ? 100 : 900)),
+    'base-300': color('surface-' + (scheme === 'light' ? 200 : 800)),
+    'base-content': scheme === 'light' ? [0, 0, 0] : [1, 1, 1],
+  };
+  for (const key of ['primary', 'secondary', 'tertiary', 'info', 'success', 'warning', 'error']) {
+    // Skeleton has no info role; use secondary for the portal's informational accents.
+    const source = key === 'info' ? 'secondary' : key;
+    colors[key === 'tertiary' ? 'accent' : key] = color(source + '-500');
+    colors[(key === 'tertiary' ? 'accent' : key) + '-content'] = color(source + '-contrast-500');
+  }
+  colors.neutral = colors['base-content'];
+  colors['neutral-content'] = colors['base-100'];
   return { scheme, colors };
 }
 

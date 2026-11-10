@@ -75,7 +75,7 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   inspect(parsedClient);
   assert.deepEqual(unsafeTemplates, [], 'GAS inline scripts must avoid URL-bearing and multiline template literals');
   assert.doesNotMatch(bundledClient + bundledStyles, /@vite|LOCAL PREVIEW|__preview|demo-address/);
-  assert.match(bundledStyles, /\[data-theme=dracula\]/, 'DaisyUI themes are bundled into the inline styles');
+  assert.match(bundledStyles, /\[data-theme=dracula\]/, 'Custom Skeleton themes are bundled into the inline styles');
   assert.doesNotMatch(bundledStyles, /@supports \(color:lab/, 'No oklch fallbacks for browsers Tailwind does not support');
   assert.doesNotMatch(html, /type="module"|browser\/main.js/);
   const app = browser((window) => { window.document.getElementById('initial-catalog').textContent = JSON.stringify(catalog); }, bundledClient.replace(/^<script>\s*/, '').replace(/\s*<\/script>\s*$/, ''), html);
@@ -97,14 +97,14 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   app.document.querySelector('#view-list').click();
   assert.equal(app.document.querySelectorAll('#tool-rows > tr').length, 2);
   app.document.querySelector('#search').value = 'Guide';
-  app.document.querySelector('#search').dispatchEvent(new app.dom.window.Event('input'));
+  app.document.querySelector('#search').dispatchEvent(new app.dom.window.Event('input', { bubbles: true }));
   assert.equal(app.document.querySelectorAll('#tool-rows > tr').length, 1);
-  app.document.querySelector('input[value="night"]').click();
-  app.themeRequests[0].success({ ok: true, theme: 'night' });
-  assert.equal(app.document.documentElement.dataset.theme, 'night');
+  app.document.querySelector('input[value="modern"]').click();
+  app.themeRequests[0].success({ ok: true, theme: 'modern' });
+  assert.equal(app.document.documentElement.dataset.theme, 'modern');
   app.document.querySelector('#reset-portal-settings').click();
   assert.equal(app.settingsRequests.length, 0);
-  app.document.querySelector('#portal-settings-form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true }));
+  app.document.querySelector('#portal-settings-form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true, bubbles: true }));
   app.settingsRequests[0].success({ ok: true, settings: { PORTAL_NAME: 'Built Portal', PORTAL_ICON: 'B', PORTAL_HEADLINE: 'Built headline', PORTAL_DESCRIPTION: 'Built description' } });
   assert.equal(app.document.title, 'Built Portal');
   assert.equal(app.document.querySelector('#page-title').textContent, 'Built headline');

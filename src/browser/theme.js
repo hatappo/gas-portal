@@ -8,13 +8,14 @@ export function initializeTheme() {
   const root = document.documentElement;
   const status = /** @type {HTMLElement} */ (document.getElementById('theme-status'));
 
-  // The server omits data-theme for auto, so DaisyUI follows the device color scheme without script.
-  let savedTheme = PortalThemes.isTheme(root.dataset.theme) ? /** @type {string} */ (root.dataset.theme) : 'auto';
+  // Palette and scheme share the existing per-user preference and save/rollback flow.
+  let savedTheme = PortalThemes.preference(root.dataset.theme || 'cerberus', root.dataset.colorScheme || 'auto');
 
   /** @param {string} theme */
   function apply(theme) {
-    if (theme === 'auto') root.removeAttribute('data-theme');
-    else root.dataset.theme = theme;
+    const { palette, scheme } = PortalThemes.resolve(theme);
+    root.dataset.theme = palette;
+    root.dataset.colorScheme = scheme;
     picker.setTheme(theme);
   }
 

@@ -43,20 +43,20 @@ test('Calendar partial errors suppress gaps; forced errors clear stale data and 
   const app = fixture(t); app.calendarRequests[0].success({ ok: true, settings: app.settings }); await flush();
   app.calendarRequests[1].success({ ...app.snapshot(), notices: ['primary: FORBIDDEN'] }); await flush();
   assert.equal(app.document.querySelectorAll('.is-gap').length, 0);
-  assert.match(app.get('calendar-panel').textContent, /一部のカレンダー/);
+  assert.match(app.get('calendar-panel').textContent.trim(), /一部のカレンダー/);
   app.document.querySelector('#calendar-panel .refresh-catalog').click();
   assert.equal(app.calendarRequests[2].force, true);
   app.calendarRequests[2].success({ ok: false, error: 'AUTHORIZATION_REQUIRED' }); await flush();
   assert.equal(app.document.querySelectorAll('.calendar-event').length, 0);
-  assert.match(app.get('calendar-panel').textContent, /authorizePortal/);
+  assert.match(app.get('calendar-panel').textContent.trim(), /authorizePortal/);
   assert.equal(app.document.querySelector('#calendar-panel .refresh-catalog').disabled, false);
 });
 test('Changing Calendar settings invalidates in-flight responses and saves only validated settings', async t => {
   const app = fixture(t); app.calendarRequests[0].success({ ok: true, settings: app.settings }); await flush();
   const old = app.calendarRequests[1];
   app.get('tab-settings').click(); app.get('settings-tab-calendar').click();
-  const cache = app.document.querySelector('[aria-labelledby=calendar-cache-label]'); cache.value = '900'; cache.dispatchEvent(new app.dom.window.Event('change'));
-  app.document.querySelector('.calendar-settings form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true }));
+  const cache = app.document.querySelector('[aria-labelledby=calendar-cache-label]'); cache.value = '900'; cache.dispatchEvent(new app.dom.window.Event('change', { bubbles: true }));
+  app.document.querySelector('.calendar-settings form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true, bubbles: true }));
   const save = app.calendarRequests[2];
   assert.deepEqual(plain(save.input), { ...app.settings, cacheSeconds: 900 });
   save.success({ ok: true, settings: save.input }); await flush();
@@ -106,8 +106,8 @@ test('The latest-ending timed appointment alone shows its end, including overlap
   const finalRow = app.document.querySelector('.calendar-event[data-last="true"]');
   assert.equal(app.document.querySelectorAll('.calendar-event[data-last="true"]').length, 1);
   assert.match(finalRow.querySelector('button').title, /current/);
-  assert.match(finalRow.querySelector('.calendar-event-time').textContent, /^\d{2}:\d{2} \u00b7 .+ ~ \d{2}:\d{2}$/);
-  assert.doesNotMatch(app.document.querySelector('.calendar-event[data-state="next"] .calendar-event-time').textContent, /~/);
+  assert.match(finalRow.querySelector('.calendar-event-time').textContent.trim(), /^\d{2}:\d{2} \u00b7 .+ ~ \d{2}:\d{2}$/);
+  assert.doesNotMatch(app.document.querySelector('.calendar-event[data-state="next"] .calendar-event-time').textContent.trim(), /~/);
   app.setNow(app.getNow() + 240000); app.dom.window.testPortal.calendar.tick();
   assert.equal(finalRow.dataset.state, 'past');
   assert.equal(finalRow.dataset.last, 'true');
@@ -136,11 +136,11 @@ test('Calendar progress and expansion filters update locally without removing ev
   assert.equal(app.document.querySelector('.calendar-date'), null);
 });
 
-test('Disabled notices retain the plain Next label and do not open a modal', async t => {
+test('Disabled notices retain the Next countdown and do not open a modal', async t => {
   const app = fixture(t);
   app.calendarRequests[0].success({ ok: true, settings: { ...app.settings, alertMinutes: 0 } }); await flush();
   app.calendarRequests[1].success(app.snapshot()); await flush();
-  assert.equal(app.document.querySelector('.calendar-next-badge').textContent, '次の予定');
+  assert.equal(app.document.querySelector('.calendar-next-badge').textContent.trim(), '次の予定 2分後');
   assert.equal(app.get('calendar-upcoming-notice'), null);
 });
 
@@ -151,16 +151,16 @@ test('Notice sample uses unsaved timing without requests or a motion toggle', as
   app.get('tab-settings').click(); app.get('settings-tab-calendar').click();
   const select = app.get('calendar-alert-select');
   assert.deepEqual(Array.from(select.options, o => o.value), ['0', '1', '2', '3', '5', '10', '15']);
-  select.value = '15'; select.dispatchEvent(new app.dom.window.Event('change'));
+  select.value = '15'; select.dispatchEvent(new app.dom.window.Event('change', { bubbles: true }));
   const trigger = app.document.querySelector('[aria-controls="calendar-notice-sample"]');
   trigger.click(); await flush();
   assert.equal(app.get('calendar-notice-sample').querySelectorAll('.calendar-event.is-approaching').length, 1);
-  assert.match(app.get('calendar-notice-sample').textContent, /15分後に開始/);
+  assert.match(app.get('calendar-notice-sample').textContent.trim(), /次の予定 15分後/);
   trigger.click(); await flush();
   assert.equal(app.get('calendar-notice-sample'), null);
-  select.value = '0'; select.dispatchEvent(new app.dom.window.Event('change'));
+  select.value = '0'; select.dispatchEvent(new app.dom.window.Event('change', { bubbles: true }));
   trigger.click(); await flush();
-  assert.match(app.get('calendar-notice-sample').textContent, /3分後に開始/);
+  assert.match(app.get('calendar-notice-sample').textContent.trim(), /次の予定 3分後/);
   assert.equal(app.calendarRequests.length, 2);
   assert.equal(app.document.querySelector('.calendar-pulse-toggle'), null);
 });
@@ -202,7 +202,7 @@ test('Next countdown follows remaining time without additional requests and loca
   app.calendarRequests[1].success(snapshot); await flush();
   const badge = () => app.document.querySelector('#calendar-panel .calendar-next-badge');
   for (const minutes of [3, 2, 1]) {
-    assert.equal(badge().textContent, `${minutes}分後に開始`);
+    assert.equal(badge().textContent.trim(), `次の予定 ${minutes}分後`);
     app.setNow(app.getNow() + 60000); app.dom.window.testPortal.calendar.tick();
   }
   assert.equal(badge(), null);
@@ -224,7 +224,7 @@ test('Current appointments show independent remaining minutes with accessible ti
   const row = rows.find(row => row.querySelector('.calendar-remaining-label').textContent === '残り30分');
   assert.match(row.querySelector('button').getAttribute('aria-label'), /残り30分/);
   app.setNow(app.getNow() + 29 * 60000); app.dom.window.testPortal.calendar.tick();
-  assert.equal(row.querySelector('.calendar-remaining-label').textContent, '残り1分');
+  assert.equal(row.querySelector('.calendar-remaining-label').textContent.trim(), '残り1分');
   assert.equal(row.style.getPropertyValue('--event-progress'), '98.33%');
   assert.match(row.querySelector('button').title, /残り1分/);
   app.setNow(app.getNow() + 60000); app.dom.window.testPortal.calendar.tick();
@@ -237,18 +237,18 @@ test('Calendar labels switch between Japanese and English without refetching eve
   app.calendarRequests[1].success(app.snapshot()); await flush();
   const next = () => app.document.querySelector('.calendar-next-badge');
   const remaining = () => app.document.querySelector('.calendar-remaining-label');
-  assert.equal(next().textContent, '次の予定');
-  assert.equal(remaining().textContent, '残り1分');
+  assert.equal(next().textContent.trim(), '次の予定 2分後');
+  assert.equal(remaining().textContent.trim(), '残り1分');
   app.document.documentElement.lang = 'en';
   app.document.dispatchEvent(new app.dom.window.Event('portal:languagechange'));
-  assert.equal(next().textContent, 'Next');
-  assert.equal(remaining().textContent, '1′ left');
+  assert.equal(next().textContent.trim(), 'Next in 2′');
+  assert.equal(remaining().textContent.trim(), '1′ left');
   app.setNow(app.getNow() + 60000); app.dom.window.testPortal.calendar.tick();
-  assert.equal(next().textContent, 'In 1′');
+  assert.equal(next().textContent.trim(), 'Next in 1′');
   assert.equal(next().getAttribute('aria-label'), 'Starts in 1 min');
   app.document.documentElement.lang = 'ja';
   app.document.dispatchEvent(new app.dom.window.Event('portal:languagechange'));
-  assert.equal(next().textContent, '1分後に開始');
+  assert.equal(next().textContent.trim(), '次の予定 1分後');
   assert.equal(next().getAttribute('aria-label'), '1分後に開始');
   assert.equal(app.calendarRequests.length, 2);
 });
@@ -265,7 +265,7 @@ test('Silencing one appointment preserves its countdown and other reminders thro
   assert.equal(button.getAttribute('aria-label'), 'このお知らせを停止');
   button.click();
   assert.equal(row.classList.contains('is-approaching'), false);
-  assert.equal(row.querySelector('.calendar-next-badge').textContent, '2分後に開始');
+  assert.equal(row.querySelector('.calendar-next-badge').textContent.trim(), '次の予定 2分後');
   assert.equal(app.document.activeElement, row.querySelector('.calendar-event-trigger'));
   assert.equal(app.document.querySelectorAll('.calendar-silence').length, 1);
   assert.equal(app.calendarRequests.length, 2, 'Silencing is a local interaction, not a settings update');
@@ -279,8 +279,8 @@ test('Silencing one appointment preserves its countdown and other reminders thro
   app.calendarRequests[3].success({ ...snapshot }); await flush();
   app.setNow(app.getNow() + 120000); app.dom.window.testPortal.calendar.tick();
   const active = app.document.querySelector('.calendar-event.is-approaching');
-  assert.match(active.querySelector('.calendar-event-title').textContent, /next/);
-  assert.equal(active.querySelector('.calendar-next-badge').textContent, '1分後に開始');
+  assert.match(active.querySelector('.calendar-event-title').textContent.trim(), /next/);
+  assert.equal(active.querySelector('.calendar-next-badge').textContent.trim(), '次の予定 1分後');
   assert.ok(active.querySelector('.calendar-silence'));
 });
 
@@ -289,27 +289,27 @@ test('Calendar choice errors stay beside Load calendars and remain separate from
   app.calendarRequests[0].success({ ok: true, settings: app.settings }); await flush();
   app.calendarRequests[1].success(app.snapshot()); await flush();
   const load = app.document.querySelector('.calendar-choices-heading button');
-  const submit = () => app.document.querySelector('.calendar-settings form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true }));
+  const submit = () => app.document.querySelector('.calendar-settings form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true, bubbles: true }));
   load.click();
   app.calendarRequests.at(-1).success({ ok: false, error: 'AUTHORIZATION_REQUIRED' }); await flush();
   const error = app.get('calendar-choices-error');
-  assert.match(error.textContent, /authorizePortal/);
+  assert.match(error.textContent.trim(), /authorizePortal/);
   assert.equal(error.previousElementSibling, load.parentElement);
   assert.equal(error.getAttribute('role'), 'alert');
-  assert.ok(error.classList.contains('alert-error'));
+  assert.ok(error.classList.contains('portal-alert-error'));
   assert.equal(load.getAttribute('aria-describedby'), error.id);
   submit();
   app.calendarRequests.at(-1).success({ ok: true, settings: app.settings }); await flush();
   assert.ok(app.get('calendar-choices-error'), 'Saving settings must not clear a failed choices request');
-  assert.equal(app.document.querySelector('.calendar-settings .settings-form-status').textContent, '保存しました');
-  assert.equal(app.document.querySelector('.calendar-settings .settings-form-status').classList.contains('alert-error'), false);
+  assert.equal(app.document.querySelector('.calendar-settings .settings-form-status').textContent.trim(), '保存しました');
+  assert.equal(app.document.querySelector('.calendar-settings .settings-form-status').classList.contains('portal-alert-error'), false);
   load.click();
   assert.equal(app.get('calendar-choices-error'), null, 'Retry clears the previous choices error');
   app.calendarRequests.at(-1).success({ ok: true, calendars: [{ id: 'primary', name: 'Work' }] }); await flush();
   assert.equal(load.hasAttribute('aria-describedby'), false);
   submit();
   app.calendarRequests.at(-1).failure(new Error('Failed')); await flush();
-  const saveError = app.document.querySelector('.calendar-settings > .alert-error');
+  const saveError = app.document.querySelector('.calendar-settings > .portal-alert-error');
   assert.equal(saveError.previousElementSibling.tagName, 'FORM');
   assert.equal(app.document.querySelector('.calendar-settings .settings-form-status'), null);
   assert.equal(app.get('calendar-choices-error'), null);
@@ -317,7 +317,7 @@ test('Calendar choice errors stay beside Load calendars and remain separate from
 
 test('Calendar names restore without fetching choices, fall back to IDs, and preserve saved selections', async t => {
   const app = fixture(t);
-  const labels = () => [...app.document.querySelectorAll('.calendar-choices label')].map(el => el.textContent);
+  const labels = () => [...app.document.querySelectorAll('.calendar-choices label')].map(el => el.textContent.trim());
   assert.deepEqual(labels(), [], 'Do not render a default ID while saved settings are loading');
   app.calendarRequests[0].success({ ok: true, settings: { ...app.settings, calendarIds: ['primary', 'saved@example.com'] }, calendarNames: { primary: 'Saved name' } }); await flush();
   app.calendarRequests[1].success(app.snapshot()); await flush();
@@ -332,7 +332,7 @@ test('Calendar names restore without fetching choices, fall back to IDs, and pre
   app.document.documentElement.lang = 'en';
   app.document.dispatchEvent(new app.dom.window.Event('portal:languagechange'));
   assert.deepEqual(labels(), ['My work calendar', 'saved@example.com']);
-  app.document.querySelector('.calendar-settings form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true }));
+  app.document.querySelector('.calendar-settings form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true, bubbles: true }));
   assert.deepEqual(plain(app.calendarRequests.at(-1).names), { primary: 'My work calendar' });
 });
 
@@ -348,7 +348,7 @@ test('Restored calendar choices survive deselection, saving and incomplete disco
   assert.equal(holidays.checked, false);
   assert.equal(app.document.activeElement, holidays);
   assert.equal(app.document.querySelectorAll('.calendar-choices input').length, 2);
-  app.document.querySelector('.calendar-settings form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true }));
+  app.document.querySelector('.calendar-settings form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true, bubbles: true }));
   assert.deepEqual(plain(app.calendarRequests.at(-1).input.calendarIds), ['primary']);
   app.calendarRequests.at(-1).success({ ok: true, settings: { ...settings, calendarIds: ['primary'] }, calendarNames: { primary: 'Work' } }); await flush();
   assert.equal(holidays.isConnected, true);
@@ -357,5 +357,5 @@ test('Restored calendar choices survive deselection, saving and incomplete disco
   app.document.querySelector('.calendar-choices-heading button').click();
   app.calendarRequests.at(-1).success({ ok: true, calendars: [{ id: 'primary', name: 'New work name' }] }); await flush();
   assert.equal(app.document.querySelectorAll('.calendar-choices input:checked').length, 2);
-  assert.match(app.document.querySelector('.calendar-choices').textContent, /Holidays/);
+  assert.match(app.document.querySelector('.calendar-choices').textContent.trim(), /Holidays/);
 });

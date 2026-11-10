@@ -1,0 +1,135 @@
+/* Portal density and states layered on Skeleton's buttons, forms, cards and badges. */
+@layer components {
+  .btn {
+    min-height: 36px;
+    border: 1px solid var(--color-surface-200-800);
+    background: var(--color-surface-100-900);
+    color: var(--portal-text);
+  }
+  .btn-sm {
+    min-height: 30px;
+  }
+  .btn-xs {
+    min-height: 24px;
+  }
+  .button-square {
+    aspect-ratio: 1;
+    padding-inline: 8px;
+  }
+  .btn.preset-filled-primary-500 {
+    border-color: transparent;
+  }
+  .button-quiet {
+    background: transparent;
+    border-color: transparent;
+  }
+  .button-quiet:hover {
+    background: color-mix(in srgb, var(--portal-text) 7%, transparent);
+  }
+  :is(button, input, select, textarea):disabled,
+  .btn-disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+  .input,
+  .select,
+  .textarea {
+    min-height: 36px;
+  }
+  .input {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .input input {
+    width: 100%;
+    min-width: 0;
+    outline: none;
+    background: transparent;
+  }
+  .checkbox {
+    flex-shrink: 0;
+  }
+  .badge {
+    background: var(--color-surface-100-900);
+    color: var(--portal-text);
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: var(--radius-base);
+  }
+  .badge-bordered {
+    background: transparent;
+    border: 1px solid currentColor;
+  }
+  .card-border {
+    border: 1px solid var(--color-surface-200-800);
+  }
+  .portal-surface {
+    background: var(--color-surface-50-950);
+  }
+  .link {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .link-hover {
+    text-decoration: none;
+  }
+  .link-hover:hover {
+    text-decoration: underline;
+  }
+  .table {
+    width: 100%;
+    text-align: left;
+    font-size: 13px;
+  }
+  .table :is(th, td) {
+    padding: 12px 16px;
+  }
+  .table tr {
+    border-bottom: 1px solid var(--color-surface-200-800);
+  }
+  .alert {
+    padding: 12px 16px;
+    border-radius: var(--radius-container);
+    background: var(--color-surface-100-900);
+  }
+  .portal-alert-error {
+    background: var(--color-error-500);
+    color: var(--color-error-contrast-500);
+  }
+  .portal-alert-warning {
+    background: var(--color-warning-500);
+    color: var(--color-warning-contrast-500);
+  }
+}
+/* Zag hides collapsed content; retain it for intrinsic-height transitions and form drafts. */
+[data-scope='collapsible'][data-part='content'] {
+  display: block;
+}
+[data-scope='tooltip'][data-part='positioner'],
+[data-scope='menu'][data-part='positioner'] {
+  z-index: 100;
+}
+
+/* Keep focus rings immediate instead of animating outline width with Skeleton's default transition. */
+.btn {
+  transition-property: background-color, color, border-color, box-shadow;
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+}
+
+/* Use Skeleton's sizing variables after utilities, which otherwise reset them to 16px. */
+.btn { --btn-size: 14px; font-weight: 500; }
+.btn-sm { --btn-size: 12px; }
+.btn-xs { --btn-size: 11px; }
+.input, .select, .textarea { --field-size: 14px; }
+.textarea { line-height: 1.6; }
+/* Only the search wrapper owns the border and focus ring. */
+.search-box input { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+@media (max-width: 760px) {
+  /* Keep text entry large enough to avoid automatic zoom on mobile browsers. */
+  .input, .select, .textarea { --field-size: 16px; }
+}

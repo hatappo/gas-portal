@@ -65,7 +65,7 @@ test('Slack settings save and clear passwords, edit without revealing credential
   const app = fixture(t); app.click('tab-settings'); connect(app, []);
   app.click('settings-tab-sources'); app.click('add-slack');
   app.get('slack-token').value = 'xoxp-TEST-SECRET';
-  app.get('slack-settings-form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true }));
+  app.get('slack-settings-form').dispatchEvent(new app.dom.window.Event('submit', { cancelable: true, bubbles: true }));
   assert.equal(app.slackRequests[1].input.token, 'xoxp-TEST-SECRET');
   assert.equal(app.get('slack-token').value, '');
   assert.equal(app.get('slack-settings-fields').disabled, true);
@@ -170,7 +170,7 @@ test('Diagnostics start collapsed, follow snapshots rather than filters, and upd
   const values = () => Object.fromEntries([...host.querySelectorAll('.diagnostics-metrics > li')].map(row => [row.querySelector('.diagnostic-label').textContent, row.querySelector('.diagnostic-value').textContent]));
   assert.equal(values()['完了'], '198');
   assert.equal(values()['未取得'], '50件');
-  const search = app.get('actions-search'); search.value = 'no-match'; search.dispatchEvent(new app.dom.window.Event('input'));
+  const search = app.get('actions-search'); search.value = 'no-match'; search.dispatchEvent(new app.dom.window.Event('input', { bubbles: true }));
   assert.equal(values()['対象ToDo件数'], '200');
   app.click('refresh-actions');
   assert.equal(values()['完了'], '198', 'Keep diagnostics with the visible snapshot while refreshing');

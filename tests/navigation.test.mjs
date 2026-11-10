@@ -23,12 +23,13 @@ test('Local tab navigation supports back and forward, retains queries and drafts
   const doc = app.document;
   app.requests[0].success(catalog);
   doc.getElementById('search').value = 'guide';
-  doc.getElementById('search').dispatchEvent(new window.Event('input'));
+  doc.getElementById('search').dispatchEvent(new window.Event('input', { bubbles: true }));
   doc.getElementById('tab-actions').click();
   assert.equal(window.location.hash, '#inbox-and-tasks');
   doc.getElementById('tab-actions').click();
   assert.equal(window.history.length, 2);
   doc.getElementById('tab-actions').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 60));
   assert.equal(window.location.hash, '#settings');
   doc.getElementById('setting-name').value = 'Unsaved name';
   const travel = (direction) => new Promise((resolve) => {
@@ -121,11 +122,13 @@ test('Settings keyboard navigation and history preserve drafts and keep parent t
   doc.getElementById('setting-name').value = 'Draft title';
   doc.getElementById('settings-tab-appearance').focus();
   doc.getElementById('settings-tab-appearance').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 60));
   assert.equal(window.location.hash, '#settings/sources');
   assert.equal(doc.activeElement.id, 'settings-tab-sources');
   assert.equal(selected(doc), 'tab-settings');
   doc.getElementById('setting-sheet-name').value = 'Draft sheet';
   doc.getElementById('settings-tab-sources').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 60));
   assert.equal(window.location.hash, '#settings/calendar');
   const length = window.history.length;
   doc.getElementById('settings-tab-calendar').click();
@@ -138,9 +141,11 @@ test('Settings keyboard navigation and history preserve drafts and keep parent t
   doc.getElementById('tab-tools').click(); doc.getElementById('tab-settings').click();
   assert.equal(window.location.hash, '#settings/sources');
   doc.getElementById('settings-tab-sources').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 60));
   assert.equal(window.location.hash, '#settings/appearance');
   doc.getElementById('settings-tab-appearance').focus();
   doc.getElementById('settings-tab-appearance').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 60));
   assert.equal(window.location.hash, '#settings/calendar');
 });
 

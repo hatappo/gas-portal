@@ -4,7 +4,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { build } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
-import solid from 'vite-plugin-solid';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { sharedSources, serverGroups } from './gas-sources.mjs';
 import { checkGasSyntax } from './gas-syntax.mjs';
 import { withPortalAssets } from './portal-html.mjs';
@@ -30,7 +30,7 @@ const bundle = await build({
   configFile: false,
   root: path.join(root, 'src'),
   publicDir: false,
-  plugins: [solid(), tailwindcss()],
+  plugins: [svelte({ configFile: false }), tailwindcss()],
   build: {
     write: false,
     target: 'es2020',
