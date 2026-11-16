@@ -1933,15 +1933,21 @@ test('Calendar opens from its icon, returns on close, and settles safely after i
   await page.waitForFunction(() => !document.getElementById('calendar-panel').dataset.calendarMotion);
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 900 });
+    // Resize/scroll handlers intentionally settle motion; let layout finish first.
+    await page.evaluate(() => { window.scrollTo(0, 0); });
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const closing = await page.evaluate(() => {
       document.querySelector('.calendar-panel-close').click();
       const panel = document.getElementById('calendar-panel');
       const animation = panel.getAnimations()[0];
       animation.pause();
       const frames = animation.effect.getKeyframes();
-      return { hidden: panel.hidden, inert: panel.inert, state: panel.dataset.calendarMotion,
+      const snapshot = { hidden: panel.hidden, inert: panel.inert, state: panel.dataset.calendarMotion,
         duration: animation.effect.getTiming().duration, destination: frames.at(-1).transform,
         focus: document.activeElement.id };
+      // Inspect and finish the same animation without a cross-process timing gap.
+      animation.finish();
+      return snapshot;
     });
     assert.equal(closing.hidden, false, 'Keep the panel visible until it reaches the icon');
     assert.equal(closing.inert, true);
@@ -1949,7 +1955,6 @@ test('Calendar opens from its icon, returns on close, and settles safely after i
     assert.equal(closing.duration, 240);
     assert.match(closing.destination, /translate\(.+\) scale\(0\./);
     assert.equal(closing.focus, 'toggle-calendar');
-    await page.evaluate(() => document.getElementById('calendar-panel').getAnimations()[0].finish());
     await page.locator('#calendar-panel').waitFor({ state: 'hidden' });
     const opening = await page.evaluate(() => {
       document.getElementById('toggle-calendar').click();
