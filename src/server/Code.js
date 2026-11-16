@@ -1,18 +1,34 @@
-/** @returns {GoogleAppsScript.HTML.HtmlOutput} */
-function doGet() {
+/** @param {{parameter?: Record<string, string>}} [event]
+ * @returns {GoogleAppsScript.HTML.HtmlOutput}
+ */
+function doGet(event) {
+  const embedded = event?.parameter?.sidePanel === '1';
+  const properties = getPortalUserProperties_();
+  // Never accept an extension ID from the URL. Only trusted defaults and this user's settings apply.
+  const extensionIds = PortalSidePanel.allowedIds(properties.SIDE_PANEL_EXTENSION_IDS);
+  const nonce = event?.parameter?.panelNonce || '';
+  if (embedded && (extensionIds.length === 0 || !/^[a-f0-9]{32}$/.test(nonce))) {
+    return HtmlService.createHtmlOutput('Side panel is not configured. Open the portal in a browser tab.');
+  }
   const template = HtmlService.createTemplateFromFile('Index');
-  const portal = getPortalContent_(getPortalUserProperties_());
+  template.sidePanelHead = embedded
+    ? '<style id="side-panel-guard">body{visibility:hidden}</style><meta name="portal-extensions" content="' + extensionIds.join(',') + '"><meta name="portal-panel-nonce" content="' + nonce + '">'
+    : '';
+  const portal = getPortalContent_(properties);
   template.portal = portal;
   template.theme = getPortalTheme_();
   // Skeleton palettes support both schemes; CSS follows the device for auto.
   // The value is allowlisted by getPortalTheme_, so it is safe to print unescaped.
   template.themeAttribute = PortalThemes.attributes(template.theme);
   template.initialCatalogJson = serializeCatalog_(getCatalog());
+  template.webAppUrl = ScriptApp.getService().getUrl() || '';
   template.projectUrl = 'https://script.google.com/home/projects/' + encodeURIComponent(ScriptApp.getScriptId()) + '/edit';
-  return template.evaluate()
+  const output = template.evaluate()
     .setTitle(portal.name)
     .setFaviconUrl(getPortalFaviconUrl_(template.theme, portal.icon))
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  if (embedded) output.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  return output;
 }
 
 /** Use defaults for missing fields; preserve explicitly empty intro text. Never interpret content as HTML.
@@ -40,6 +56,7 @@ function getPortalContent_(properties) {
     cacheSeconds: String(normalizeCatalogCacheTtl_(properties.CATALOG_CACHE_SECONDS)),
     actionsCacheSeconds: String(normalizeActionsCacheTtl_(properties.ACTIONS_CACHE_SECONDS)),
     unblockedUrlSchemes: PortalUrlSchemes.normalizeUnblocked(properties.UNBLOCKED_URL_SCHEMES).join(','),
+    sidePanelExtensionIds: PortalSidePanel.readAdditional(properties.SIDE_PANEL_EXTENSION_IDS).join('\n'),
     defaultsJson: JSON.stringify(defaults),
     icon: Array.from(normalizePortalIcon_(properties.PORTAL_ICON?.trim() || defaults.PORTAL_ICON))[0],
     brandLead: split < 0 ? name : name.slice(0, split),

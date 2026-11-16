@@ -291,7 +291,7 @@ Settings has three subtabs: **Appearance**, **Sources**, and **Calendar**. Sourc
 
 The spreadsheet section ends with collapsed **Advanced settings** for blocked URL schemes and the favicon finder. Switching tabs or opening disclosures preserves form drafts and each control's save behavior.
 
-Main routes are `#links`, `#inbox-and-tasks`, and `#settings`. Settings routes are `#settings/appearance`, `#settings/sources`, and `#settings/calendar`; old settings routes are not aliases. Browser back/forward works in both GAS and preview. Arrow keys and Home/End navigate the focused tab row.
+Main routes are `#links`, `#inbox-and-tasks`, and `#settings`. Settings routes are `#settings/appearance`, `#settings/sources`, `#settings/calendar`, and `#settings/extension`; old settings routes are not aliases. Browser back/forward works in both GAS and preview. Arrow keys and Home/End navigate the focused tab row.
 
 When editing GitHub or Slack connections, the token field is read-only and shows a fixed mask plus its last two characters. Only those two characters are included in connection metadata; saved tokens are never returned in full. Choose **Replace token** to enter a replacement. An empty replacement preserves the existing token. Local preview shows a fictional suffix (`mo`).
 

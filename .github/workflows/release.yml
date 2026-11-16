@@ -34,14 +34,17 @@ jobs:
       - run: npm install --global npm@12.2.2
       - run: npm ci
       - run: npm run check
+      - run: npm run extension:check
+      - run: npm run extension:zip
       - name: Pack compiled assets
         run: |
           mkdir -p release
           npm pack --ignore-scripts --pack-destination release
+          cp extension/.output/gas-portal-side-panel-*-chrome.zip release/
       - uses: actions/upload-artifact@v7.0.2
         with:
           name: release-package
-          path: release/gas-portal-*.tgz
+          path: release/
           if-no-files-found: error
           retention-days: 7
   publish:
@@ -62,5 +65,5 @@ jobs:
         run: |
           flags=()
           if [[ "$RELEASE_TAG" == *-* ]]; then flags+=(--prerelease); fi
-          gh release create "$RELEASE_TAG" "release/gas-portal-${RELEASE_TAG#v}.tgz" \
+          gh release create "$RELEASE_TAG" "release/gas-portal-${RELEASE_TAG#v}.tgz" "release/gas-portal-side-panel-${RELEASE_TAG#v}-chrome.zip" \
             --verify-tag --generate-notes --title "$RELEASE_TAG" "${flags[@]}"

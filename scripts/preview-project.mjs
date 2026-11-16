@@ -6,13 +6,15 @@ const themes = portalThemes();
 export function withPreviewContent(html, portal, theme = 'auto') {
   const escapes = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
   return html
+    .replace('<?!= sidePanelHead ?>', '')
+    .replace('<?= webAppUrl ?>', '')
     .replace('<? if (!portal.headline && !portal.description) { ?>hidden<? } ?>', !portal.headline && !portal.description ? 'hidden' : '')
     .replace('<? if (!portal.headline) { ?>hidden<? } ?>', !portal.headline ? 'hidden' : '')
     .replace('<? if (!portal.description) { ?>hidden<? } ?>', !portal.description ? 'hidden' : '')
     .replace('<?!= themeAttribute ?>', () => themes.attributes(theme))
     .replace(/<\? if \(portal\.spreadsheetUrl\) \{ \?>([\s\S]*?)<\? \} \?>/g,
     (_, content) => portal.spreadsheetUrl ? content : '')
-    .replace(/<\?= portal\.(spreadsheetId|sheetName|cacheSeconds|actionsCacheSeconds|unblockedUrlSchemes|languagePreference|language|name|brandLead|brandRest|headline|description|spreadsheetUrl|icon|defaultsJson) \?>/g,
+    .replace(/<\?= portal\.(spreadsheetId|sheetName|cacheSeconds|actionsCacheSeconds|unblockedUrlSchemes|sidePanelExtensionIds|languagePreference|language|name|brandLead|brandRest|headline|description|spreadsheetUrl|icon|defaultsJson) \?>/g,
     (_, key) => portal[key].replace(/[&<>"']/g, (character) => escapes[character]));
 }
 

@@ -11,7 +11,9 @@
   "ignorePatterns": [
     "dist/**",
     "assets/**",
-    "node_modules/**"
+    "node_modules/**",
+    "extension/.wxt/**",
+    "extension/.output/**"
   ],
   "env": {
     "builtin": true,
@@ -21,6 +23,7 @@
   "globals": {
     "PortalI18n": "readonly",
     "PortalUrlSchemes": "readonly",
+    "PortalSidePanel": "readonly",
     "PortalThemes": "readonly",
     "PortalCatalogRules": "readonly",
     "PortalSlackSettings": "readonly",
@@ -60,7 +63,7 @@
         "no-unused-vars": [
           "error",
           {
-            "varsIgnorePattern": "^(getGmailSettings|saveGmailSettings|getGmailActionItems|authorizePortal|getCalendarSettings|saveCalendarSettings|getCalendarChoices|getCalendarEvents|saveSlackBookmarkLimit|getSlackConnections|saveSlackConnection|disconnectSlack|getSlackActionItems|getSlackBookmarks|getGitHubConnections|saveGitHubConnection|disconnectGitHub|getGitHubActionItems|doGet|getCatalog|saveCatalogCacheTtl|saveActionsCacheTtl|normalizeCatalogCacheTtl_|readCachedSheetCatalog_|saveTheme|saveLanguage|include_|parseCatalog_|readSheetCatalog_|savePortalSettings|saveSpreadsheetSettings|createPortalSpreadsheet|saveUnblockedUrlSchemes|doGet|getPortalLanguage_|getPortalPropertyDefaults_|getPortalTheme_|getPortalUserProperties_|isPortalTheme_|normalizeActionsCacheTtl_|normalizeCatalogCacheTtl_|normalizePortalIcon_|normalizeSpreadsheetId_|parseCatalog_|readCachedSheetCatalog_|withPortalPropertiesLock_)$"
+            "varsIgnorePattern": "^(saveSidePanelExtensionIds|getGmailSettings|saveGmailSettings|getGmailActionItems|authorizePortal|getCalendarSettings|saveCalendarSettings|getCalendarChoices|getCalendarEvents|saveSlackBookmarkLimit|getSlackConnections|saveSlackConnection|disconnectSlack|getSlackActionItems|getSlackBookmarks|getGitHubConnections|saveGitHubConnection|disconnectGitHub|getGitHubActionItems|doGet|getCatalog|saveCatalogCacheTtl|saveActionsCacheTtl|normalizeCatalogCacheTtl_|readCachedSheetCatalog_|saveTheme|saveLanguage|include_|parseCatalog_|readSheetCatalog_|savePortalSettings|saveSpreadsheetSettings|createPortalSpreadsheet|saveUnblockedUrlSchemes|doGet|getPortalLanguage_|getPortalPropertyDefaults_|getPortalTheme_|getPortalUserProperties_|isPortalTheme_|normalizeActionsCacheTtl_|normalizeCatalogCacheTtl_|normalizePortalIcon_|normalizeSpreadsheetId_|parseCatalog_|readCachedSheetCatalog_|withPortalPropertiesLock_)$"
           }
         ]
       }
@@ -144,10 +147,22 @@
     },
     {
       "files": [
-        "src/browser/*.svelte"
+        "src/browser/*.svelte",
+        "extension/**/*.svelte"
       ],
       "rules": {
         "no-undef": "off"
+      }
+    },
+    {
+      "files": [
+        "extension/**/*.ts",
+        "extension/**/*.svelte",
+        "tests/extension/*.mjs"
+      ],
+      "env": {
+        "browser": true,
+        "node": true
       }
     }
   ]
