@@ -16,20 +16,29 @@
   const tabId = (value: string) => tabs.find(tab => tab.hash === value)!.button.id.replace('tab-', '');
   onMount(() => {
     const layout = typeof matchMedia === 'undefined' ? undefined : matchMedia('(max-width: 760px)');
+    let focusFrame = 0;
     const sync = () => {
       const compact = layout?.matches ?? false;
       if (document.documentElement.dataset.compact === String(compact)) return;
       const active = document.activeElement;
       document.documentElement.dataset.compact = String(compact);
-      if (compact && tabs.some((tab) => tab.button === active))
-        document.getElementById('compact-tab-' + tabId(tabs[selected()].hash))?.focus({ preventScroll: true });
-      else if (!compact && document.getElementById('compact-navigation')?.contains(active)) {
-        requestAnimationFrame(() => tabs[selected()].button.focus({ preventScroll: true }));
+      cancelAnimationFrame(focusFrame);
+      const moveFocus = compact
+        ? tabs.some(tab => tab.button === active)
+        : document.getElementById('compact-navigation')?.contains(active);
+      if (moveFocus) {
+        // Wait for the new layout and radio-group bindings before focusing a newly visible control.
+        focusFrame = requestAnimationFrame(() => {
+          const target = compact
+            ? document.getElementById('compact-tab-' + tabId(tabs[selected()].hash))
+            : tabs[selected()].button;
+          target?.focus({ preventScroll: true });
+        });
       }
     };
     sync();
     layout?.addEventListener('change', sync);
-    return () => layout?.removeEventListener('change', sync);
+    return () => { cancelAnimationFrame(focusFrame); layout?.removeEventListener('change', sync); };
   });
 </script>
 

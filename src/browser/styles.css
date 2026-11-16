@@ -663,8 +663,8 @@ h2 .service-logo { width: 24px; height: 24px; }
 .theme-mode .settings-help { flex-basis: 100%; margin: 0; }
 #theme-picker > .theme-grid { display: grid; }
 
-/* Hide wide navigation synchronously on resize, before the JS menu state catches up. */
-@media (max-width: 760px) { .portal-tabs { display: none; } }
+/* Avoid a wide-tab flash before startup. After mounting, JS coordinates hiding and focus. */
+@media (max-width: 760px) { :root:not([data-compact]) .portal-tabs { display: none; } }
 @media (prefers-reduced-motion: reduce) {
   [data-scope="tabs"][data-part="trigger"],
   [data-scope="radio-group"][data-part="item-text"] { transition: none; }

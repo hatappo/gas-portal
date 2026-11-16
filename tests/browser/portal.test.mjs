@@ -1206,7 +1206,7 @@ test('Compact segmented navigation supports keyboard switching and preserves dra
   assert.ok((await page.locator('.site-header').boundingBox()).height <= 44);
   const navigation = page.locator('#compact-navigation');
   assert.equal(await navigation.getByRole('radio').count(), 3);
-  assert.equal(await page.evaluate(() => document.activeElement.id), 'compact-tab-tools');
+  await page.waitForFunction(() => document.activeElement.id === 'compact-tab-tools');
   await page.keyboard.press('ArrowRight');
   await page.locator('#actions-panel').waitFor({ state: 'visible' });
   assert.ok(page.url().endsWith('#inbox-and-tasks'));
@@ -1797,6 +1797,8 @@ test('Type search supports Japanese, IME, dismissal, duplicate prevention and co
   await search.fill('is:nosuchtype');
   await page.getByText('No matching types', { exact: true }).waitFor();
   await search.press('Enter');
+  assert.equal(await search.inputValue(), 'is:nosuchtype');
+  assert.equal(await page.getByRole('listbox').isVisible(), true, 'Enter with no candidate keeps suggestions open');
   assert.equal(await page.locator('.action-type-chip').count(), 0);
   await search.fill('is:issue');
   await page.getByRole('option', { name: 'GitHub · Assigned issue', exact: true }).waitFor();
