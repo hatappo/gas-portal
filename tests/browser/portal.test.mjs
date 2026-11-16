@@ -1639,6 +1639,8 @@ test('Skeleton forms normalize checkboxes and selects and keep input and button 
   await select.selectOption('3600');
   await page.locator('#cache-settings-status').getByText('Saved', { exact: true }).waitFor();
   await page.reload();
+  // Restored settings can appear before the asynchronous catalog is ready.
+  await page.locator('#directory[aria-busy="false"] .tool-card').first().waitFor({ state: 'attached' });
   assert.equal(await select.inputValue(), '3600');
   await page.setViewportSize({ width: 390, height: 900 });
   assert.equal(await font(select), '16px');
