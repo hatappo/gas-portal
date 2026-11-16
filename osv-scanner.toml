@@ -1,0 +1,27 @@
+# Temporary risk acceptance, not a claim that these packages are fixed.
+# Review sooner when dependency paths, build inputs, or clasp MCP usage change.
+# CI retains unfiltered findings and fails when an exception expires.
+
+# Zod: oversized collection validation can exhaust memory and crash the process (DoS).
+[[IgnoredVulns]]
+id = "GHSA-mrhx-c7xc-m3w5"
+effectiveUntil = 2027-02-16
+reason = "Zod 3.25.76 is used by clasp's MCP tooling, which portal does not start. It is absent from the GAS/browser payload. Accept temporarily while awaiting a compatible clasp update; reassess before enabling MCP."
+
+# glob: cancelled directory traversal can continue consuming filesystem I/O and CPU.
+[[IgnoredVulns]]
+id = "GHSA-3g3m-2fjr-6pw4"
+effectiveUntil = 2027-02-16
+reason = "glob 10.5.0 is a transitive dependency of clasp via googleapis-common/gaxios/rimraf. The portal does not expose filesystem traversal or glob patterns to web users. Accept temporarily; reassess changes to CLI inputs and this dependency path."
+
+# minimatch: crafted glob patterns can amplify processing and exhaust CPU/memory (DoS).
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+effectiveUntil = 2027-02-16
+reason = "minimatch 9.0.9 is in clasp's glob dependency path, outside the GAS/browser payload. CLI patterns and project files are developer-controlled. Accept temporarily; reassess if untrusted patterns are introduced."
+
+# deepmerge: malicious merge input can poison the returned object's prototype.
+[[IgnoredVulns]]
+id = "GHSA-gcqx-w48m-w2h4"
+effectiveUntil = 2027-02-16
+reason = "deepmerge 4.3.1 merges developer-controlled Svelte/Vite configuration during builds. Service responses and portal user input do not enter this configuration. No patched release is available; reassess changes to build configuration inputs."

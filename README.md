@@ -12,7 +12,7 @@ Google Calendar adds a collapsible **Today** sidebar across all tabs, with compa
 
 Packages are distributed as `gas-portal-VERSION.tgz` assets on GitHub Releases, without publishing to the npm registry. Use the attached package from a published release in the public repository. GitHub's automatic Source code archives do not include the compiled assets.
 
-Requirements: Node.js 26.x and npm 11.20 or later (the version bundled with Node.js 26). To access GAS, enable the Apps Script API for the target Google account and sign in with clasp.
+Requirements: Node.js 26.13.1 or later within the 26.x series and npm 12.2.2 or later. To access GAS, enable the Apps Script API for the target Google account and sign in with clasp.
 
 ```sh
 # In a new directory for your work environment
@@ -252,3 +252,7 @@ They are bundled into the stylesheet as data URLs, so viewing a row does not
 contact a logo CDN. Icons retain accessible service names and hover labels;
 unknown services keep their text label. Spreadsheet settings use the Google
 Drive mark. See [NOTICE](NOTICE) for sources and licensing.
+
+## Dependency security
+
+[OSV-Scanner checks](docs/security-scanning.md) run in CI with reasoned, expiring risk exceptions. Run `npm run security:scan` locally with OSV-Scanner 2.7.1 installed. Complete findings and accepted risks remain available in the Actions summary and report artifact.
