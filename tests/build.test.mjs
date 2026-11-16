@@ -14,7 +14,7 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   t.after(() => rmSync(root, { recursive: true, force: true }));
   cpSync('src', path.join(root, 'src'), { recursive: true });
   mkdirSync(path.join(root, 'scripts'));
-  for (const file of ['build.mjs', 'gas-sources.mjs', 'gas-syntax.mjs', 'portal-html.mjs']) cpSync(`scripts/${file}`, path.join(root, 'scripts', file));
+  for (const file of ['build.mjs', 'gas-sources.mjs', 'gas-syntax.mjs', 'portal-html.mjs', 'inline-script.mjs']) cpSync(`scripts/${file}`, path.join(root, 'scripts', file));
   mkdirSync(path.join(root, 'lib'));
   cpSync('lib/repository-url.mjs', path.join(root, 'lib/repository-url.mjs'));
   symlinkSync(path.resolve('node_modules'), path.join(root, 'node_modules'), 'dir');
@@ -68,11 +68,17 @@ test("Build stays offline, removes stale data, and preserves output after syntax
   const clientCode = bundledClient.replace(/^<script>\s*/, '').replace(/\s*<\/script>\s*$/, '');
   const parsedClient = ts.createSourceFile('Client.js', clientCode, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   const unsafeTemplates = [];
+  const unsafeRegexps = [];
+  const unsafeStrings = [];
   function inspect(node) {
     if ((ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateExpression(node)) && /:\/\/|[\r\n]/.test(node.getText(parsedClient))) unsafeTemplates.push(node.getText(parsedClient));
+    if (ts.isRegularExpressionLiteral(node) && node.text.slice(1, node.text.lastIndexOf('/')).includes('/')) unsafeRegexps.push(node.text);
+    if (ts.isStringLiteral(node) && node.getText(parsedClient).includes('/')) unsafeStrings.push(node.getText(parsedClient));
     ts.forEachChild(node, inspect);
   }
   inspect(parsedClient);
+  assert.deepEqual(unsafeStrings, [], 'GAS inline string literals must escape slashes so URLs cannot be mistaken for comments');
+  assert.deepEqual(unsafeRegexps, [], 'GAS inline scripts must not expose regexp comment delimiters to HTML processing');
   assert.deepEqual(unsafeTemplates, [], 'GAS inline scripts must avoid URL-bearing and multiline template literals');
   assert.doesNotMatch(bundledClient + bundledStyles, /@vite|LOCAL PREVIEW|__preview|demo-address/);
   assert.match(bundledStyles, /\[data-theme=dracula\]/, 'Custom Skeleton themes are bundled into the inline styles');
