@@ -1,0 +1,48 @@
+name: Dependency security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependencies:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '26'
+          check-latest: true
+          cache: npm
+      - run: npm install --global npm@12.2.2
+      - run: npm ci --ignore-scripts
+      - name: Install verified OSV-Scanner
+        shell: bash
+        run: |
+          destination="$RUNNER_TEMP/osv-scanner"
+          curl --fail --location --retry 3 \
+            https://github.com/google/osv-scanner/releases/download/v2.7.1/osv-scanner_linux_amd64 \
+            --output "$destination"
+          printf '%s  %s\n' fb7dab19a8bd9bbe5c3189f09d4b7ee1820c9553a23bac202648a56efd2f6ee8 "$destination" | sha256sum --check -
+          chmod +x "$destination"
+          echo "OSV_SCANNER=$destination" >> "$GITHUB_ENV"
+      - name: Scan dependencies and summarize accepted risks
+        run: npm run security:scan
+      - name: Preserve complete results and policy
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: dependency-security-${{ github.run_id }}-${{ github.run_attempt }}
+          path: security-reports/
+          if-no-files-found: warn
+          retention-days: 30
