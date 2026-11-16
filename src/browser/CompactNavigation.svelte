@@ -17,15 +17,24 @@
   onMount(() => {
     const layout = typeof matchMedia === 'undefined' ? undefined : matchMedia('(max-width: 760px)');
     let focusFrame = 0;
+    let displacedFocus = false;
+    const isNavigation = (node: EventTarget | null) => node instanceof Node &&
+      (tabs.some(tab => tab.button === node) || !!document.getElementById('compact-navigation')?.contains(node));
+    const rememberDisplacedFocus = (event: FocusEvent) => {
+      // CSS can hide the wide tab before the media-query callback runs.
+      if (String(layout?.matches ?? false) !== document.documentElement.dataset.compact && isNavigation(event.target)) {
+        displacedFocus = true;
+      }
+    };
+    document.addEventListener('focusout', rememberDisplacedFocus, true);
     const sync = () => {
       const compact = layout?.matches ?? false;
       if (document.documentElement.dataset.compact === String(compact)) return;
       const active = document.activeElement;
       document.documentElement.dataset.compact = String(compact);
       cancelAnimationFrame(focusFrame);
-      const moveFocus = compact
-        ? tabs.some(tab => tab.button === active)
-        : document.getElementById('compact-navigation')?.contains(active);
+      const moveFocus = displacedFocus || isNavigation(active);
+      displacedFocus = false;
       if (moveFocus) {
         // Wait for the new layout and radio-group bindings before focusing a newly visible control.
         focusFrame = requestAnimationFrame(() => {
@@ -38,7 +47,11 @@
     };
     sync();
     layout?.addEventListener('change', sync);
-    return () => { cancelAnimationFrame(focusFrame); layout?.removeEventListener('change', sync); };
+    return () => {
+      cancelAnimationFrame(focusFrame);
+      layout?.removeEventListener('change', sync);
+      document.removeEventListener('focusout', rememberDisplacedFocus, true);
+    };
   });
 </script>
 
