@@ -27,13 +27,14 @@ test("Initialize User Properties without accessing Script Properties or repeatin
   assert.deepEqual(Object.keys(userValues).sort(), [
     'PORTAL_NAME', 'PORTAL_ICON', 'PORTAL_HEADLINE', 'PORTAL_DESCRIPTION', 'PORTAL_THEME', 'PORTAL_LANGUAGE',
     'CATALOG_CACHE_SECONDS', 'ACTIONS_CACHE_SECONDS', 'CALENDAR_SETTINGS', 'SPREADSHEET_ID', 'SHEET_NAME',
-    'UNBLOCKED_URL_SCHEMES', 'OTHER',
+    'UNBLOCKED_URL_SCHEMES', 'SIDE_PANEL_EXTENSION_IDS', 'OTHER',
   ].sort());
   assert.equal(userValues.PORTAL_NAME, 'My Portal');
   assert.equal(userValues.PORTAL_ICON, '');
   assert.equal(userValues.PORTAL_THEME, 'forest');
   assert.equal(userValues.SPREADSHEET_ID, '');
   assert.equal(userValues.SHEET_NAME, '');
+  assert.equal(userValues.SIDE_PANEL_EXTENSION_IDS, '');
   assert.equal(userValues.OTHER, 'user-keep');
   assert.equal(scriptValues.PORTAL_ICON, undefined);
   assert.equal(scriptValues.SPREADSHEET_ID, 'private-id');
@@ -107,7 +108,7 @@ test('Editor authorization changes no settings and initialization does not expli
   assert.deepEqual(userProperties, { PORTAL_NAME: 'Keep me', PORTAL_HEADLINE: '' });
   assert.equal(checks, 2);
   consentRequired = true;
-  assert.equal(Object.keys(app.context.getPortalUserProperties_()).length, 12);
+  assert.equal(Object.keys(app.context.getPortalUserProperties_()).length, 13);
   assert.equal(checks, 2, 'Automatic initialization must not invoke the consent flow');
   assert.equal(userProperties.PORTAL_NAME, 'Keep me');
   assert.equal(userProperties.PORTAL_HEADLINE, '');

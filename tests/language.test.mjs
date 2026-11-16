@@ -229,3 +229,25 @@ test('Give language its own section at the same heading level as portal content 
   assert.equal(app.document.getElementById('portal-language').getAttribute('aria-labelledby'), 'language-settings-title');
   assert.equal(language.getAttribute('aria-labelledby'), 'language-settings-title');
 });
+
+test('Automatic Japanese is applied to Svelte settings mounted after language initialization', t => {
+  const app = browser(window => {
+    window.document.documentElement.lang = 'en';
+    window.document.documentElement.dataset.languagePreference = 'auto';
+    Object.defineProperty(window.navigator, 'languages', { value: ['ja-JP'] });
+  });
+  t.after(() => app.dom.window.close());
+  assert.equal(app.document.documentElement.lang, 'ja');
+  assert.equal(app.document.querySelector('#portal-settings-form .settings-save').textContent.trim(), '変更を保存');
+  assert.equal(app.document.getElementById('reset-portal-settings').textContent.trim(), '既定値に戻す');
+  assert.match(app.document.getElementById('intro-help').textContent, /見出し・メモ/);
+  choose(app, 'en');
+  app.languageRequests.at(-1).success({ ok: true, language: 'en' });
+  app.dom.window.flushSvelte();
+  assert.equal(app.document.querySelector('#portal-settings-form .settings-save').textContent.trim(), 'Save changes');
+  assert.match(app.document.getElementById('intro-help').textContent, /Leave the headline or notes/);
+  choose(app, 'ja');
+  app.languageRequests.at(-1).success({ ok: true, language: 'ja' });
+  app.dom.window.flushSvelte();
+  assert.equal(app.document.getElementById('reset-portal-settings').textContent.trim(), '既定値に戻す');
+});

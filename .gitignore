@@ -15,4 +15,7 @@ releases/
 /site/
 /screenshots/
 
+/extension/.wxt/
+/extension/.output/
+
 /security-reports/

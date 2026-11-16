@@ -8,6 +8,7 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { sharedSources, serverGroups } from './gas-sources.mjs';
 import { checkGasSyntax } from './gas-syntax.mjs';
 import { withPortalAssets } from './portal-html.mjs';
+import { prepareInlineScript } from './inline-script.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const dist = path.join(root, 'dist');
@@ -44,11 +45,12 @@ const bundle = await build({
   },
 });
 const outputs = (Array.isArray(bundle) ? bundle : [bundle]).flatMap((result) => result.output);
-const client = outputs.find((file) => file.type === 'chunk')?.code;
+const rawClient = outputs.find((file) => file.type === 'chunk')?.code;
 const css = outputs.find((file) => file.type === 'asset' && file.fileName.endsWith('.css'))?.source;
-if (outputs.length !== 2 || typeof client !== 'string' || typeof css !== 'string') {
+if (outputs.length !== 2 || typeof rawClient !== 'string' || typeof css !== 'string') {
   throw new Error('GAS output requires a single JavaScript bundle and CSS asset.');
 }
+const client = prepareInlineScript(rawClient);
 new vm.Script(client, { filename: 'Client.html' });
 if (/<\/script/i.test(client) || /<\/style/i.test(css)) throw new Error('Generated assets must not contain closing HTML tags.');
 const index = withPortalAssets(readFileSync(path.join(root, 'src/Index.html'), 'utf8').replace('<!-- repository-link -->', '<!-- portal-repository-link -->'), root)

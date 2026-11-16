@@ -75,6 +75,10 @@
       }}
       onkeydowncapture={event => {
         if (event.isComposing || composing) { event.stopPropagation(); return; }
+        // With no candidate, Enter must not schedule a stale close over the next query.
+        if (event.key === 'Enter' && token && !candidates.length) {
+          event.preventDefault(); event.stopPropagation(); return;
+        }
         // Dismiss immediately, even before the combobox's popup listeners are installed.
         if (event.key === 'Escape' && open) {
           event.preventDefault(); event.stopPropagation(); open = false; return;

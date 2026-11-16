@@ -33,6 +33,7 @@ export function renderPreview(html, root, options = {}) {
   const context = vm.createContext({ console });
   const i18n = readFileSync(path.join(root, 'src/shared/i18n.js'), 'utf8');
   const urlSchemes = readFileSync(path.join(root, 'src/shared/url-schemes.js'), 'utf8');
+  const sidePanel = readFileSync(path.join(root, 'src/shared/side-panel.js'), 'utf8');
   for (const file of sharedSources) vm.runInContext(readFileSync(path.join(root, file), 'utf8'), context);
   for (const file of serverSources) vm.runInContext(readFileSync(path.join(root, file), 'utf8'), context);
   const catalog = { ok: true, ...context.parseCatalog_(demo.tools) };
@@ -48,6 +49,7 @@ export function renderPreview(html, root, options = {}) {
     .replace('<script type="module" src="/browser/main.js"></script>', () => `<script>
       ${i18n}
       ${urlSchemes}
+      ${sidePanel}
       ${readFileSync(path.join(root, 'src/shared/themes.js'), 'utf8')}
       ${readFileSync(path.join(root, 'src/shared/cache-durations.js'), 'utf8')}
       ${readFileSync(path.join(root, 'src/shared/slack-settings.js'), 'utf8')}
@@ -115,6 +117,10 @@ export function renderPreview(html, root, options = {}) {
       let previewUnblockedUrlSchemes = [];
       try { previewUnblockedUrlSchemes = PortalUrlSchemes.normalizeUnblocked(localStorage.getItem('portal-preview-unblocked-url-schemes')); } catch { /* Use defaults. */ }
       if (typeof document !== 'undefined') document.getElementById('url-scheme-settings').dataset.savedValue = previewUnblockedUrlSchemes.join(',');
+      try {
+        const ids = PortalSidePanel.readAdditional(localStorage.getItem('portal-preview-extension-ids'));
+        document.getElementById('side-panel-extension-ids').value = ids.join('\\n');
+      } catch { /* Use defaults. */ }
       const demo = ${serialize(demo)};
       const catalog = ${serialize(catalog)};
       const scenario = new URLSearchParams(location.search).get('state');
@@ -210,6 +216,13 @@ export function renderPreview(html, root, options = {}) {
             previewActionsCacheSeconds = seconds;
             this.success({ok:true, seconds});
           } catch { this.failure(); }
+        }, 200);},
+        saveSidePanelExtensionIds(input) {setTimeout(() => {
+          try {
+            const ids = PortalSidePanel.parseAdditional(input);
+            localStorage.setItem('portal-preview-extension-ids', ids.join('\\n'));
+            this.success({ok:true, ids});
+          } catch (error) { this.success({ok:false, error:error.message}); }
         }, 200);},
         saveUnblockedUrlSchemes(schemes) {setTimeout(() => {
           const normalized = validateUnblockedUrlSchemes_(schemes);

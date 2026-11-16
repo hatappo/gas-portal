@@ -104,7 +104,7 @@ test('The skip link hash keeps the current tab and unavailable history does not 
 });
 
 test('Settings subroutes open the correct panel and safely handle unknown section links', (t) => {
-  for (const [hash, section] of [['settings', 'appearance'], ['settings/appearance', 'appearance'], ['settings/sources', 'sources'], ['settings/missing', 'appearance']]) {
+  for (const [hash, section] of [['settings', 'appearance'], ['settings/appearance', 'appearance'], ['settings/sources', 'sources'], ['settings/extension', 'extension'], ['settings/missing', 'appearance']]) {
     const app = browser((window) => window.history.replaceState(null, '', '#' + hash));
     t.after(() => app.dom.window.close());
     assert.equal(selected(app.document), 'tab-settings');
@@ -129,9 +129,9 @@ test('Settings keyboard navigation and history preserve drafts and keep parent t
   doc.getElementById('setting-sheet-name').value = 'Draft sheet';
   doc.getElementById('settings-tab-sources').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'End', bubbles: true }));
     await new Promise(resolve => setTimeout(resolve, 60));
-  assert.equal(window.location.hash, '#settings/calendar');
+  assert.equal(window.location.hash, '#settings/extension');
   const length = window.history.length;
-  doc.getElementById('settings-tab-calendar').click();
+  doc.getElementById('settings-tab-extension').click();
   assert.equal(window.history.length, length);
   const back = new Promise((resolve) => window.addEventListener('popstate', resolve, { once: true }));
   window.history.back(); await back;
@@ -146,7 +146,7 @@ test('Settings keyboard navigation and history preserve drafts and keep parent t
   doc.getElementById('settings-tab-appearance').focus();
   doc.getElementById('settings-tab-appearance').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
     await new Promise(resolve => setTimeout(resolve, 60));
-  assert.equal(window.location.hash, '#settings/calendar');
+  assert.equal(window.location.hash, '#settings/extension');
 });
 
 test('GAS settings subtabs use the outer history bridge', (t) => {

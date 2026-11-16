@@ -20,7 +20,7 @@ export function initializeNavigation(motion) {
     { hash: 'inbox-and-tasks', button: element('tab-actions'), panel: element('actions-panel') },
     { hash: 'settings', button: element('tab-settings'), panel: element('settings-panel') },
   ];
-  const settingsTabs = ['appearance', 'sources', 'calendar'].map((id) => ({
+  const settingsTabs = ['appearance', 'sources', 'calendar', 'extension'].map((id) => ({
     hash: id, button: element('settings-tab-' + id), panel: element('settings-' + id + '-panel'),
   }));
   const [activeSettingsTab, setActiveSettingsTab] = createCell(0);

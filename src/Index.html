@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= portal.name ?></title>
+    <?!= sidePanelHead ?>
     <!-- gas-styles -->
   </head>
   <body>
@@ -113,6 +114,7 @@
           <button type="button" id="settings-tab-appearance" class="tab" role="tab" aria-selected="true" aria-controls="settings-appearance-panel" tabindex="0" data-i18n="Appearance">Appearance</button>
           <button type="button" id="settings-tab-sources" class="tab" role="tab" aria-selected="false" aria-controls="settings-sources-panel" tabindex="-1">Sources</button>
           <button type="button" id="settings-tab-calendar" class="tab" role="tab" aria-selected="false" aria-controls="settings-calendar-panel" tabindex="-1">Calendar</button>
+          <button type="button" id="settings-tab-extension" class="tab" role="tab" aria-selected="false" aria-controls="settings-extension-panel" tabindex="-1" data-i18n="Extension">Extension</button>
         </div>
         <div id="settings-appearance-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-appearance" tabindex="0">
           <section class="display-settings" aria-labelledby="display-settings-title">
@@ -125,8 +127,8 @@
                   <label class="settings-field settings-icon-field"><span data-i18n="Icon">Icon</span><input id="setting-icon" class="input w-full" name="PORTAL_ICON" maxlength="8" value="<?= portal.icon ?>" autocomplete="off" aria-describedby="icon-help"><span id="icon-help"><span data-i18n="1 character">1 character</span></span></label>
                 </div>
                 <label class="settings-field"><span data-i18n="Headline">Headline</span><input aria-describedby="intro-help" id="setting-headline" class="input w-full" name="PORTAL_HEADLINE" maxlength="160" value="<?= portal.headline ?>" autocomplete="off"></label>
-                <label class="settings-field"><span data-i18n="Description text">Description text</span><textarea aria-describedby="intro-help" id="setting-description" class="textarea w-full" name="PORTAL_DESCRIPTION" maxlength="500" rows="3"><?= portal.description ?></textarea></label>
-                <p id="intro-help" class="settings-help" data-i18n="Leave the headline or description blank to hide it. Leave both blank to give more space to your content.">Leave the headline or description blank to hide it. Leave both blank to give more space to your content.</p>
+                <label class="settings-field"><span data-i18n="Notes">Notes</span><textarea aria-describedby="intro-help" id="setting-description" class="textarea w-full" name="PORTAL_DESCRIPTION" maxlength="500" rows="3"><?= portal.description ?></textarea></label>
+                <p id="intro-help" class="settings-help" data-i18n="Leave the headline or notes blank to hide them. Leave both blank to give more space to your content.">Leave the headline or notes blank to hide them. Leave both blank to give more space to your content.</p>
                 <div class="settings-form-actions"><button type="submit" class="settings-save btn preset-filled-primary-500"><span data-i18n="Save changes">Save changes</span></button><button type="button" id="reset-portal-settings" class="settings-reset btn"><span data-i18n="Restore defaults">Restore defaults</span></button></div>
               </fieldset>
               <p id="portal-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
@@ -290,6 +292,28 @@
           </section>
         </div>
         <div id="settings-calendar-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-calendar" tabindex="0" hidden><div id="calendar-settings-host"></div></div>
+        <div id="settings-extension-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-extension" tabindex="0" hidden>
+          <section class="side-panel-settings" aria-labelledby="side-panel-settings-title">
+            <div class="settings-heading"><h2 id="side-panel-settings-title" data-i18n="Chrome extension">Chrome extension</h2></div>
+            <div class="side-panel-connection">
+              <label class="settings-field" for="side-panel-url"><span data-i18n="Connection URL">Connection URL</span></label>
+              <div class="side-panel-url-row">
+                <input id="side-panel-url" class="input w-full" type="text" readonly value="<?= webAppUrl ?>" spellcheck="false" aria-describedby="side-panel-url-help side-panel-copy-status">
+                <button id="side-panel-copy-url" type="button" class="btn button-quiet btn-sm" disabled data-i18n="Copy URL">Copy URL</button>
+              </div>
+              <p id="side-panel-url-help" class="settings-help" data-i18n="Paste this URL into the extension’s connection settings.">Paste this URL into the extension’s connection settings.</p>
+              <p id="side-panel-copy-status" class="settings-form-status" role="status" aria-live="polite"></p>
+            </div>
+            <form id="side-panel-settings-form" class="portal-settings-form">
+              <fieldset id="side-panel-settings-fields">
+                <label class="settings-field"><span data-i18n="Additional allowed extension IDs">Additional allowed extension IDs</span><textarea id="side-panel-extension-ids" class="textarea w-full" rows="3" maxlength="4096" spellcheck="false" autocomplete="off" aria-describedby="side-panel-settings-help side-panel-settings-status"><?= portal.sidePanelExtensionIds ?></textarea></label>
+                <p id="side-panel-settings-help" class="settings-help" data-i18n="Allow local builds to open this portal in a side panel. Enter one ID per line, up to 10. Official extension IDs are allowed automatically. Save, then reload the side panel; no redeployment is needed.">Allow local builds to open this portal in a side panel. Enter one ID per line, up to 10. Official extension IDs are allowed automatically. Save, then reload the side panel; no redeployment is needed.</p>
+                <div class="settings-form-actions"><button type="submit" class="settings-save btn preset-filled-primary-500"><span data-i18n="Save changes">Save changes</span></button></div>
+              </fieldset>
+              <p id="side-panel-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>
+            </form>
+          </section>
+        </div>
       </section>
     </main>
     <aside id="calendar-panel" class="calendar-panel" aria-label="Today’s schedule" data-i18n-aria-label="Today’s schedule" hidden></aside>

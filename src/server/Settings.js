@@ -77,7 +77,7 @@ function initializeUserProperties_() {
     ...getPortalPropertyDefaults_(),
     PORTAL_THEME: 'auto', PORTAL_LANGUAGE: 'auto', CATALOG_CACHE_SECONDS: String(PortalCacheDurations.catalog.defaultSeconds), ACTIONS_CACHE_SECONDS: String(PortalCacheDurations.actions.defaultSeconds),
     CALENDAR_SETTINGS: JSON.stringify(PortalCalendar.defaults()),
-    SPREADSHEET_ID: '', SHEET_NAME: '', UNBLOCKED_URL_SCHEMES: '',
+    SPREADSHEET_ID: '', SHEET_NAME: '', UNBLOCKED_URL_SCHEMES: '', SIDE_PANEL_EXTENSION_IDS: '',
   };
   const missing = Object.fromEntries(Object.entries(defaults).filter(([key]) => !Object.prototype.hasOwnProperty.call(current, key)));
   if (Object.keys(missing).length) store.setProperties(missing, false);
@@ -182,5 +182,19 @@ function saveUnblockedUrlSchemes(schemes) {
   } catch {
     console.error('URL_SCHEME_SETTINGS_SAVE_FAILED');
     return { ok: false };
+  }
+}
+
+/** Save only additional IDs; official IDs cannot be modified through RPC. @param {unknown} input */
+function saveSidePanelExtensionIds(input) {
+  let ids;
+  try { ids = PortalSidePanel.parseAdditional(input); }
+  catch (error) { return { ok: false, error: error instanceof Error ? error.message : 'Check your input.' }; }
+  try {
+    withPortalPropertiesLock_(() => PropertiesService.getUserProperties().setProperty('SIDE_PANEL_EXTENSION_IDS', ids.join('\n')));
+    return { ok: true, ids };
+  } catch {
+    console.error('SIDE_PANEL_SETTINGS_SAVE_FAILED');
+    return { ok: false, error: 'Could not save. Please try again.' };
   }
 }

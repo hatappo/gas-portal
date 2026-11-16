@@ -30,9 +30,8 @@ async function pageFor(t, options = {}) {
 
 async function selectPortalTab(page, tab) {
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  const menu = page.locator('#compact-nav-trigger');
-  if (await menu.isVisible()) {
-    await menu.click();
+  const compact = page.locator('#compact-navigation');
+  if (await compact.isVisible()) {
     await page.locator('.compact-nav-item[data-portal-tab="' + tab + '"]').click();
   } else await page.locator('#tab-' + tab).click();
 }
@@ -760,10 +759,10 @@ test('Description preserves line breaks and Skeleton tabs indicate the selected 
   const calendar = page.locator('#toggle-calendar');
   await calendar.click();
   await page.mouse.move(0, 0);
-  const active = await appearance(page.locator('#compact-nav-trigger'));
+  const active = await appearance(page.locator('#compact-nav-settings'));
   await page.setViewportSize({ width: 390, height: 900 });
-  await page.locator('#compact-nav-trigger').waitFor({ state: 'visible' });
-  assert.deepEqual(await appearance(page.locator('#compact-nav-trigger')), active);
+  await page.locator('#compact-nav-settings').waitFor({ state: 'visible' });
+  assert.deepEqual(await appearance(page.locator('#compact-nav-settings')), active);
 
 });
 
@@ -1195,29 +1194,24 @@ test('Inbox hover opens after 150ms and cancels a brief pass', async t => {
   assert.equal(await summary.getAttribute('aria-expanded'), 'true');
 });
 
-test('Compact header replaces tabs with an accessible menu and preserves drafts and history', async t => {
+test('Compact segmented navigation supports keyboard switching and preserves drafts and history', async t => {
   const page = await pageFor(t, { reducedMotion: 'reduce' });
-  const wideHeader = await page.locator('.site-header').boundingBox();
-  assert.ok(wideHeader.height <= 65);
+  assert.ok((await page.locator('.site-header').boundingBox()).height <= 65);
+  await page.locator('#tab-tools').focus();
   await page.setViewportSize({ width: 600, height: 1000 });
   await page.locator('html[data-compact="true"]').waitFor();
   assert.equal(await page.locator('.portal-tabs').isVisible(), false);
   assert.equal(await page.locator('.brand-name').isVisible(), false);
   assert.equal(await page.locator('.preview-label').textContent(), 'LOCAL PREVIEW');
-  assert.equal(await page.locator('.preview-label.preset-filled-warning-500').isVisible(), true);
-  assert.ok((await page.locator('.site-header').boundingBox()).height <= 53);
-  const trigger = page.locator('#compact-nav-trigger');
-  assert.match(await trigger.getAttribute('aria-label'), /Links/);
-  await trigger.focus(); await page.keyboard.press('Enter');
-  await page.getByRole('menuitemradio', { name: 'Links', exact: true }).waitFor();
-  await page.waitForFunction(() => document.activeElement?.matches('.compact-nav-menu'));
-  await page.keyboard.press('ArrowDown');
-  await page.waitForFunction(() => document.querySelector('.compact-nav-item[data-highlighted]')?.getAttribute('data-portal-tab') === 'actions');
-  await page.keyboard.press('Enter');
+  assert.ok((await page.locator('.site-header').boundingBox()).height <= 44);
+  const navigation = page.locator('#compact-navigation');
+  assert.equal(await navigation.getByRole('radio').count(), 3);
+  await page.waitForFunction(() => document.activeElement.id === 'compact-tab-tools');
+  await page.keyboard.press('ArrowRight');
   await page.locator('#actions-panel').waitFor({ state: 'visible' });
   assert.ok(page.url().endsWith('#inbox-and-tasks'));
-  assert.match(await trigger.getAttribute('aria-label'), /Inbox & Tasks/);
-  assert.equal(await trigger.locator('svg').innerHTML(), await page.locator('#tab-actions svg').innerHTML());
+  assert.equal(await navigation.getByRole('radio', { name: 'Inbox & Tasks', exact: true }).isChecked(), true);
+  assert.equal(await page.locator('#compact-nav-actions svg').innerHTML(), await page.locator('#tab-actions svg').innerHTML());
   assert.equal(await page.locator('#inbox-title').isVisible(), false);
   assert.equal(await page.locator('#tasks-title').isVisible(), false);
   await selectPortalTab(page, 'settings');
@@ -1225,46 +1219,40 @@ test('Compact header replaces tabs with an accessible menu and preserves drafts 
   await selectPortalTab(page, 'tools');
   await page.goBack();
   await page.locator('#settings-panel').waitFor({ state: 'visible' });
+  assert.equal(await navigation.getByRole('radio', { name: 'Settings', exact: true }).isChecked(), true);
   assert.equal(await page.locator('#setting-name').inputValue(), 'Compact draft');
-  await trigger.click();
-  await page.waitForFunction(() => document.activeElement?.matches('.compact-nav-menu'));
-  await page.keyboard.press('Escape');
-  await page.waitForFunction(() => document.getElementById('compact-nav-trigger').getAttribute('aria-expanded') === 'false');
-  assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
-  assert.equal(await trigger.evaluate(el => el === document.activeElement), true);
+  await page.locator('#compact-tab-settings').focus();
   await page.setViewportSize({ width: 1280, height: 1000 });
   await page.locator('html[data-compact="false"]').waitFor();
+  await page.waitForFunction(() => document.activeElement.id === 'tab-settings');
   assert.equal(await page.locator('.portal-tabs').isVisible(), true);
   assert.equal(await page.locator('.brand-name').isVisible(), true);
-  assert.equal(await trigger.isVisible(), false);
+  assert.equal(await navigation.isVisible(), false);
   assert.equal(await page.locator('#setting-name').inputValue(), 'Compact draft');
   for (const theme of ['cerberus-light', 'dracula-dark']) {
     await page.evaluate(theme => { const selection = PortalThemes.resolve(theme); document.documentElement.dataset.theme = selection.palette; document.documentElement.dataset.colorScheme = selection.scheme; }, theme);
     await page.setViewportSize({ width: 390, height: 900 });
     await page.locator('html[data-compact="true"]').waitFor();
-    await trigger.click();
     await page.screenshot({ path: '/tmp/compact-header-' + theme + '.png', fullPage: true });
-    await page.keyboard.press('Escape');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   }
 });
 
-test('Compact mode follows the calendar viewport breakpoint and closes an open menu when returning to wide tabs', async t => {
+
+test('Compact mode follows the calendar viewport breakpoint and restores focus to wide tabs', async t => {
   const page = await pageFor(t, { reducedMotion: 'reduce', viewport: { width: 900, height: 1000 } });
   await page.locator('html[data-compact="false"]').waitFor();
   await page.locator('#toggle-calendar').click();
   await page.locator('#calendar-panel').waitFor({ state: 'visible' });
   assert.equal(await page.locator('html').getAttribute('data-compact'), 'false');
   await page.locator('.calendar-panel-close').click();
-  await page.locator('html[data-compact="false"]').waitFor();
   await page.setViewportSize({ width: 390, height: 900 });
-  await page.locator('#compact-nav-trigger').click();
-  await page.getByRole('menuitemradio', { name: 'Links', exact: true }).waitFor();
-  await page.waitForFunction(() => document.activeElement?.matches('.compact-nav-menu'));
+  await page.locator('html[data-compact="true"]').waitFor();
+  await page.locator('#compact-tab-tools').focus();
   await page.setViewportSize({ width: 1280, height: 1000 });
   await page.locator('html[data-compact="false"]').waitFor();
-  await page.locator('.compact-nav-menu').waitFor({ state: 'hidden' });
-  assert.equal(await page.evaluate(() => document.activeElement.id), 'tab-tools');
+  await page.waitForFunction(() => document.activeElement.id === 'tab-tools');
+  assert.equal(await page.locator('#compact-navigation').isVisible(), false);
 });
 
 
@@ -1320,8 +1308,7 @@ test('Compact settings temporarily hide the calendar without changing its open p
   await hint.waitFor();
   await page.keyboard.press('Escape');
   await page.locator('#setting-name').fill('Preserved draft');
-  await page.locator('#compact-nav-trigger').click();
-  await page.keyboard.press('Escape');
+  await page.locator('#compact-tab-settings').focus();
   assert.equal(await preference(), 'true');
   await page.setViewportSize({ width: 761, height: 1000 });
   await panel.waitFor({ state: 'visible' });
@@ -1552,34 +1539,33 @@ test('View icons stay centered and readable, with anchored tooltips in light and
 });
 
 
-test('Compact header icons remain square, centered and aligned across sections and screen widths', async t => {
+test('Compact header icons remain small, centered and aligned across sections and screen widths', async t => {
   const page = await pageFor(t, { reducedMotion: 'reduce' });
   for (const width of [600, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.locator('#compact-nav-trigger').waitFor({ state: 'visible' });
+    await page.locator('#compact-navigation').waitFor({ state: 'visible' });
     for (const section of ['tools', 'actions', 'settings']) {
       await selectPortalTab(page, section);
-      const icons = await page.locator('#compact-nav-trigger, #toggle-calendar').evaluateAll(buttons => buttons.map(button => {
+      const icons = await page.locator('.compact-nav-item, #toggle-calendar').evaluateAll(buttons => buttons.map(button => {
         const box = button.getBoundingClientRect(), icon = button.querySelector('svg').getBoundingClientRect();
         return { buttonWidth: box.width, buttonHeight: box.height, width: icon.width, height: icon.height, centerY: icon.y + icon.height / 2, dx: box.x + box.width / 2 - icon.x - icon.width / 2, dy: box.y + box.height / 2 - icon.y - icon.height / 2 };
       }));
-      assert.equal(icons.length, 2);
+      assert.equal(icons.length, 4);
       for (const icon of icons) {
-        assert.equal(icon.buttonWidth, 36); assert.equal(icon.buttonHeight, 36);
-        assert.equal(icon.width, 20); assert.equal(icon.height, 20);
+        assert.equal(icon.buttonWidth, 30); assert.equal(icon.buttonHeight, 30);
+        assert.equal(icon.width, 18); assert.equal(icon.height, 18);
         assert.ok(Math.abs(icon.dx) < 1 && Math.abs(icon.dy) < 1);
+        assert.ok(Math.abs(icons[0].centerY - icon.centerY) < 1);
       }
-      assert.ok(Math.abs(icons[0].centerY - icons[1].centerY) < 1);
+      assert.equal(await page.locator('.compact-nav-item[data-state="checked"]').getAttribute('data-portal-tab'), section);
+      await page.waitForFunction(() => {
+        const selected = document.querySelector('.compact-nav-item[data-state="checked"]').getBoundingClientRect();
+        const indicator = document.querySelector('.compact-nav [data-part="indicator"]').getBoundingClientRect();
+        return Math.abs(selected.x - indicator.x) < 1 && Math.abs(selected.width - indicator.width) < 1;
+      });
     }
-    await page.locator('#compact-nav-trigger').click();
-    await page.getByRole('menuitemradio', { name: 'Links', exact: true }).waitFor();
-    for (const icon of await page.locator('.compact-nav-item svg').all()) {
-      const box = await icon.boundingBox(); assert.equal(box.width, 20); assert.equal(box.height, 20);
-    }
-    await page.waitForFunction(() => document.activeElement?.matches('.compact-nav-menu'));
-    await page.keyboard.press('Escape');
-    await page.locator('.compact-nav-menu').waitFor({ state: 'hidden' });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    assert.ok((await page.locator('.site-header').boundingBox()).height <= 44);
   }
 });
 
@@ -1587,7 +1573,7 @@ test('Compact header icons remain square, centered and aligned across sections a
 test('Open calendar matches navigation styling while the closed state stays quiet', async t => {
   const page = await pageFor(t, { reducedMotion: 'reduce' });
   const toggle = page.locator('#toggle-calendar');
-  const navigation = page.locator('#compact-nav-trigger');
+  const navigation = page.locator('#compact-nav-tools');
   const appearance = locator => locator.evaluate(el => ({ color: getComputedStyle(el).color, stroke: Number.parseFloat(getComputedStyle(el.querySelector('svg')).strokeWidth) }));
   for (const scheme of ['light', 'dark']) {
     await page.evaluate(scheme => { document.documentElement.dataset.colorScheme = scheme; }, scheme);
@@ -1653,6 +1639,8 @@ test('Skeleton forms normalize checkboxes and selects and keep input and button 
   await select.selectOption('3600');
   await page.locator('#cache-settings-status').getByText('Saved', { exact: true }).waitFor();
   await page.reload();
+  // Restored settings can appear before the asynchronous catalog is ready.
+  await page.locator('#directory[aria-busy="false"] .tool-card').first().waitFor({ state: 'attached' });
   assert.equal(await select.inputValue(), '3600');
   await page.setViewportSize({ width: 390, height: 900 });
   assert.equal(await font(select), '16px');
@@ -1809,6 +1797,8 @@ test('Type search supports Japanese, IME, dismissal, duplicate prevention and co
   await search.fill('is:nosuchtype');
   await page.getByText('No matching types', { exact: true }).waitFor();
   await search.press('Enter');
+  assert.equal(await search.inputValue(), 'is:nosuchtype');
+  assert.equal(await page.getByRole('listbox').isVisible(), true, 'Enter with no candidate keeps suggestions open');
   assert.equal(await page.locator('.action-type-chip').count(), 0);
   await search.fill('is:issue');
   await page.getByRole('option', { name: 'GitHub · Assigned issue', exact: true }).waitFor();
@@ -1947,15 +1937,21 @@ test('Calendar opens from its icon, returns on close, and settles safely after i
   await page.waitForFunction(() => !document.getElementById('calendar-panel').dataset.calendarMotion);
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 900 });
+    // Resize/scroll handlers intentionally settle motion; let layout finish first.
+    await page.evaluate(() => { window.scrollTo(0, 0); });
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const closing = await page.evaluate(() => {
       document.querySelector('.calendar-panel-close').click();
       const panel = document.getElementById('calendar-panel');
       const animation = panel.getAnimations()[0];
       animation.pause();
       const frames = animation.effect.getKeyframes();
-      return { hidden: panel.hidden, inert: panel.inert, state: panel.dataset.calendarMotion,
+      const snapshot = { hidden: panel.hidden, inert: panel.inert, state: panel.dataset.calendarMotion,
         duration: animation.effect.getTiming().duration, destination: frames.at(-1).transform,
         focus: document.activeElement.id };
+      // Inspect and finish the same animation without a cross-process timing gap.
+      animation.finish();
+      return snapshot;
     });
     assert.equal(closing.hidden, false, 'Keep the panel visible until it reaches the icon');
     assert.equal(closing.inert, true);
@@ -1963,7 +1959,6 @@ test('Calendar opens from its icon, returns on close, and settles safely after i
     assert.equal(closing.duration, 240);
     assert.match(closing.destination, /translate\(.+\) scale\(0\./);
     assert.equal(closing.focus, 'toggle-calendar');
-    await page.evaluate(() => document.getElementById('calendar-panel').getAnimations()[0].finish());
     await page.locator('#calendar-panel').waitFor({ state: 'hidden' });
     const opening = await page.evaluate(() => {
       document.getElementById('toggle-calendar').click();
@@ -1999,3 +1994,38 @@ test('Calendar opens from its icon, returns on close, and settles safely after i
   await page.locator('.calendar-panel-close').click();
   assert.equal(await page.locator('#calendar-panel').evaluate(el => el.hidden), true);
 });
+
+for (const locale of ['en-US', 'ja-JP']) {
+  test(`Additional extension IDs validate and persist in settings (${locale})`, async t => {
+    const page = await pageFor(t, { locale, viewport: { width: 390, height: 844 } });
+    await page.evaluate(() => { location.hash = '#settings/extension'; });
+    await page.locator('#side-panel-url').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('#side-panel-url').inputValue(), '');
+    assert.equal(await page.locator('#side-panel-copy-url').isDisabled(), true);
+    assert.equal(await page.locator('#side-panel-copy-url').textContent(), locale === 'ja-JP' ? 'URLをコピー' : 'Copy URL');
+    assert.match(await page.locator('#side-panel-url-help').textContent(), locale === 'ja-JP' ? /ローカルプレビュー/ : /local preview/);
+    const input = page.locator('#side-panel-extension-ids');
+    const save = page.locator('#side-panel-settings-form button[type="submit"]');
+    const status = page.locator('#side-panel-settings-status');
+    const first = 'a'.repeat(32), second = 'b'.repeat(32);
+    await input.fill(first + '\n' + second + '\n' + first);
+    await save.click();
+    await page.waitForFunction(() => document.getElementById('side-panel-settings-status').getAttribute('aria-busy') === 'false');
+    assert.equal(await input.inputValue(), first + '\n' + second);
+    assert.match(await status.textContent(), locale === 'ja-JP' ? /保存しました/ : /Saved/);
+    await page.reload();
+    assert.equal(await input.inputValue(), first + '\n' + second);
+    await input.fill('not-an-extension-id');
+    await save.click();
+    assert.equal(await input.getAttribute('aria-invalid'), 'true');
+    assert.match(await status.textContent(), /32/);
+    await page.reload();
+    assert.equal(await input.inputValue(), first + '\n' + second, 'invalid input does not replace saved IDs');
+    await input.fill('');
+    await save.click();
+    await page.waitForFunction(() => document.getElementById('side-panel-settings-status').getAttribute('aria-busy') === 'false');
+    await page.reload();
+    assert.equal(await input.inputValue(), '');
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  });
+}

@@ -48,13 +48,13 @@ h1 { margin: 0; font-size: clamp(25px, 3.5vw, 36px); line-height: 1.6; font-weig
 .portal-tabs .tab { gap: 8px; font-size: 15px; font-weight: 600; }
 .portal-tabs .tab svg { width: 18px; height: 18px; flex-shrink: 0; }
 /* Main navigation shares neutral idle, selected and hover states. */
-:is(#toggle-calendar, #compact-nav-trigger) { --nav-icon-stroke: 1.75; background: transparent; color: color-mix(in srgb, var(--portal-text) 50%, transparent); transition: color 160ms ease; }
-:is(#toggle-calendar[aria-expanded="true"], #compact-nav-trigger) { --nav-icon-stroke: 1.9; color: color-mix(in srgb, var(--portal-text) 80%, transparent); }
-:is(#toggle-calendar, #compact-nav-trigger):hover { --nav-icon-stroke: 2.1; color: var(--portal-text); }
+:is(#toggle-calendar, .compact-nav-item) { --nav-icon-stroke: 1.75; background: transparent; color: color-mix(in srgb, var(--portal-text) 50%, transparent); transition: color 160ms ease; }
+:is(#toggle-calendar[aria-expanded="true"], .compact-nav-item[data-state="checked"]) { --nav-icon-stroke: 1.9; color: color-mix(in srgb, var(--portal-text) 80%, transparent); }
+:is(#toggle-calendar, .compact-nav-item):hover { --nav-icon-stroke: 2.1; color: var(--portal-text); }
 /* Only the closed calendar is quieter; the open state shares navigation styling. */
 #toggle-calendar[aria-expanded="false"] { --nav-icon-stroke: 1.5; color: color-mix(in srgb, var(--portal-text) 40%, transparent); }
 #toggle-calendar[aria-expanded="false"]:hover { --nav-icon-stroke: 1.8; color: color-mix(in srgb, var(--portal-text) 70%, transparent); }
-:is(#toggle-calendar, #compact-nav-trigger) svg { stroke-width: var(--nav-icon-stroke); transition: stroke-width 160ms ease; }
+:is(#toggle-calendar, .compact-nav-item) svg { stroke-width: var(--nav-icon-stroke); transition: stroke-width 160ms ease; }
 h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 600; margin: 0; }
 .count, .tool-description, .status p, .table-view td, .intro-copy, .settings-help { color: var(--portal-muted); }
 .count { flex-shrink: 0; min-width: calc(var(--count-digits, 1) * 2ch + 9ch); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-family: "Avenir Next", Avenir, sans-serif; font-size: 12px; font-weight: 400; }
@@ -181,7 +181,7 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .settings-subpanel > :last-child { margin-bottom: 0; }
 .settings-subpanel > .display-settings:last-child { padding-bottom: 0; border-bottom: 0; }
 .settings-subpanel > .language-settings { padding-top: 24px; border-top: 1px solid var(--color-surface-200-800); }
-@media (max-width: 420px) { .settings-tabs .tab { padding-inline: 10px; font-size: 12px; } }
+@media (max-width: 420px) { .settings-tabs { column-gap: 4px; } .settings-tabs .tab { padding-inline: 8px; font-size: 12px; } }
 
 .display-settings { margin-bottom: 36px; padding-bottom: 24px; border-bottom: 1px solid var(--color-surface-200-800); }
 .portal-settings-form { margin: 0; }
@@ -504,7 +504,7 @@ main { container-type: inline-size; container-name: portal-main; }
 .calendar-event.is-approaching::before { content: ""; position: absolute; inset: 0; z-index: 0; border-radius: inherit; pointer-events: none; background: color-mix(in srgb, var(--event-color) 38%, transparent); box-shadow: 0 0 22px 4px color-mix(in srgb, var(--event-color) 60%, transparent); animation: calendar-upcoming-pulse 1.8s ease-in-out infinite; }
 @keyframes calendar-upcoming-pulse { 0%, 52%, 100% { opacity: .06; } 12% { opacity: 1; } 23% { opacity: .2; } 34% { opacity: .8; } }
 .calendar-schedule[data-filter="free"] .calendar-event[data-expanded="false"]::before { display: none; }
-@media (prefers-reduced-motion: reduce) { .calendar-event.is-approaching::before { animation: none; opacity: .2; } :is(#toggle-calendar, #compact-nav-trigger), :is(#toggle-calendar, #compact-nav-trigger) svg { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .calendar-event.is-approaching::before { animation: none; opacity: .2; } :is(#toggle-calendar, .compact-nav-item), :is(#toggle-calendar, .compact-nav-item) svg { transition: none; } }
 
 .calendar-event:lang(ja)[data-state="next"] .calendar-event-detail > div { padding-right: 128px; }
 .calendar-event:lang(ja)[data-state="next"][data-expanded="false"] .calendar-event-trigger { padding-right: 128px; }
@@ -608,22 +608,17 @@ h2 .service-logo { width: 24px; height: 24px; }
 :root[data-compact="true"] .portal-tabs,
 :root[data-compact="true"] #inbox-title,
 :root[data-compact="true"] .tasks-heading { display: none; }
-:root[data-compact="true"] .site-header { min-height: 52px; padding-block: 6px; gap: 8px; }
-:root[data-compact="true"] .brand-mark { width: 32px; height: 32px; font-size: 25px; }
+:root[data-compact="true"] .site-header { min-height: 44px; padding: 3px 12px; gap: 6px; }
+:root[data-compact="true"] .brand-mark { width: 28px; height: 28px; font-size: 23px; }
 :root[data-compact="true"] .intro { padding-block: 16px 20px; }
 :root[data-compact="true"] main { padding-top: 16px; }
 :root[data-compact="true"] .tasks-section { margin-top: 16px; }
-:root[data-compact="true"] .site-header .btn { min-height: 36px; height: 36px; width: 36px; min-width: 36px; }
+:root[data-compact="true"] .site-header .btn { min-height: 30px; height: 30px; width: 30px; min-width: 30px; }
 /* Icon-only header buttons reserve their full area for a centered, unshrunk SVG.
    Existing.svelte wraps adopted icons, so sizing must not rely on direct children. */
 #calendar-toggle-host { display: flex; align-items: center; }
-:is(#compact-nav-trigger, #toggle-calendar) { display: inline-flex; align-items: center; justify-content: center; padding: 0; }
-:is(#compact-nav-trigger, #toggle-calendar, .compact-nav-item) svg { width: 20px; height: 20px; flex-shrink: 0; }
-.compact-nav-menu { z-index: 100; min-width: 200px; max-width: calc(100vw - 24px); padding: 5px; border: 1px solid var(--color-surface-200-800); border-radius: var(--radius-container); background: var(--color-surface-50-950); color: var(--portal-text); box-shadow: 0 8px 24px #0002; }
-.compact-nav-item { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 8px 10px; border-radius: var(--radius-base); outline: none; cursor: pointer; font-size: 13px; }
-.compact-nav-item[data-highlighted] { background: var(--color-surface-100-900); }
-.compact-nav-item[data-checked] { font-weight: 600; }
-.compact-nav-selected { margin-inline-start: auto; }
+#toggle-calendar { display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+:is(#toggle-calendar, .compact-nav-item) svg { width: 20px; height: 20px; flex-shrink: 0; }
 
 #toggle-calendar[aria-disabled="true"] { pointer-events: auto; --nav-icon-stroke: 1.75; color: color-mix(in srgb, var(--portal-text) 50%, transparent); cursor: help; }
 
@@ -658,14 +653,17 @@ h2 .service-logo { width: 24px; height: 24px; }
 
 /* Theme samples are cards, not the horizontal options used by compact switches. */
 .theme-choice { display: block; white-space: normal; }
-.compact-nav-item { justify-content: flex-start; }
+/* The compact header keeps all three sections visible without a menu. */
+.compact-nav.segmented-control [data-part="control"] { padding: 2px; gap: 0; }
+.compact-nav.segmented-control .compact-nav-item { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; min-height: 30px; padding: 0; }
+:root[data-compact="true"] :is(.compact-nav-item, #toggle-calendar) svg { width: 18px; height: 18px; }
 
 .theme-mode { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 20px; }
 .theme-mode > span { font-size: 13px; font-weight: 600; }
 .theme-mode .settings-help { flex-basis: 100%; margin: 0; }
 #theme-picker > .theme-grid { display: grid; }
 
-/* Hide wide navigation synchronously on resize, before the JS menu state catches up. */
+/* Hide wide tabs immediately; compact navigation remembers focus displaced by this rule. */
 @media (max-width: 760px) { .portal-tabs { display: none; } }
 @media (prefers-reduced-motion: reduce) {
   [data-scope="tabs"][data-part="trigger"],
@@ -704,3 +702,8 @@ h2 .service-logo { width: 24px; height: 24px; }
 
 /* Allow the moving panel to travel above adjacent content toward its header icon. */
 .calendar-panel[data-calendar-motion] { z-index: 20; pointer-events: none; will-change: transform, opacity; }
+
+.side-panel-connection { margin-bottom: 1.25rem; }
+.side-panel-url-row { display: flex; align-items: center; gap: .5rem; margin-block: .4rem; }
+.side-panel-url-row .input { flex: 1; min-width: 0; }
+.side-panel-url-row .btn { flex-shrink: 0; }

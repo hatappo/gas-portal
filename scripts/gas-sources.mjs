@@ -5,6 +5,7 @@
 export const sharedSources = [
   'src/shared/i18n.js',
   'src/shared/url-schemes.js',
+  'src/shared/side-panel.js',
   'src/shared/themes.js',
   'src/shared/catalog-rules.js',
   'src/shared/cache-durations.js',

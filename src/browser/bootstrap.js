@@ -11,6 +11,7 @@ import { initializeTheme } from './theme.js';
 import { initializeSettings } from './settings.js';
 import { initializeCacheSettings } from './cache-settings.js';
 import { initializeUrlSchemeSettings } from './url-scheme-settings.js';
+import { initializeSidePanelSettings } from './side-panel-settings.js';
 import { initializeFaviconFinder } from './favicon-finder.js';
 import { initializeSpreadsheetSettings } from './spreadsheet-settings.js';
 import { initializeActions } from './action-items.js';
@@ -31,6 +32,7 @@ export function initializePortal({ connectGitHub = initializeGitHub, connectSlac
   initializeSettings();
   initializeCacheSettings();
   initializeUrlSchemeSettings();
+  initializeSidePanelSettings();
   initializeFaviconFinder();
   initializeSpreadsheetSettings();
   const actions = initializeActions();

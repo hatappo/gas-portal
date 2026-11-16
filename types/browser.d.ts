@@ -66,6 +66,7 @@ interface GasRunner {
   saveCatalogCacheTtl(seconds: number): void;
   saveActionsCacheTtl(seconds: number): void;
   saveUnblockedUrlSchemes(schemes: string[]): void;
+  saveSidePanelExtensionIds(ids: string): void;
   saveLanguage(language: string): void;
   saveTheme(theme: string): void;
   savePortalSettings(settings: PortalSettings, browserLanguage?: string): void;

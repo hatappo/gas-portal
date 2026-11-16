@@ -49,7 +49,6 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
   const calls = [];
   const context = vm.createContext({
     console: { error: (...args) => logs.push(args), info: (...args) => logs.push(args) },
-    ScriptApp: { AuthMode: { FULL: 'FULL' }, requireAllScopes() {} },
     PropertiesService: {
       getScriptProperties: () => ({ getProperties: () => ({ ...properties }), setProperties: (values) => Object.assign(properties, values) }),
       getUserProperties: () => ({ getProperties: () => ({ ...userProperties }), setProperties: (values) => Object.assign(userProperties, values), getProperty: (key) => userProperties[key] ?? null, setProperty: (key, value) => { userProperties[key] = value; }, deleteProperty: (key) => { delete userProperties[key]; } }),
@@ -70,6 +69,7 @@ export function server({ values = sheetRows([entry()]), sheetProperties = [{ tit
       newBlob: (text) => ({ getBytes: () => [...Buffer.from(text)] }),
     },
     ...overrides,
+    ScriptApp: { AuthMode: { FULL: 'FULL' }, requireAllScopes() {}, getService: () => ({ getUrl: () => null }), ...overrides.ScriptApp },
   });
   for (const file of sharedSources) vm.runInContext(readFileSync(file, 'utf8'), context);
   for (const file of serverSources) vm.runInContext(readFileSync(file, 'utf8'), context);
