@@ -6,6 +6,7 @@
   import AllDayGroup from './AllDayGroup.svelte';
   import Hint from './Hint.svelte';
   import Icon from './Icon.svelte';
+  import PinIcon from './PinIcon.svelte';
   import SettingsGuidance from './SettingsGuidance.svelte';
   import {
     calendarErrorText,
@@ -162,7 +163,7 @@
       type="button" class="calendar-panel-pin btn button-quiet button-square btn-sm"
       aria-label={t(view.pinned ? 'Unpin calendar' : 'Pin calendar above other tabs')}
       aria-pressed={view.pinned} onclick={() => commands.pin(!view.pinned)}>
-      <Icon id={view.pinned ? 'calendar-pin-off-icon' : 'calendar-pin-icon'} />
+      <PinIcon pinned={view.pinned} />
     </button>{/snippet}
   </Hint>
 </div>

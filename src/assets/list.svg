@@ -32,7 +32,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 -->
-<svg class="list-icon" aria-hidden="true" focusable="false"
+<svg data-animated-icon="list" class="list-icon" aria-hidden="true" focusable="false"
   xmlns="http://www.w3.org/2000/svg"
   width="24"
   height="24"
@@ -43,10 +43,9 @@ SOFTWARE.
   stroke-linecap="round"
   stroke-linejoin="round"
 >
-  <path d="M3 5h.01" />
+  <g class="icon-motion-part icon-right-drop"><path d="M3 5h.01" /><path d="M8 5h13" /></g>
   <path d="M3 12h.01" />
   <path d="M3 19h.01" />
-  <path d="M8 5h13" />
   <path d="M8 12h13" />
   <path d="M8 19h13" />
 </svg>

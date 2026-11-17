@@ -16,7 +16,7 @@ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 -->
-<svg class="list-checks-icon" aria-hidden="true" focusable="false"
+<svg data-animated-icon="list-checks" class="list-checks-icon" aria-hidden="true" focusable="false"
   xmlns="http://www.w3.org/2000/svg"
   width="24"
   height="24"
@@ -30,6 +30,6 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
   <path d="M13 5h8" />
   <path d="M13 12h8" />
   <path d="M13 19h8" />
-  <path d="m3 17 2 2 4-4" />
-  <path d="m3 7 2 2 4-4" />
+  <path class="icon-motion-part icon-drop icon-drop-later" d="m3 17 2 2 4-4" />
+  <path class="icon-motion-part icon-drop" d="m3 7 2 2 4-4" />
 </svg>

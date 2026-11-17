@@ -3,6 +3,7 @@
 @import "@skeletonlabs/skeleton-svelte";
 @import "./themes.css";
 @import "./controls.css";
+@import "./icon-motion.css";
 @plugin "@tailwindcss/forms";
 /* Scan only markup and browser code, also when a consumer project runs the preview.
    Translations and server code are excluded: their plain words would match component names. */
@@ -52,7 +53,7 @@ h1 { margin: 0; font-size: clamp(25px, 3.5vw, 36px); line-height: 1.6; font-weig
 .header-tabs .header-tab[aria-selected="false"]:hover { background: color-mix(in srgb, var(--portal-text) 7%, transparent); }
 .header-tab svg { width: 18px; height: 18px; flex-shrink: 0; stroke-width: 2; }
 .header-tab .calendar-pinned-mark { display: flex; position: absolute; right: 1px; top: 0; border-radius: 50%; padding: 1px; background: var(--color-surface-100-900); color: var(--portal-text); }
-.header-tab .calendar-pinned-mark svg { width: 12px; height: 12px; }
+.header-tab .calendar-pinned-mark svg { width: 14px; height: 14px; }
 h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 600; margin: 0; }
 .count, .tool-description, .status p, .table-view td, .intro-copy, .settings-help { color: var(--portal-muted); }
 .count { flex-shrink: 0; min-width: calc(var(--count-digits, 1) * 2ch + 9ch); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-family: "Avenir Next", Avenir, sans-serif; font-size: 12px; font-weight: 400; }
@@ -68,7 +69,8 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
 .view-switch svg { width: 18px; height: 18px; }
 .tag-filter { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 8px; padding: 0 0 16px; }
 .tag-filter .tags { display: contents; }
-.tag-heading { flex-shrink: 0; display: flex; align-items: center; min-height: 32px; font-size: 12px; font-weight: 600; }
+.tag-heading { flex-shrink: 0; display: flex; align-items: center; min-height: 32px; }
+.tag-heading svg { width: 18px; height: 18px; flex-shrink: 0; }
 .tags { display: flex; flex: 1; min-width: 0; flex-wrap: wrap; gap: 6px; }
 .tag-button { background-color: color-mix(in srgb, var(--tag-accent, var(--color-primary-500)) 12%, var(--color-surface-50-950)); color: var(--portal-text); border-radius: 999px; font-weight: 400; overflow-wrap: anywhere; height: auto; min-height: 32px; white-space: normal; }
 .tag-button:not([aria-pressed="true"]) { border-color: transparent; box-shadow: none; }
@@ -372,14 +374,16 @@ h2 { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight
   66.667% { translate: -.3px; }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .calendar-event.is-gap:focus-within .coffee-steam {
-    animation: coffee-steam-draw 1.8s ease-in-out var(--steam-delay, 0s) infinite,
-      coffee-steam-drift 1.8s ease-in-out var(--steam-delay, 0s) infinite;
+  .calendar-event.is-gap:focus-within .coffee-steam,
+  .calendar-display-filters [data-part="item"][data-focus-visible] .coffee-steam {
+    animation: coffee-steam-draw var(--portal-icon-cycle, 1.8s) ease-in-out var(--steam-delay, 0s) infinite,
+      coffee-steam-drift var(--portal-icon-cycle, 1.8s) ease-in-out var(--steam-delay, 0s) infinite;
   }
   @media (hover: hover) {
-    .calendar-event.is-gap:hover .coffee-steam {
-      animation: coffee-steam-draw 1.8s ease-in-out var(--steam-delay, 0s) infinite,
-        coffee-steam-drift 1.8s ease-in-out var(--steam-delay, 0s) infinite;
+    .calendar-event.is-gap:hover .coffee-steam,
+    .calendar-display-filters [data-part="item"]:hover .coffee-steam {
+      animation: coffee-steam-draw var(--portal-icon-cycle, 1.8s) ease-in-out var(--steam-delay, 0s) infinite,
+        coffee-steam-drift var(--portal-icon-cycle, 1.8s) ease-in-out var(--steam-delay, 0s) infinite;
     }
   }
   .calendar-coffee .coffee-steam:nth-of-type(3) { --steam-delay: .3s; }
@@ -485,7 +489,7 @@ main { container-type: inline-size; container-name: portal-main; }
 
 
 /* Compact controls and a surface pulse keep upcoming notices inside their appointment. */
-.calendar-panel-pin { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 22px; min-width: 22px; height: 26px; min-height: 26px; padding: 0; }
+.calendar-panel-pin { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 24px; min-width: 24px; height: 24px; min-height: 24px; padding: 0; }
 .calendar-changing-time { display: inline-block; }
 .calendar-notice-sample { margin-top: 12px; }
 .calendar-event.is-approaching { isolation: isolate; }
@@ -679,3 +683,13 @@ h2 .service-logo { width: 24px; height: 24px; }
 .side-panel-connection { margin-bottom: 1.25rem; }
 .side-panel-url-row { display: flex; align-items: center; gap: .5rem; margin-block: .4rem; }
 .side-panel-url-row .textarea { flex: 1; min-width: 0; field-sizing: content; min-height: 3lh; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-all; resize: vertical; }
+
+/* Show the state at rest and preview the action on hover or keyboard focus. */
+.pin-state-icon, .pin-current { display: inline-flex; align-items: center; justify-content: center; }
+.pin-next { display: none; }
+button:focus-visible .pin-current { display: none; }
+button:focus-visible .pin-next { display: inline-flex; }
+@media (hover: hover) {
+  button:hover .pin-current { display: none; }
+  button:hover .pin-next { display: inline-flex; }
+}

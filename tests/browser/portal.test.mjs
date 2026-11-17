@@ -546,10 +546,11 @@ test('Calendar uses Lucide pin actions, stronger Next badges and vertical detail
   const page = await calendarPage(t, '', { viewport: { width: 700, height: 1100 }, reducedMotion: 'reduce' });
   await page.locator('.calendar-all-day').hover();
   const pin = page.locator('.calendar-all-day-pin');
-  assert.equal(await pin.locator('svg').count(), 1);
-  assert.equal(await pin.locator('path[d="m2 2 20 20"]').count(), 0);
+  await pin.waitFor({ state: 'visible' });
+  assert.equal(await pin.locator('svg:visible').count(), 1);
+  assert.equal(await pin.locator('svg:visible path[d="m2 2 20 20"]').count(), 1);
   await pin.click();
-  assert.equal(await pin.locator('path[d="m2 2 20 20"]').count(), 1);
+  assert.equal(await pin.locator('svg:visible path[d="m2 2 20 20"]').count(), 1);
   await pin.click();
   await page.waitForFunction(() => document.querySelector('.calendar-all-day').dataset.expanded === 'false');
   const current = page.locator('.calendar-event[data-state="current"]:not(.is-gap)').first();
@@ -714,7 +715,7 @@ test('Calendar countdowns glitch only on value changes and honor reduced motion'
   const controls = page.locator('.calendar-panel-controls');
   assert.equal(await page.locator('#calendar-panel h2').count(), 0);
   const close = controls.getByRole('button', { name: 'Unpin calendar' });
-  const buttonBox = await close.boundingBox(), iconBox = await close.locator('svg').boundingBox();
+  const buttonBox = await close.boundingBox(), iconBox = await close.locator('svg:visible').boundingBox();
   assert.ok(Math.abs(buttonBox.y + buttonBox.height / 2 - iconBox.y - iconBox.height / 2) < 1);
 });
 
@@ -1908,8 +1909,105 @@ test('Calendar filter icons provide localized hover and keyboard hints without l
     await page.keyboard.press('ArrowRight');
     assert.equal(await page.locator('#calendar-filter-free').getByRole('radio').isChecked(), true);
     assert.equal(await page.locator('.preview-label').textContent(), 'localhost');
-    assert.equal(await page.locator('.calendar-pinned-mark svg').evaluate(el => getComputedStyle(el).width), '12px');
+    assert.equal(await page.locator('.calendar-pinned-mark svg').evaluate(el => getComputedStyle(el).width), '14px');
     await page.mouse.move(0, 0); await page.locator('#calendar-filter-free').getByRole('radio').blur();
     await page.screenshot({ path: '/tmp/calendar-icon-controls-' + locale + '.png' });
   }
+});
+
+test('Navigation and view icons animate on hover at one cadence, reset on leave and honor reduced motion', async t => {
+  const page = await calendarPage(t, 'overlap');
+  const selectors = ['.tag-heading', '#tab-tools', '#tab-actions', '#tab-calendar', '#tab-settings', '#calendar-filter-nearby', '#calendar-filter-free', '#calendar-filter-all', '#view-cards-label', '#view-list-label'];
+  const animations = control => control.locator('.icon-motion-part, .coffee-steam').evaluateAll(parts => parts.flatMap(el => el.getAnimations()).map(animation => animation.effect.getTiming().duration));
+  for (const selector of selectors) {
+    const control = page.locator(selector);
+    await page.mouse.move(0, 0);
+    assert.deepEqual(await animations(control), [], selector + ' is still at rest');
+    const before = await control.boundingBox();
+    await control.hover();
+    const durations = await animations(control);
+    assert.ok(durations.length > 0, selector + ' animates');
+    assert.ok(durations.every(duration => duration === 1800), selector + ' shares the cadence');
+    const after = await control.boundingBox();
+    assert.equal(after.width, before.width); assert.equal(after.height, before.height);
+    await page.mouse.move(0, 0);
+    assert.deepEqual(await animations(control), [], selector + ' stops on leave');
+  }
+  await page.keyboard.press('Tab');
+  await page.locator('#tab-settings').focus();
+  assert.deepEqual(await animations(page.locator('#tab-settings')), [1800], 'Keyboard focus also animates');
+  await page.locator('#tab-settings').blur();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  for (const selector of selectors) {
+    const control = page.locator(selector);
+    await control.hover();
+    assert.deepEqual(await animations(control), [], selector + ' respects reduced motion');
+  }
+});
+
+test('Calendar dots relight in order while the frame stays still; moving view artwork returns from above', async t => {
+  const page = await calendarPage(t);
+  const calendar = page.locator('#tab-calendar');
+  await calendar.hover();
+  const dotStates = await calendar.locator('.icon-dot').evaluateAll(dots => {
+    const sample = time => dots.map(dot => {
+      const animation = dot.getAnimations()[0]; animation.pause(); animation.currentTime = time;
+      return Number(getComputedStyle(dot).opacity);
+    });
+    return [sample(0), sample(720), sample(1440)];
+  });
+  assert.deepEqual(dotStates, [[0, 0, 0, 0, 0], [1, 1, 0, 0, 0], [1, 1, 1, 1, 1]]);
+  assert.equal(await calendar.locator('svg > rect').evaluate(el => el.getAnimations().length), 0);
+  for (const selector of ['#view-cards-label', '#view-list-label']) {
+    const control = page.locator(selector); await control.hover();
+    const positions = await control.locator('.icon-motion-part').evaluate(el => {
+      const animation = el.getAnimations()[0]; animation.pause();
+      return [0, 684, 774, 1620].map(time => {
+        animation.currentTime = time;
+        const matrix = new DOMMatrix(getComputedStyle(el).transform);
+        return [Math.round(matrix.m41), Math.round(matrix.m42)];
+      });
+    });
+    assert.deepEqual(positions, [[0, 0], [24, 0], [0, -24], [0, 0]]);
+  }
+});
+
+test('Calendar and all-day pin icons show state at rest and the next state on hover', async t => {
+  const page = await calendarPage(t, 'overlap', { reducedMotion: 'reduce' });
+  await selectPortalTab(page, 'calendar');
+  const panelPin = page.locator('.calendar-panel-pin');
+  const slashCount = pin => pin.locator('svg:visible path[d="m2 2 20 20"]').count();
+  for (const pinned of [true, false]) {
+    await page.mouse.move(0, 0); await panelPin.blur();
+    assert.equal(await panelPin.getAttribute('aria-pressed'), String(pinned));
+    assert.equal(await panelPin.locator('svg:visible').count(), 1);
+    assert.equal(await slashCount(panelPin), pinned ? 0 : 1);
+    await panelPin.hover();
+    assert.equal(await slashCount(panelPin), pinned ? 1 : 0);
+    assert.equal(await panelPin.getAttribute('aria-pressed'), String(pinned), 'Hover only previews');
+    await panelPin.click();
+  }
+  await page.locator('.calendar-all-day-trigger').hover();
+  const allDayPin = page.locator('.calendar-all-day-pin');
+  await allDayPin.waitFor();
+  assert.equal(await slashCount(allDayPin), 1);
+  await allDayPin.hover();
+  assert.equal(await slashCount(allDayPin), 0);
+  await allDayPin.click();
+  await page.mouse.move(0, 0); await allDayPin.blur();
+  assert.equal(await allDayPin.getAttribute('aria-pressed'), 'true');
+  assert.equal(await slashCount(allDayPin), 0);
+  await allDayPin.hover();
+  assert.equal(await slashCount(allDayPin), 1);
+  for (const pin of [panelPin, allDayPin]) {
+    assert.deepEqual(await pin.evaluate(el => {
+      const box = el.getBoundingClientRect();
+      const icon = [...el.querySelectorAll('svg')].find(svg => svg.getBoundingClientRect().width > 0).getBoundingClientRect();
+      return [box.width, box.height, icon.width, icon.height];
+    }), [24, 24, 14, 14]);
+  }
+  await page.mouse.move(0, 0); await page.keyboard.press('Tab'); await panelPin.focus();
+  assert.equal(await slashCount(panelPin), 1, 'Keyboard focus previews unpinning');
+  await allDayPin.click();
+  assert.equal(await page.locator('.calendar-all-day').getAttribute('data-expanded'), 'false');
 });
