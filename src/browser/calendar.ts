@@ -1,6 +1,6 @@
 import { createCell, mountView } from './view';
 import CalendarHost from './CalendarHost.svelte';
-import { createCalendarPanelMotion } from './calendar-panel-motion';
+import type { CalendarPlacement } from './portal-navigation';
 import { calendarErrorText, type CalendarViewState, type CalendarCommands } from './calendar-types';
 /** Bounded RPCs, without logging upstream responses or exposing authorization tokens. */
 function rpc<T>(send: (runner: GasRunner) => void): Promise<T> {
@@ -58,9 +58,8 @@ function validSnapshot(value: unknown): value is CalendarSnapshot & { ok: true }
     ),
   );
 }
-export function initializeCalendar() {
+export function initializeCalendar(placement: CalendarPlacement) {
   const panel = document.getElementById('calendar-panel')!;
-  const panelMotion = createCalendarPanelMotion(panel);
   const [model, publish] = createCell<CalendarViewState>({
     settings: PortalCalendar.defaults(),
     initialized: false,
@@ -73,22 +72,20 @@ export function initializeCalendar() {
     calendarNames: {},
     calendars: [],
     choicesBusy: false,
-    open: false,
+    open: placement.visible(),
+    pinned: placement.pinned(),
     now: Date.now(),
     language: document.documentElement.lang,
   });
   let state = model();
   function setState(patch: Partial<CalendarViewState>): void;
-  function setState<K extends keyof CalendarViewState>(key: K, value: CalendarViewState[K], animatePanel?: boolean): void;
+  function setState<K extends keyof CalendarViewState>(key: K, value: CalendarViewState[K]): void;
   function setState(
     key: Partial<CalendarViewState> | keyof CalendarViewState,
     value?: CalendarViewState[keyof CalendarViewState],
-    animatePanel = false,
   ) {
-    const wasOpen = state.open;
     state = { ...state, ...(typeof key === 'string' ? { [key]: value } : key) };
     publish(state);
-    if (state.open !== wasOpen) panelMotion.setOpen(state.open, animatePanel);
   }
   const [draft, setDraft] = createCell<CalendarSettings>(PortalCalendar.defaults());
   let generation = 0,
@@ -97,14 +94,6 @@ export function initializeCalendar() {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const zone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   const errorText = (code: string) => calendarErrorText(code, state.language);
-  const rememberedOpen = () => {
-    try {
-      const saved = localStorage.getItem('portal-calendar-open');
-      return saved !== 'false';
-    } catch {
-      return true;
-    }
-  };
   async function load(force = false) {
     if (state.busy || !state.initialized || document.hidden) return;
     const request = ++generation;
@@ -209,7 +198,6 @@ export function initializeCalendar() {
         initialized: true,
         settingsError: '',
         error: '',
-        open: state.open || rememberedOpen(),
       });
       setDraft({ ...response.settings, calendarIds: [...response.settings.calendarIds] });
     } catch {
@@ -221,18 +209,7 @@ export function initializeCalendar() {
     }
   }
   const commands: CalendarCommands = {
-    toggle(open) {
-      setState('open', open, true);
-      try {
-        localStorage.setItem('portal-calendar-open', String(open));
-      } catch {
-        /* Optional UI preference. */
-      }
-      if (open) {
-        if (!state.initialized) void initialize();
-        else tick();
-      } else document.getElementById('toggle-calendar')?.focus();
-    },
+    pin(pinned) { placement.pin(pinned); },
     refresh() {
       if (!state.initialized) void initialize();
       else void load(true);
@@ -301,7 +278,6 @@ export function initializeCalendar() {
           error: '',
           settingsError: '',
           saved: true,
-          open: rememberedOpen(),
         });
         setDraft({ ...response.settings, calendarIds: [...response.settings.calendarIds] });
         tick();
@@ -312,13 +288,6 @@ export function initializeCalendar() {
       }
     },
   };
-  mountView(CalendarHost, document.getElementById('calendar-toggle-host')!, {
-    model,
-    draft,
-    setDraft,
-    commands,
-    part: 'toggle',
-  });
   mountView(CalendarHost, panel, { model, draft, setDraft, commands, part: 'panel' });
   mountView(CalendarHost, document.getElementById('calendar-settings-host')!, {
     model,
@@ -335,9 +304,10 @@ export function initializeCalendar() {
     else tick();
   });
   window.addEventListener('focus', tick);
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && state.open && panel.contains(document.activeElement))
-      commands.toggle(false);
+  placement.pinned.subscribe(pinned => setState('pinned', pinned));
+  placement.visible.subscribe(open => {
+    setState('open', open);
+    if (open && state.initialized) tick();
   });
   void initialize();
   return { tick };

@@ -1,6 +1,6 @@
 import { createCell } from './view';
 import { mountTabs } from './tabs';
-import { mountCompactNavigation } from './compact-navigation';
+import { mountPortalNavigation } from './portal-navigation';
 
 // Portal and settings tabs, kept in sync with the URL hash.
 /** @param {ReturnType<typeof import('./motion.js').createMotion>} motion */
@@ -18,6 +18,7 @@ export function initializeNavigation(motion) {
   const portalTabs = [
     { hash: 'links', button: element('tab-tools'), panel: element('directory') },
     { hash: 'inbox-and-tasks', button: element('tab-actions'), panel: element('actions-panel') },
+    { hash: 'calendar', button: element('tab-calendar'), panel: element('calendar-panel') },
     { hash: 'settings', button: element('tab-settings'), panel: element('settings-panel') },
   ];
   const settingsTabs = ['appearance', 'sources', 'calendar', 'extension'].map((id) => ({
@@ -32,9 +33,10 @@ export function initializeNavigation(motion) {
   /** @param {number} index */
   function selectPortalTab(index) {
     if (activeTab() === index) return;
-    setActiveTab(index);
+    const entering = portalTabs[index].panel.hidden;
     panelAnimation?.cancel();
-    panelAnimation = motion.appear(portalTabs[index].panel);
+    setActiveTab(index);
+    if (entering) panelAnimation = motion.appear(portalTabs[index].panel);
     document.dispatchEvent(new CustomEvent('portal:tabchange', { detail: portalTabs[index].hash }));
   }
   // GAS renders this code in a sandbox iframe. Its bridge controls the public URL;
@@ -60,7 +62,7 @@ export function initializeNavigation(motion) {
   }
 
   /** @param {number} index @param {string} [hash] */
-  function navigatePortalTab(index, hash = index === 2 && activeSettingsTab() !== 0 ? 'settings/' + settingsTabs[activeSettingsTab()].hash : portalTabs[index].hash) {
+  function navigatePortalTab(index, hash = index === 3 && activeSettingsTab() !== 0 ? 'settings/' + settingsTabs[activeSettingsTab()].hash : portalTabs[index].hash) {
     navigationRevision++;
     selectPortalTab(index);
     if (routeHash === hash) return;
@@ -76,10 +78,36 @@ export function initializeNavigation(motion) {
 
   mountTabs(settingsTabs, activeSettingsTab, (index) => {
     selectSettingsTab(index);
-    navigatePortalTab(2, 'settings/' + settingsTabs[index].hash);
+    navigatePortalTab(3, 'settings/' + settingsTabs[index].hash);
   });
-  mountTabs(portalTabs, activeTab, navigatePortalTab);
-  mountCompactNavigation(portalTabs, activeTab, navigatePortalTab);
+  let savedPin = false;
+  try { savedPin = localStorage.getItem('portal-calendar-pinned') === 'true'; } catch { /* Optional preference. */ }
+  const [pinned, setPinned] = createCell(savedPin);
+  const [visible, setVisible] = createCell(false);
+  mountPortalNavigation(portalTabs, activeTab, navigatePortalTab, pinned);
+  const synchronizePanels = () => {
+    const calendarSelected = portalTabs[activeTab()].hash === 'calendar';
+    portalTabs.forEach((tab, index) => {
+      const calendar = tab.hash === 'calendar';
+      tab.panel.hidden = calendar ? !(calendarSelected || pinned()) : index !== activeTab();
+      tab.panel.setAttribute('role', calendar && !calendarSelected ? 'region' : 'tabpanel');
+      tab.panel.setAttribute('aria-labelledby', tab.button.id);
+      if (calendar) tab.panel.dataset.pinned = String(pinned() && !calendarSelected);
+    });
+    setVisible(calendarSelected || pinned());
+  };
+  activeTab.subscribe(synchronizePanels);
+  pinned.subscribe(synchronizePanels);
+  /** @type {import('./portal-navigation').CalendarPlacement} */
+  const calendar = {
+    visible, pinned,
+    pin(value) {
+      const focusInside = portalTabs[2].panel.contains(document.activeElement);
+      setPinned(value);
+      try { localStorage.setItem('portal-calendar-pinned', String(value)); } catch { /* Optional preference. */ }
+      if (!visible() && focusInside) portalTabs[activeTab()].button.focus({ preventScroll: true });
+    },
+  };
 
   if (useGasHistory) {
     try {
@@ -99,4 +127,5 @@ export function initializeNavigation(motion) {
     applyRoute(window.location.hash);
   }
 
+  return { calendar };
 }

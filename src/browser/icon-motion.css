@@ -1,0 +1,81 @@
+/* One cadence for navigation and view controls. Only artwork moves, never hit targets. */
+:root { --portal-icon-cycle: 1.8s; }
+svg[data-animated-icon] { overflow: hidden; }
+.icon-motion-part { transform-box: view-box; transform-origin: center; }
+svg[data-animated-icon="tag"] { overflow: visible; }
+.icon-tag-swing { --icon-animation: portal-icon-tag-swing; transform-origin: 7.5px 7.5px; }
+.icon-drop { --icon-animation: portal-icon-drop; }
+.icon-drop-later { --icon-delay: .12s; }
+.icon-scatter { --icon-animation: portal-icon-scatter; }
+.icon-scatter-left { --icon-exit-x: -24px; --icon-exit-angle: -18deg; }
+.icon-scatter-right { --icon-exit-x: 24px; --icon-exit-angle: 18deg; }
+.icon-right-drop { --icon-animation: portal-icon-right-drop; }
+.icon-slide { --icon-animation: portal-icon-slide; }
+.icon-spin { --icon-animation: portal-icon-spin; }
+.icon-expand { --icon-animation: portal-icon-expand; }
+.icon-expand-ne { --icon-x: 2px; --icon-y: -2px; }
+.icon-expand-nw { --icon-x: -2px; --icon-y: -2px; }
+.icon-expand-se { --icon-x: 2px; --icon-y: 2px; }
+.icon-expand-sw { --icon-x: -2px; --icon-y: 2px; }
+.icon-dot-1 { --icon-animation: portal-icon-dot-1; }
+.icon-dot-2 { --icon-animation: portal-icon-dot-2; }
+.icon-dot-3 { --icon-animation: portal-icon-dot-3; }
+.icon-dot-4 { --icon-animation: portal-icon-dot-4; }
+.icon-dot-5 { --icon-animation: portal-icon-dot-5; }
+
+/* The tag hangs from its punched hole, with a gently settling swing. */
+@keyframes portal-icon-tag-swing {
+  0%, 8%, 92%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-16deg); }
+  45% { transform: rotate(11deg); }
+  62% { transform: rotate(-6deg); }
+  78% { transform: rotate(3deg); }
+}
+@keyframes portal-icon-drop {
+  0%, 12%, 78%, 100% { transform: translateY(0); opacity: 1; }
+  28% { transform: translateY(0); opacity: 0; }
+  29%, 35% { transform: translateY(-20px); opacity: 0; }
+  66% { transform: translateY(0); opacity: 1; }
+}
+@keyframes portal-icon-scatter {
+  0%, 12%, 78%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  38% { transform: translate(var(--icon-exit-x), -4px) rotate(var(--icon-exit-angle)); opacity: 0; }
+  39%, 43% { transform: translate(0, -20px) rotate(0deg); opacity: 0; }
+  74% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+}
+@keyframes portal-icon-right-drop {
+  0%, 12%, 78%, 100% { transform: translate(0, 0); opacity: 1; }
+  38% { transform: translate(24px, 0); opacity: 0; }
+  39%, 43% { transform: translate(0, -24px); opacity: 0; }
+  74% { transform: translate(0, 0); opacity: 1; }
+}
+@keyframes portal-icon-slide {
+  0%, 12%, 82%, 100% { transform: translateX(0); }
+  44% { transform: translateX(24px); }
+  44.01% { transform: translateX(-24px); }
+}
+@keyframes portal-icon-spin {
+  0%, 12% { transform: rotate(0deg); }
+  88%, 100% { transform: rotate(360deg); }
+}
+@keyframes portal-icon-expand {
+  0%, 12%, 85%, 100% { transform: translate(0, 0); }
+  42%, 55% { transform: translate(var(--icon-x), var(--icon-y)); }
+}
+/* All five dots go dark together, then light in reading order. */
+@keyframes portal-icon-dot-1 { 0%, 20% { opacity: 0; } 28%, 100% { opacity: 1; } }
+@keyframes portal-icon-dot-2 { 0%, 30% { opacity: 0; } 38%, 100% { opacity: 1; } }
+@keyframes portal-icon-dot-3 { 0%, 40% { opacity: 0; } 48%, 100% { opacity: 1; } }
+@keyframes portal-icon-dot-4 { 0%, 50% { opacity: 0; } 58%, 100% { opacity: 1; } }
+@keyframes portal-icon-dot-5 { 0%, 60% { opacity: 0; } 68%, 100% { opacity: 1; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  :is(.header-tab:focus-visible, .view-switch [data-part="item"][data-focus-visible], .calendar-display-filters [data-part="item"][data-focus-visible]) .icon-motion-part {
+    animation: var(--icon-animation) var(--portal-icon-cycle) ease-in-out var(--icon-delay, 0s) infinite;
+  }
+  @media (hover: hover) {
+    :is(.tag-heading:hover, .header-tab:hover, .view-switch [data-part="item"]:hover, .calendar-display-filters [data-part="item"]:hover) .icon-motion-part {
+      animation: var(--icon-animation) var(--portal-icon-cycle) ease-in-out var(--icon-delay, 0s) infinite;
+    }
+  }
+}

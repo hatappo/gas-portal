@@ -6,7 +6,7 @@ Display links from a spreadsheet as cards or a list. Connect an existing spreads
 
 **Consumer projects only need configuration and a package dependency.** The CLI generates GAS code under `.portal/`. Each work environment can use its own Google account, Apps Script project, and spreadsheet.
 
-Google Calendar adds a collapsible **Today** sidebar across all tabs, with compact past/future events, expanding hover/focus details, and free-time blocks between appointments. Select calendars, cache duration and optional in-page notices in Settings. Calendar access is read-only and uses the executing Google account. See [Calendar setup](docs/usage.md#google-calendar).
+Google Calendar has its own header tab and can be pinned above the other tabs, with compact past/future events, expanding hover/focus details, and free-time blocks between appointments. Select calendars, cache duration and optional in-page notices in Settings. Calendar access is read-only and uses the executing Google account. See [Calendar setup](docs/usage.md#google-calendar).
 
 [Alcove](https://github.com/hatappo/alcove) is a separate Chrome Side Panel extension for HTTPS web apps. Follow the [portal connection guide](docs/side-panel.md) to use this portal in Alcove; portal service tokens and settings stay in GAS.
 
@@ -103,7 +103,7 @@ npm run test:browser      # Small Chromium smoke suite (also runs in CI)
 npm run pack:local
 ```
 
-The frontend uses [Svelte](https://svelte.dev/) 5 with [Skeleton](https://www.skeleton.dev/) 5 tabs, tooltips, segmented controls, switches, toggle groups, menus, and collapsible disclosures. Tabs and segmented controls use Skeleton’s standard indicators; portal overrides only adjust their density. Components in `src/browser/*.svelte` own the dynamic Links, Inbox & Tasks, and Calendar views. The adjacent JavaScript controllers coordinate GAS RPCs, validation, timeouts, and routing. Small TypeScript adapters expose synchronous controller methods through Svelte stores; component-local interactions use Svelte runes. `TabsView.svelte` adopts server-rendered panels through `Existing.svelte`, preserving form drafts and existing controller listeners across navigation. Spreadsheet and connection forms retain their DOM controllers. Do not mutate Svelte-owned list contents from those controllers.
+The frontend uses [Svelte](https://svelte.dev/) 5 with [Skeleton](https://www.skeleton.dev/) 5 tabs, tooltips, segmented controls, switches, toggle groups, menus, and collapsible disclosures. Header tabs use a compact segmented appearance at every width; settings tabs and segmented controls retain Skeleton indicators. Components in `src/browser/*.svelte` own the dynamic Links, Inbox & Tasks, and Calendar views. The adjacent JavaScript controllers coordinate GAS RPCs, validation, timeouts, and routing. Small TypeScript adapters expose synchronous controller methods through Svelte stores; component-local interactions use Svelte runes. `TabsView.svelte` adopts server-rendered panels through `Existing.svelte`, preserving form drafts and existing controller listeners across navigation. Spreadsheet and connection forms retain their DOM controllers. Do not mutate Svelte-owned list contents from those controllers.
 
 The display-settings form and theme picker keep the shared save helpers for rollback and timeouts. Disclosures keep their content mounted, animate intrinsic height, and respect reduced-motion preferences. Shared translations, theme definitions, and catalog rules remain usable by both the browser and GAS.
 

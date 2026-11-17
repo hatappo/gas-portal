@@ -287,18 +287,18 @@ The same credentials serve saved messages and To-dos. Saved messages use the Lin
 
 ## Settings navigation
 
-Settings has three subtabs: **Appearance**, **Sources**, and **Calendar**. Sources starts with independent Links and Inbox & Tasks cache durations, followed by **Links spreadsheet**, **Gmail**, **Slack**, and **GitHub**. The cache controls appear side by side, stacking in compact mode; their changes save automatically. Calendar cache changes use the Calendar form's **Save changes** button.
+Settings has four subtabs: **Appearance**, **Sources**, **Calendar**, and **Extension**. Sources starts with independent Links and Inbox & Tasks cache durations, followed by **Links spreadsheet**, **Gmail**, **Slack**, and **GitHub**. The cache controls appear side by side, stacking in compact mode; their changes save automatically. Calendar cache changes use the Calendar form's **Save changes** button.
 
 The spreadsheet section ends with collapsed **Advanced settings** for blocked URL schemes and the favicon finder. Switching tabs or opening disclosures preserves form drafts and each control's save behavior.
 
-Main routes are `#links`, `#inbox-and-tasks`, and `#settings`. Settings routes are `#settings/appearance`, `#settings/sources`, `#settings/calendar`, and `#settings/extension`; old settings routes are not aliases. Browser back/forward works in both GAS and preview. Arrow keys and Home/End navigate the focused tab row.
+The header always contains four tabs: **Links**, **Inbox & Tasks**, **Calendar**, and **Settings**. Labels collapse to icons at 760px and below. Main routes are `#links`, `#inbox-and-tasks`, `#calendar`, and `#settings`. Settings routes are `#settings/appearance`, `#settings/sources`, `#settings/calendar`, and `#settings/extension`; old settings routes are not aliases. Browser back/forward works in both GAS and preview. Arrow keys and Home/End navigate the focused tab row. Header, calendar-filter and Cards/List icons animate on hover or visible keyboard focus with a shared 1.8-second cadence. They return to their resting artwork on exit and stay still when the system requests reduced motion.
 
 When editing GitHub or Slack connections, the token field is read-only and shows a fixed mask plus its last two characters. Only those two characters are included in connection metadata; saved tokens are never returned in full. Choose **Replace token** to enter a replacement. An empty replacement preserves the existing token. Local preview shows a fictional suffix (`mo`).
 
 
 ## Google Calendar
 
-The header calendar button opens a compact schedule panel available across Links, Inbox & Tasks and Settings. It always reserves space in the page, beside the main content on screens wider than 760px and above it on narrower screens. It never overlays the content. At wider stacked sizes, card details use a horizontal layout; at phone widths, source and links share a compact row. Search controls in Tools and Actions stay beside the input when the main content has enough room, independently of whether the panel is open. The open/closed preference is saved in that browser; the calendar opens by default at every screen size.
+Open **Calendar** in the header to show the schedule on its own. Its pin button keeps the same schedule above Links, Inbox & Tasks or Settings, at every screen width. A small pin on the Calendar tab indicates this preference. The pinned view scrolls within at most 45% of the viewport height; the standalone tab shows the full schedule. Selecting Calendar never duplicates it. Unpinning keeps the selected tab unchanged. Pinning is off by default and saved in this browser; filters, expanded all-day events and silenced reminders survive tab switches and pin changes during the page session.
 
 
 ### Setup and authorization
@@ -306,7 +306,7 @@ The header calendar button opens a compact schedule panel available across Links
 1. Build the updated package and deploy with `npm run ship` in the consumer project. The manifest adds `https://www.googleapis.com/auth/calendar.readonly` and the Calendar v3 advanced service. No Calendar write permission or manually entered token is needed. GAS supplies the executing user's OAuth token; this works with personal Google accounts as well as Workspace accounts.
 2. Authorize the new read-only permission with the account that executes the web app. If consent does not appear, open the GAS editor and run `authorizePortal` with that account, then reload the portal. CLI deployment alone does not grant consent.
 3. Open **Settings → Calendar**, optionally choose **Load calendars**. Select between one and five readable calendars; the default is the primary calendar. Shared calendars can be selected when they appear in that account's calendar list.
-4. Choose the cache duration and optional upcoming-event notice, then **Save changes**. These fields save together. Close the panel with the header button to stop automatic event fetching. Loading calendar choices remains available in Settings.
+4. Choose the cache duration and optional upcoming-event notice, then **Save changes**. These fields save together. Unpin the calendar and select another main tab to stop automatic event fetching. Loading calendar choices remains available in Settings.
 
 For an Apps Script default Cloud project, the declared advanced service enables the Calendar API automatically. If your script uses a standard Google Cloud project, enable **Google Calendar API** in that project if necessary. See Google's [advanced service setup](https://developers.google.com/apps-script/guides/services/advanced#requirements).
 
@@ -326,7 +326,7 @@ Calendar data loads asynchronously when the panel is open, independently of Link
 
 Current appointments show the elapsed portion from the top down in the same pale background as free time. Card durations and countdowns use the compact prime notation (`30′`); accessible names retain localized minute words. Remaining minutes read **12′ left** in English or **残り12分** in Japanese and use the same 12px type size as the leading duration and appear at the bottom right in a darker, theme-aware shade of the event color. They remain readable as the remaining fill shrinks, including the final minute. Each overlapping appointment has its own countdown, also available in its tooltip and accessible name. The portion uses the full appointment duration, including events spanning midnight. It updates with the existing local clock, without additional requests.
 
-**Nearby** expands the current and next appointments. **Free** expands free-time blocks instead and reduces all other timed appointments, including the current and next ones, to thin strips without visible labels or badges. Hover, focus or touch can still inspect those appointments. **All** expands every timed appointment, free-time block and the all-day group; switching back restores the other modes and any explicit all-day pin. None of the modes removes entries, and hover/focus/touch can still expand other rows. The segmented control shares a row with refresh and uses the same component as Cards/List. Switching modes is entirely local and resets temporary expansion. Calendar settings remain available through **Settings → Calendar**.
+**Nearby** expands the current and next appointments. **Free** expands free-time blocks instead and reduces all other timed appointments, including the current and next ones, to thin strips without visible labels or badges. Hover, focus or touch can still inspect those appointments. **All** expands every timed appointment, free-time block and the all-day group; switching back restores the other modes and any explicit all-day pin. None of the modes removes entries, and hover/focus/touch can still expand other rows. The icon-only segmented control shares a row with refresh and uses the same component as Cards/List: play for Nearby, coffee for Free, and expand for All. Hover or keyboard focus shows a localized explanation. Switching modes is entirely local and resets temporary expansion. Calendar settings remain available through **Settings → Calendar**.
 
 While the page is visible, a local clock reclassifies events at start/end/notice boundaries and at least once per minute, without requesting Google. An open panel also refreshes expired data (every five minutes when caching is disabled). Hidden tabs pause this timer; returning to the page or changing days re-evaluates state and refreshes when necessary. Failed reads retry after approximately a minute while visible and open, with a manual retry always available. A failed forced refresh reports the failure and clears the previous snapshot.
 
@@ -334,7 +334,7 @@ Optional notices highlight the next scheduled appointment's own card one, two, t
 
 ### Offline preview
 
-Preview enables a fictional calendar by default and never contacts Google. Its relative-time fixtures include past, current, next and later appointments, free time and an all-day event. Calendar settings persist in preview localStorage independently of production. Use the header calendar button if the panel was previously closed.
+Preview enables a fictional calendar by default and never contacts Google. Its relative-time fixtures include past, current, next and later appointments, free time and an all-day event. Calendar settings persist in preview localStorage independently of production. Select the Calendar tab to view the schedule.
 
 | URL parameter | Scenario |
 | --- | --- |

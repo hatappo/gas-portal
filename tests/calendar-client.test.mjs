@@ -3,9 +3,10 @@ import { test } from 'node:test';
 import { browser, bundleBrowser, plain } from './helpers.mjs';
 const client = await bundleBrowser({ connectGitHub: false, connectCalendar: true });
 const flush = () => new Promise(resolve => setTimeout(resolve, 0));
-function fixture(t) {
+function fixture(t, pinned = true) {
   let now = Date.parse('2026-11-07T12:00:00Z');
   const app = browser(window => {
+    window.localStorage.setItem('portal-calendar-pinned', String(pinned));
     window.Date.now = () => now;
     window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
   }, client);
@@ -71,7 +72,7 @@ test('Changing Calendar settings invalidates in-flight responses and saves only 
 test('Calendar settings initialization shows a spinner, coalesces retries and recovers in Settings', async t => {
   const app = fixture(t);
   assert.equal(app.document.querySelector('#calendar-panel .refresh-catalog').getAttribute('aria-busy'), 'true');
-  app.get('toggle-calendar').click();
+  app.get('tab-calendar').click();
   assert.equal(app.calendarRequests.length, 1);
   app.calendarRequests[0].failure(new Error('Failed')); await flush();
   app.get('tab-settings').click(); app.get('settings-tab-calendar').click();
@@ -189,7 +190,7 @@ test('Calendar refetches only after expiry, coalesces ticks, and backs off failu
   app.document.dispatchEvent(new app.dom.window.Event('visibilitychange'));
   assert.equal(app.calendarRequests.length, 5, 'Visibility restores expired data');
   app.calendarRequests[4].success(app.snapshot()); await flush();
-  app.get('toggle-calendar').click();
+  app.document.querySelector('.calendar-panel-pin').click();
   app.setNow(app.getNow() + 16 * 60000); tick();
   assert.equal(app.calendarRequests.length, 5, 'Closed panels do not auto-fetch');
 });
@@ -269,7 +270,9 @@ test('Silencing one appointment preserves its countdown and other reminders thro
   assert.equal(app.document.activeElement, row.querySelector('.calendar-event-trigger'));
   assert.equal(app.document.querySelectorAll('.calendar-silence').length, 1);
   assert.equal(app.calendarRequests.length, 2, 'Silencing is a local interaction, not a settings update');
-  app.get('toggle-calendar').click(); app.get('toggle-calendar').click();
+  app.document.querySelector('.calendar-panel-pin').click();
+  app.get('tab-settings').click();
+  app.get('tab-calendar').click();
   app.document.querySelector('#calendar-panel .refresh-catalog').click();
   app.calendarRequests[2].success({ ...snapshot }); await flush();
   assert.equal(app.document.querySelectorAll('.calendar-silence').length, 1);
@@ -358,4 +361,28 @@ test('Restored calendar choices survive deselection, saving and incomplete disco
   app.calendarRequests.at(-1).success({ ok: true, calendars: [{ id: 'primary', name: 'New work name' }] }); await flush();
   assert.equal(app.document.querySelectorAll('.calendar-choices input:checked').length, 2);
   assert.match(app.document.querySelector('.calendar-choices').textContent.trim(), /Holidays/);
+});
+
+
+test('Unpinned calendars defer events until selected and retain fresh data across tab and pin changes', async t => {
+  const app = fixture(t, false);
+  app.calendarRequests[0].success({ ok: true, settings: app.settings }); await flush();
+  assert.equal(app.calendarRequests.length, 1, 'Hidden calendars initialize settings without reading events');
+  assert.equal(app.get('calendar-panel').hidden, true);
+  app.get('tab-calendar').click();
+  assert.equal(app.calendarRequests.length, 2);
+  app.calendarRequests[1].success(app.snapshot()); await flush();
+  const schedule = app.document.querySelector('.calendar-schedule');
+  app.document.querySelector('.calendar-panel-pin').click();
+  assert.equal(app.dom.window.location.hash, '#calendar', 'Pinning does not navigate');
+  app.get('tab-settings').click();
+  assert.equal(app.get('calendar-panel').hidden, false);
+  app.document.querySelector('.calendar-panel-pin').focus();
+  app.document.querySelector('.calendar-panel-pin').click();
+  assert.equal(app.get('calendar-panel').hidden, true);
+  assert.equal(app.document.activeElement.id, 'tab-settings');
+  app.get('tab-calendar').click();
+  assert.equal(app.document.querySelector('.calendar-schedule'), schedule);
+  assert.equal(app.calendarRequests.length, 2, 'Reopening uses the existing fresh snapshot');
+  assert.equal(app.dom.window.localStorage.getItem('portal-calendar-pinned'), 'false');
 });

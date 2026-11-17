@@ -25,7 +25,7 @@ import { initializeSearchShortcuts } from './search-shortcuts.js';
 export function initializePortal({ connectGitHub = initializeGitHub, connectSlack = initializeSlack, connectCalendar = initializeCalendar, connectGmail = initializeGmail } = {}) {
   const motion = createMotion();
   initializeLanguage();
-  initializeNavigation(motion);
+  const navigation = initializeNavigation(motion);
   mountDisclosures();
   const catalog = initializeCatalog(motion);
   initializeTheme();
@@ -39,7 +39,7 @@ export function initializePortal({ connectGitHub = initializeGitHub, connectSlac
   connectGmail(actions);
   connectSlack(actions, catalog);
   connectGitHub(actions);
-  const calendar = connectCalendar();
+  const calendar = connectCalendar(navigation.calendar);
   mountRefreshHints();
   initializeSearchShortcuts();
   return { actions, calendar };

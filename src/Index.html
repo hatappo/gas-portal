@@ -15,8 +15,12 @@
         <span class="brand-name"><?= portal.brandLead ?><span><?= portal.brandRest ?></span></span>
       </div>
       <!-- preview-label -->
-      <div id="compact-navigation"></div>
-      <div id="calendar-toggle-host"></div>
+      <div id="portal-navigation" class="portal-tabs" role="tablist" aria-label="Portal sections" data-i18n-aria-label="Portal sections">
+        <button type="button" id="tab-tools" class="tab" role="tab" aria-selected="true" aria-controls="directory" tabindex="0"><!-- tool-case-icon --><span>Links</span></button>
+        <button type="button" id="tab-actions" class="tab" role="tab" aria-selected="false" aria-controls="actions-panel" tabindex="-1"><!-- list-checks-icon --><span>Inbox &amp; Tasks</span></button>
+        <button type="button" id="tab-calendar" class="tab" role="tab" aria-selected="false" aria-controls="calendar-panel" tabindex="-1"><!-- calendar-days-icon --><span data-i18n="Calendar">Calendar</span></button>
+        <button type="button" id="tab-settings" class="tab settings-tab" role="tab" aria-label="Settings" data-i18n-aria-label="Settings" title="Settings" data-i18n-title="Settings" aria-selected="false" aria-controls="settings-panel" tabindex="-1"><!-- settings-icon --></button>
+      </div>
     </header>
     <div class="portal-layout">
     <main id="main">
@@ -24,11 +28,7 @@
         <h1 id="page-title" <? if (!portal.headline) { ?>hidden<? } ?>><?= portal.headline ?></h1>
         <p class="intro-copy" <? if (!portal.description) { ?>hidden<? } ?>><?= portal.description ?></p>
       </section>
-      <div class="portal-tabs" role="tablist" aria-label="Portal sections" data-i18n-aria-label="Portal sections">
-        <button type="button" id="tab-tools" class="tab" role="tab" aria-selected="true" aria-controls="directory" tabindex="0"><!-- tool-case-icon --><span>Links</span></button>
-        <button type="button" id="tab-actions" class="tab" role="tab" aria-selected="false" aria-controls="actions-panel" tabindex="-1"><!-- list-checks-icon --><span>Inbox &amp; Tasks</span></button>
-        <button type="button" id="tab-settings" class="tab settings-tab" role="tab" aria-label="Settings" data-i18n-aria-label="Settings" title="Settings" data-i18n-title="Settings" aria-selected="false" aria-controls="settings-panel" tabindex="-1"><!-- settings-icon --></button>
-      </div>
+      <section id="calendar-panel" class="calendar-panel" role="tabpanel" aria-labelledby="tab-calendar" tabindex="0" hidden></section>
       <section class="directory" role="tabpanel" aria-labelledby="tab-tools" aria-busy="true" id="directory" tabindex="0">
         <div class="directory-toolbar">
           <div class="search-controls">
@@ -52,7 +52,7 @@
           </div>
         </div>
         <div id="tag-filter" class="tag-filter" hidden>
-          <div class="tag-heading" title="Filter by tags (match all)" data-i18n-title="Filter by tags (match all)">Tags</div>
+          <div class="tag-heading" title="Filter by tags (match all)" data-i18n-title="Filter by tags (match all)"><!-- tag-icon --><span class="sr-only">Tags</span></div>
           <div id="tags" class="tags" role="group" aria-label="Filter by tags" data-i18n-aria-label="Filter by tags"></div>
         </div>
         <aside id="warnings" class="warnings alert portal-alert-warning" aria-label="Data issues" data-i18n-aria-label="Data issues" hidden>
@@ -313,7 +313,6 @@
         </div>
       </section>
     </main>
-    <aside id="calendar-panel" class="calendar-panel" aria-label="Today’s schedule" data-i18n-aria-label="Today’s schedule" hidden></aside>
     </div>
     <footer class="site-footer">
       <nav aria-label="Management links" data-i18n-aria-label="Management links">
@@ -328,6 +327,8 @@
     <template id="calendar-pin-off-icon"><!-- pin-off-icon --></template>
     <template id="calendar-off-icon"><!-- calendar-off-icon --></template>
     <template id="calendar-icon"><!-- calendar-days-icon --></template>
+    <template id="calendar-nearby-icon"><!-- play-icon --></template>
+    <template id="calendar-expand-icon"><!-- expand-icon --></template>
     <template id="calendar-coffee-icon"><!-- coffee-icon --></template>
     <template id="calendar-silence-icon"><!-- bell-off-icon --></template>
     <template id="gmail-refresh-icon"><!-- refresh-cw-icon --></template>

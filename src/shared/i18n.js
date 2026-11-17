@@ -2,6 +2,12 @@
 globalThis.PortalI18n = (() => {
   /** @type {Record<string, string>} */
   const messages = {
+  "Highlight current and next events": "直近の予定を強調",
+  "Free time only": "空き時間のみ",
+  "All events": "すべての予定",
+  "Calendar · pinned": "カレンダー · ピン留め中",
+  "Pin calendar above other tabs": "カレンダーを他のタブの上部にピン留め",
+  "Unpin calendar": "カレンダーのピン留めを解除",
   "Alcove Chrome extension": "Alcove Chrome 拡張機能",
   "Additional allowed extension ID": "追加で許可する拡張ID",
   "Allow a local Alcove extension to connect. Save its extension ID, then reload the side panel.": "ローカル版の Alcove 拡張からの接続を許可します。拡張IDを保存し、サイドパネルを再読み込みしてください。",
@@ -204,9 +210,7 @@ globalThis.PortalI18n = (() => {
   "Fine-grained personal access token": "Fine-grained personal access token",
   "Choose Replace token to enter a new token. Leaving it empty keeps the saved token. Never enter a real token in local preview.": "差し替える場合は「トークンを変更」を選びます。空欄なら保存済みの値を使います。ローカルプレビューには実際のトークンを入力しないでください。",
   "Today": "今日の予定",
-  "In compact view, the calendar is hidden while Settings is open.": "コンパクト表示では、設定画面を開いている間だけカレンダーを隠します。",
   "Today’s schedule": "今日の予定",
-  "Close calendar": "予定パネルを閉じる",
   "Calendar": "カレンダー",
   "Calendar settings": "カレンダー設定",
   "Free": "空き",

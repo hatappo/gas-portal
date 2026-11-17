@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
-  import Icon from './Icon.svelte';
+  import PinIcon from './PinIcon.svelte';
   let {
     events,
     language,
@@ -86,7 +86,7 @@
       title={t(pinned ? 'Collapse all-day events' : 'Keep all-day events expanded')}
       onclick={toggle}
     >
-      <Icon id={pinned ? 'calendar-pin-off-icon' : 'calendar-pin-icon'} />
+      <PinIcon {pinned} />
     </button>
   </div>
   <div
