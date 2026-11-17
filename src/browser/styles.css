@@ -20,6 +20,7 @@
 }
 
 * { box-sizing: border-box; }
+html { scroll-padding-top: 88px; }
 [hidden] { display: none !important; }
 /* Panels use subtle surface borders rather than shadows. */
 body { min-height: 100vh; display: flex; flex-direction: column; color: var(--portal-text); background: var(--color-surface-50-950); font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif; font-size: 14px; line-height: 1.7; }
@@ -27,7 +28,7 @@ body { min-height: 100vh; display: flex; flex-direction: column; color: var(--po
 button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
 button, a, input { -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 3px solid var(--portal-text); outline-offset: 4px; }
-.site-header { width: 100%; max-width: 1184px; margin: 0 auto; min-height: 64px; padding: 10px 40px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--color-surface-200-800); }
+.site-header { position: sticky; top: 0; z-index: 20; flex-shrink: 0; background: var(--color-surface-50-950); width: 100%; max-width: 1184px; margin: 0 auto; min-height: 64px; padding: 10px 40px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--color-surface-200-800); }
 .brand { min-width: 0; flex: 1; display: flex; align-items: center; gap: 12px; font-family: "Avenir Next", Avenir, sans-serif; font-size: 20px; font-weight: 700; letter-spacing: -.6px; }
 .brand-name { line-height: 1.3; overflow-wrap: anywhere; }
 .brand-name > span { font-weight: 400; }
@@ -594,6 +595,7 @@ h2 .service-logo { width: 24px; height: 24px; }
 
 @media (max-width: 760px) {
   .brand-name, .header-tab-label, #inbox-title, .tasks-heading { display: none; }
+  html { scroll-padding-top: 60px; }
   .site-header { min-height: 44px; padding: 3px 12px; gap: 6px; }
   .brand-mark { width: 28px; height: 28px; font-size: 23px; }
   .header-tabs .header-tab { width: 30px; height: 30px; min-height: 30px; padding: 0; }
@@ -639,6 +641,8 @@ h2 .service-logo { width: 24px; height: 24px; }
 /* The compact header keeps all three sections visible without a menu. */
 
 .theme-mode { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 20px; }
+.theme-mode-switch [data-part="item"] { width: 32px; height: 32px; min-height: 32px; padding: 0; }
+.theme-mode-switch svg { display: block; width: 18px; height: 18px; }
 .theme-mode > span { font-size: 13px; font-weight: 600; }
 .theme-mode .settings-help { flex-basis: 100%; margin: 0; }
 #theme-picker > .theme-grid { display: grid; }
