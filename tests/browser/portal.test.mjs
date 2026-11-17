@@ -2022,7 +2022,14 @@ test('Appearance mode icons have localized tooltips, preserve selection and resp
       const control = page.locator('#theme-mode-' + mode);
       const parts = control.locator('.icon-motion-part');
       const animations = () => parts.evaluateAll(elements => elements.flatMap(el => el.getAnimations()).map(a => a.effect.getTiming().duration));
-      await control.hover();
+      // Tooltips intentionally close on scroll. Finish bringing these below-fold
+      // controls into view before testing a pointer that rests over the icon.
+      await page.locator('#settings-panel').evaluate(el => Promise.all(el.getAnimations().map(animation => animation.finished)));
+      await control.evaluate(el => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      await page.mouse.move(0, 0);
+      const box = await control.boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       await page.getByRole('tooltip', { name: labels[index], exact: true }).waitFor();
       assert.equal(await control.locator('svg').count(), 1);
       assert.ok((await animations()).length > 0);
