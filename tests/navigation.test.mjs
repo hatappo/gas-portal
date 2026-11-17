@@ -5,7 +5,7 @@ import { browser, catalog } from './helpers.mjs';
 const selected = (document) => document.querySelector('[role="tab"][aria-selected="true"]').id;
 
 test('Open each tab directly from the hash and fall back safely for absent or unknown routes', (t) => {
-  for (const [hash, tab] of [['#links', 'tools'], ['#inbox-and-tasks', 'actions'], ['#settings', 'settings'], ['', 'tools'], ['#unknown', 'tools'], ['#%ZZ', 'tools']]) {
+  for (const [hash, tab] of [['#calendar', 'calendar'], ['#links', 'tools'], ['#inbox-and-tasks', 'actions'], ['#settings', 'settings'], ['', 'tools'], ['#unknown', 'tools'], ['#%ZZ', 'tools']]) {
     const app = browser((window) => window.history.replaceState(null, '', '/?state=empty' + hash));
     t.after(() => app.dom.window.close());
     assert.equal(selected(app.document), 'tab-' + tab);

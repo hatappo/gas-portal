@@ -12,11 +12,12 @@ export interface CalendarViewState {
   calendars: CalendarChoice[];
   choicesBusy: boolean;
   open: boolean;
+  pinned: boolean;
   now: number;
   language: string;
 }
 export interface CalendarCommands {
-  toggle(open: boolean): void;
+  pin(pinned: boolean): void;
   refresh(): void;
   loadChoices(): void;
   save(settings: CalendarSettings): void;

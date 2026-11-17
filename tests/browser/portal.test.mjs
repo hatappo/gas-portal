@@ -17,7 +17,6 @@ async function pageFor(t, options = {}) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'en-US', ...options });
   const page = await context.newPage();
   page.setDefaultTimeout(10000);
-  await page.addInitScript(() => localStorage.setItem('portal-calendar-open', 'false'));
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   // The smoke suite uses only the local fixture, including its image fallbacks.
@@ -30,10 +29,7 @@ async function pageFor(t, options = {}) {
 
 async function selectPortalTab(page, tab) {
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  const compact = page.locator('#compact-navigation');
-  if (await compact.isVisible()) {
-    await page.locator('.compact-nav-item[data-portal-tab="' + tab + '"]').click();
-  } else await page.locator('#tab-' + tab).click();
+  await page.locator('#tab-' + tab).click();
 }
 
 test('Tabs preserve drafts and history; defaults only apply after saving', async t => {
@@ -312,8 +308,10 @@ async function calendarPage(t, scenario = '', options = {}) {
   // Keep fixture events on the same day, regardless of when CI runs.
   await page.clock.setFixedTime(new Date('2026-11-07T03:00:00Z'));
   await page.goto(base + '/?calendar=' + scenario);
-  await page.locator('#toggle-calendar').click();
+  await selectPortalTab(page, 'calendar');
   await page.locator('#calendar-panel .refresh-catalog[aria-busy="false"]').waitFor();
+  await page.locator('.calendar-panel-pin').click();
+  await selectPortalTab(page, 'tools');
   return page;
 }
 
@@ -337,9 +335,9 @@ test('Calendar compact rows expand on hover and focus, and remain available acro
   await page.emulateMedia({ reducedMotion: 'reduce' });
   assert.equal(await past.locator('button').evaluate(el => getComputedStyle(el).transitionDuration), '0s');
   for (const tab of ['#tab-actions', '#tab-settings', '#tab-tools']) { await selectPortalTab(page, tab.replace('#tab-', '')); assert.equal(await page.locator('#calendar-panel').isVisible(), true); }
-  await page.getByRole('button', { name: 'Close calendar', exact: true }).click();
+  await page.getByRole('button', { name: 'Unpin calendar', exact: true }).click();
   assert.equal(await page.locator('#calendar-panel').isVisible(), false);
-  assert.equal(await page.locator('#toggle-calendar').evaluate(el => el === document.activeElement), true);
+  assert.equal(await page.locator('#tab-tools').evaluate(el => el === document.activeElement), true);
 });
 
 test('Calendar settings persist, narrow screens remain usable and in-page notices can be enabled', async t => {
@@ -348,8 +346,8 @@ test('Calendar settings persist, narrow screens remain usable and in-page notice
   await page.locator('#settings-tab-calendar').click();
   await page.locator('#settings-calendar-panel').waitFor({ state: 'visible' });
   assert.equal(await page.locator('#settings-tab-calendar').textContent(), 'Calendar');
-  assert.equal(await page.locator('#calendar-panel').isVisible(), false);
-  assert.equal(await page.locator('#toggle-calendar').getAttribute('aria-disabled'), 'true');
+  assert.equal(await page.locator('#calendar-panel').isVisible(), true);
+  assert.equal(await page.locator('#tab-settings').getAttribute('aria-selected'), 'true');
   await page.getByRole('button', { name: 'Load calendars', exact: true }).click();
   await page.getByLabel('Personal', { exact: true }).check();
   await page.getByLabel('Calendar cache duration', { exact: true }).selectOption('900');
@@ -368,7 +366,7 @@ test('Calendar settings persist, narrow screens remain usable and in-page notice
   assert.equal(await page.getByLabel('Upcoming-event notice', { exact: true }).inputValue(), '5');
   assert.equal(await page.getByLabel('Animate upcoming events', { exact: true }).count(), 0);
   await selectPortalTab(page, 'tools');
-  await page.locator('#toggle-calendar').click();
+  await page.locator('#tab-calendar').click();
   await page.locator('.calendar-all-day-trigger').tap();
   assert.equal(await page.locator('.calendar-all-day-pin').getAttribute('aria-pressed'), 'true');
   await page.locator('.calendar-all-day-trigger').tap();
@@ -380,7 +378,8 @@ test('Calendar settings persist, narrow screens remain usable and in-page notice
     await page.setViewportSize({ width, height: 900 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   }
-  await page.keyboard.press('Escape');
+  await page.locator('.calendar-panel-pin').click();
+  await selectPortalTab(page, 'tools');
   await page.locator('#calendar-panel').waitFor({ state: 'hidden' });
 });
 
@@ -390,11 +389,11 @@ test('Calendar empty and partial states never imply false free time', async t =>
   assert.equal(await page.locator('.calendar-event.is-gap').count(), 0);
   assert.match(await page.locator('.calendar-notice').textContent(), /Some calendars could not be loaded/);
   await page.goto(base + '/?calendar=empty');
-  await page.locator('#toggle-calendar').click();
+  await page.locator('#tab-calendar').click();
   await page.getByText('No events today.', { exact: true }).waitFor();
   assert.equal(await page.locator('.calendar-event').count(), 0);
   await page.goto(base + '/?calendar=unauthorized');
-  await page.locator('#toggle-calendar').click();
+  await page.locator('#tab-calendar').click();
   await page.getByText('Calendar authorization is required. Run authorizePortal in the GAS editor and grant access.', { exact: true }).first().waitFor();
   assert.equal(await page.locator('#calendar-panel .refresh-catalog').isEnabled(), true);
 });
@@ -422,7 +421,7 @@ test('Calendar all-day card can be hovered, pinned and explicitly collapsed; upc
   await pin.click();
   assert.equal(await pin.getAttribute('aria-pressed'), 'true');
   await page.locator('#calendar-panel .calendar-panel-controls').hover();
-  await page.locator('#toggle-calendar').focus();
+  await page.locator('#tab-calendar').focus();
   assert.equal(await allDay.getAttribute('data-expanded'), 'true');
   await pin.click();
   assert.equal(await allDay.getAttribute('data-expanded'), 'false', 'Unpin collapses even while hovered/focused');
@@ -481,20 +480,20 @@ test('Calendar segmented filters preserve rows and always reserve layout space a
   assert.equal(await filters.getByRole('radio', { name: 'Free', exact: true }).isChecked(), true);
   for (const width of [1000, 800, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
-    const main = await page.locator('#main').boundingBox(), panel = await page.locator('#calendar-panel').boundingBox();
-    assert.ok(width > 760 ? panel.x >= main.x + main.width - 1 : panel.y + panel.height <= main.y + 1, 'Docked panel does not cover main content at ' + width);
+    const main = await page.locator('#directory').boundingBox(), panel = await page.locator('#calendar-panel').boundingBox();
+    assert.ok(panel.y + panel.height <= main.y + 1, 'Docked panel does not cover main content at ' + width);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   }
   await page.reload();
-  await page.locator('#toggle-calendar').click();
   await page.locator('#calendar-panel').waitFor({ state: 'visible' });
-  await page.getByRole('button', { name: 'Close calendar', exact: true }).click();
+  await page.getByRole('button', { name: 'Unpin calendar', exact: true }).click();
   assert.equal(await page.locator('#calendar-panel').isVisible(), false);
-  assert.equal(await page.evaluate(() => localStorage.getItem('portal-calendar-open')), 'false');
+  assert.equal(await page.evaluate(() => localStorage.getItem('portal-calendar-pinned')), 'false');
 });
 
 test('Past calendar rows remain reachable top-down, then collapse together outside the schedule', async t => {
   const page = await calendarPage(t, 'overlap', { viewport: { width: 1440, height: 1100 } });
+  await selectPortalTab(page, 'calendar');
   await page.locator('.calendar-all-day').hover();
   await page.waitForTimeout(500);
   const rows = await page.locator('.calendar-event[data-state="past"]').all();
@@ -514,6 +513,7 @@ test('Past calendar rows remain reachable top-down, then collapse together outsi
 
 test('Calendar past inspection ends on current or future rows while explicit all-day pins remain', async t => {
   const page = await calendarPage(t, 'overlap', { viewport: { width: 1440, height: 1100 } });
+  await selectPortalTab(page, 'calendar');
   const schedule = page.locator('.calendar-schedule');
   const allDay = page.locator('.calendar-all-day');
   const past = page.locator('.calendar-event[data-state="past"]:not(.is-gap)').first();
@@ -587,7 +587,7 @@ test('Calendar hover waits 150ms, cancels brief passes, and keeps keyboard expan
   const page = await pageFor(t, { timezoneId: 'Asia/Tokyo', reducedMotion: 'reduce', viewport: { width: 1440, height: 1100 } });
   await page.clock.install({ time: new Date('2026-11-07T03:00:00Z') });
   await page.goto(base + '/?calendar=overlap');
-  await page.locator('#toggle-calendar').click();
+  await page.locator('#tab-calendar').click();
   await page.locator('#calendar-panel .refresh-catalog[aria-busy="false"]').waitFor();
   await page.clock.pauseAt(new Date('2026-11-07T03:01:00Z'));
   const header = page.locator('#calendar-panel .calendar-panel-controls');
@@ -620,7 +620,7 @@ test('Calendar countdown changes at remaining-minute boundaries using the existi
   const page = await pageFor(t, { timezoneId: 'Asia/Tokyo', reducedMotion: 'reduce' });
   await page.clock.install({ time: new Date('2026-11-07T03:00:00Z') });
   await page.goto(base + '/?calendar=pulse');
-  await page.locator('#toggle-calendar').click();
+  await page.locator('#tab-calendar').click();
   await page.locator('#calendar-panel .refresh-catalog[aria-busy="false"]').waitFor();
   await page.clock.pauseAt(new Date('2026-11-07T03:00:30Z'));
   const badge = page.locator('#calendar-panel .calendar-next-badge');
@@ -637,7 +637,7 @@ test('Current calendar cards keep colored remaining minutes readable through the
   await page.addInitScript(() => localStorage.setItem('portal-preview-calendar', JSON.stringify({ calendarIds: ['primary'], cacheSeconds: 21600, alertMinutes: 3 })));
   await page.clock.setFixedTime(new Date('2026-11-07T03:00:00Z'));
   await page.goto(base + '/?calendar=overlap');
-  await page.locator('#toggle-calendar').click();
+  await page.locator('#tab-calendar').click();
   await page.locator('#calendar-panel .refresh-catalog[aria-busy="false"]').waitFor();
   assert.equal(await page.locator('.calendar-remaining-label').count(), 2);
   assert.equal(await page.locator('.calendar-event mask').count(), 0);
@@ -667,13 +667,15 @@ test('Calendar upcoming card pulses without a modal or focus changes, and stops 
   const page = await pageFor(t, { timezoneId: 'Asia/Tokyo', viewport: { width: 1200, height: 900 } });
   await page.clock.install({ time: new Date('2026-11-07T03:00:00Z') });
   await page.goto(base + '/?calendar=pulse');
-  await page.locator('#toggle-calendar').click();
+  await page.locator('#tab-calendar').click();
   const card = page.locator('.calendar-event.is-approaching');
   await card.waitFor();
   assert.equal(await page.locator('[role=dialog]').count(), 0);
   assert.equal(await card.evaluate(el => getComputedStyle(el, '::before').animationName), 'calendar-upcoming-pulse');
   assert.equal(await card.evaluate(el => getComputedStyle(el, '::before').animationDuration), '1.8s');
   assert.equal(await card.locator('.calendar-next-badge').evaluate(el => getComputedStyle(el).animationName), 'none');
+  await page.locator('.calendar-panel-pin').click();
+  await selectPortalTab(page, 'tools');
   const search = page.locator('#search');
   await search.fill('Address');
   await page.clock.runFor(60000);
@@ -711,7 +713,7 @@ test('Calendar countdowns glitch only on value changes and honor reduced motion'
   assert.equal(await page.evaluate(() => window.__calendarGlitches.length), 2);
   const controls = page.locator('.calendar-panel-controls');
   assert.equal(await page.locator('#calendar-panel h2').count(), 0);
-  const close = controls.getByRole('button', { name: 'Close calendar' });
+  const close = controls.getByRole('button', { name: 'Unpin calendar' });
   const buttonBox = await close.boundingBox(), iconBox = await close.locator('svg').boundingBox();
   assert.ok(Math.abs(buttonBox.y + buttonBox.height / 2 - iconBox.y - iconBox.height / 2) < 1);
 });
@@ -736,18 +738,8 @@ test('Description preserves line breaks and Skeleton tabs indicate the selected 
   for (const id of ['#tab-tools', '#tab-actions', '#tab-settings']) {
     const tab = page.locator(id);
     await tab.click();
-    await page.waitForFunction(() => {
-      const tab = document.querySelector('.portal-tabs [aria-selected="true"]');
-      const indicator = document.querySelector('.portal-tabs [data-part="indicator"]');
-      const a = tab.getBoundingClientRect(), b = indicator.getBoundingClientRect();
-      return Math.abs(a.x - b.x) < 1 && Math.abs(a.width - b.width) < 1;
-    });
-    await page.mouse.move(0, 0);
-    await page.waitForTimeout(200);
-    const before = await tab.evaluate(el => getComputedStyle(el).backgroundColor);
-    await tab.hover();
-    await page.waitForFunction(({ id, before }) => getComputedStyle(document.querySelector(id)).backgroundColor !== before, { id, before });
-    assert.equal(await tab.evaluate(el => getComputedStyle(el).borderBottomWidth), '0px', 'Only the Skeleton indicator draws the underline');
+    assert.equal(await tab.getAttribute('aria-selected'), 'true');
+    assert.notEqual(await tab.evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)');
   }
   await page.locator('#settings-tab-sources').click();
   await page.waitForFunction(() => {
@@ -755,14 +747,6 @@ test('Description preserves line breaks and Skeleton tabs indicate the selected 
     const indicator = document.querySelector('.settings-tabs [data-part="indicator"]').getBoundingClientRect();
     return Math.abs(tab.x - indicator.x) < 1 && Math.abs(tab.width - indicator.width) < 1;
   });
-  const appearance = locator => locator.evaluate(el => ({ color: getComputedStyle(el).color, stroke: getComputedStyle(el.querySelector('svg')).strokeWidth }));
-  const calendar = page.locator('#toggle-calendar');
-  await calendar.click();
-  await page.mouse.move(0, 0);
-  const active = await appearance(page.locator('#compact-nav-settings'));
-  await page.setViewportSize({ width: 390, height: 900 });
-  await page.locator('#compact-nav-settings').waitFor({ state: 'visible' });
-  assert.deepEqual(await appearance(page.locator('#compact-nav-settings')), active);
 
 });
 
@@ -1128,7 +1112,7 @@ test('Setup guidance links open their settings section by keyboard and preserve 
     await page.locator('#actions-panel').waitFor({ state: 'visible' });
   }
   await page.goto(base + '/?calendar=partial#links');
-  await page.locator('#toggle-calendar').click();
+  await page.locator('#tab-calendar').click();
   const calendarLink = page.locator('#calendar-panel a.settings-guidance-link');
   await calendarLink.waitFor();
   await calendarLink.click();
@@ -1194,152 +1178,86 @@ test('Inbox hover opens after 150ms and cancels a brief pass', async t => {
   assert.equal(await summary.getAttribute('aria-expanded'), 'true');
 });
 
-test('Compact segmented navigation supports keyboard switching and preserves drafts and history', async t => {
+test('Header tabs support keyboard navigation at every width and preserve drafts and history', async t => {
   const page = await pageFor(t, { reducedMotion: 'reduce' });
-  assert.ok((await page.locator('.site-header').boundingBox()).height <= 65);
+  const navigation = page.locator('#portal-navigation');
+  assert.equal(await navigation.getByRole('tab').count(), 4);
   await page.locator('#tab-tools').focus();
-  await page.setViewportSize({ width: 600, height: 1000 });
-  await page.locator('html[data-compact="true"]').waitFor();
-  assert.equal(await page.locator('.portal-tabs').isVisible(), false);
-  assert.equal(await page.locator('.brand-name').isVisible(), false);
-  assert.equal(await page.locator('.preview-label').textContent(), 'LOCAL PREVIEW');
-  assert.ok((await page.locator('.site-header').boundingBox()).height <= 44);
-  const navigation = page.locator('#compact-navigation');
-  assert.equal(await navigation.getByRole('radio').count(), 3);
-  await page.waitForFunction(() => document.activeElement.id === 'compact-tab-tools');
+  for (const width of [760, 390, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    assert.equal(await navigation.isVisible(), true);
+    assert.equal(await page.locator('#tab-tools').evaluate(el => el === document.activeElement), true);
+  }
   await page.keyboard.press('ArrowRight');
   await page.locator('#actions-panel').waitFor({ state: 'visible' });
-  assert.ok(page.url().endsWith('#inbox-and-tasks'));
-  assert.equal(await navigation.getByRole('radio', { name: 'Inbox & Tasks', exact: true }).isChecked(), true);
-  assert.equal(await page.locator('#compact-nav-actions svg').innerHTML(), await page.locator('#tab-actions svg').innerHTML());
-  assert.equal(await page.locator('#inbox-title').isVisible(), false);
-  assert.equal(await page.locator('#tasks-title').isVisible(), false);
-  await selectPortalTab(page, 'settings');
-  await page.locator('#setting-name').fill('Compact draft');
-  await selectPortalTab(page, 'tools');
-  await page.goBack();
-  await page.locator('#settings-panel').waitFor({ state: 'visible' });
-  assert.equal(await navigation.getByRole('radio', { name: 'Settings', exact: true }).isChecked(), true);
-  assert.equal(await page.locator('#setting-name').inputValue(), 'Compact draft');
-  await page.locator('#compact-tab-settings').focus();
-  await page.setViewportSize({ width: 1280, height: 1000 });
-  await page.locator('html[data-compact="false"]').waitFor();
-  await page.waitForFunction(() => document.activeElement.id === 'tab-settings');
-  assert.equal(await page.locator('.portal-tabs').isVisible(), true);
-  assert.equal(await page.locator('.brand-name').isVisible(), true);
-  assert.equal(await navigation.isVisible(), false);
-  assert.equal(await page.locator('#setting-name').inputValue(), 'Compact draft');
-  for (const theme of ['cerberus-light', 'dracula-dark']) {
-    await page.evaluate(theme => { const selection = PortalThemes.resolve(theme); document.documentElement.dataset.theme = selection.palette; document.documentElement.dataset.colorScheme = selection.scheme; }, theme);
-    await page.setViewportSize({ width: 390, height: 900 });
-    await page.locator('html[data-compact="true"]').waitFor();
-    await page.screenshot({ path: '/tmp/compact-header-' + theme + '.png', fullPage: true });
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-  }
-});
-
-
-test('Compact mode follows the calendar viewport breakpoint and restores focus to wide tabs', async t => {
-  const page = await pageFor(t, { reducedMotion: 'reduce', viewport: { width: 900, height: 1000 } });
-  await page.locator('html[data-compact="false"]').waitFor();
-  await page.locator('#toggle-calendar').click();
+  await page.keyboard.press('ArrowRight');
   await page.locator('#calendar-panel').waitFor({ state: 'visible' });
-  assert.equal(await page.locator('html').getAttribute('data-compact'), 'false');
-  await page.locator('.calendar-panel-close').click();
-  await page.setViewportSize({ width: 390, height: 900 });
-  await page.locator('html[data-compact="true"]').waitFor();
-  await page.locator('#compact-tab-tools').focus();
-  await page.setViewportSize({ width: 1280, height: 1000 });
-  await page.locator('html[data-compact="false"]').waitFor();
-  await page.waitForFunction(() => document.activeElement.id === 'tab-tools');
-  assert.equal(await page.locator('#compact-navigation').isVisible(), false);
-});
-
-
-test('Calendar stacking, compact header and toolbars switch together without an intermediate card layout', async t => {
-  const page = await calendarPage(t, 'overlap', { viewport: { width: 900, height: 1000 } });
-  await selectPortalTab(page, 'actions');
-  for (const width of [761, 760, 700, 600, 599, 390, 320, 760, 761]) {
-    await page.setViewportSize({ width, height: 1000 });
-    await page.locator('html[data-compact="' + (width <= 760) + '"]').waitFor();
-    const main = await page.locator('#main').boundingBox();
-    const calendar = await page.locator('#calendar-panel').boundingBox();
-    assert.ok(width <= 760 ? calendar.y + calendar.height <= main.y + 1 : calendar.x >= main.x + main.width - 1);
-    assert.equal(await page.locator('.portal-tabs').isVisible(), width > 760);
-    assert.equal(await page.locator('#inbox-title').isVisible(), width > 760);
-    if (width <= 760) {
-      const event = page.locator('.calendar-event[data-expanded="true"]').first();
-      assert.notEqual(await event.evaluate(el => getComputedStyle(el).display), 'grid', 'No intermediate two-column card layout');
-      const trigger = await event.locator('.calendar-event-trigger').boundingBox();
-      const detail = await event.locator('.calendar-event-detail').boundingBox();
-      assert.ok(detail.y >= trigger.y + trigger.height - 1, 'Event detail stays below its title at every stacked width');
-      const search = await page.locator('#actions-search').boundingBox();
-      const counts = await page.locator('.queue-counts').boundingBox();
-      assert.ok(counts.y >= search.y + search.height);
-    }
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-  }
-});
-
-
-test('Compact settings temporarily hide the calendar without changing its open preference', async t => {
-  const page = await calendarPage(t, 'overlap', { viewport: { width: 600, height: 1000 }, reducedMotion: 'reduce' });
-  const panel = page.locator('#calendar-panel');
-  const toggle = page.locator('#toggle-calendar');
-  const preference = () => page.evaluate(() => localStorage.getItem('portal-calendar-open'));
-  await selectPortalTab(page, 'settings');
-  assert.equal(await panel.isVisible(), false);
-  assert.equal(await toggle.isVisible(), true);
-  assert.equal(await toggle.getAttribute('aria-disabled'), 'true');
-  assert.equal(await preference(), 'true');
-  assert.equal(await toggle.locator('svg').count(), 1, 'Only the suppressed calendar icon is rendered');
-  assert.equal(await toggle.locator('path[d="m2 2 20 20"]').count(), 1);
-  // aria-disabled blocks the calendar action, but the real pointer can still open its explanation.
-  await toggle.click({ force: true });
-  const hint = page.getByRole('tooltip');
-  await hint.waitFor();
-  assert.equal(await hint.textContent(), 'In compact view, the calendar is hidden while Settings is open.');
-  assert.equal(await preference(), 'true');
-  assert.equal(await panel.isVisible(), false);
-  await page.keyboard.press('Escape');
-  await hint.waitFor({ state: 'hidden' });
-  await toggle.focus();
-  await page.keyboard.press('Enter');
-  await hint.waitFor();
-  await page.keyboard.press('Escape');
-  await page.locator('#setting-name').fill('Preserved draft');
-  await page.locator('#compact-tab-settings').focus();
-  assert.equal(await preference(), 'true');
-  await page.setViewportSize({ width: 761, height: 1000 });
-  await panel.waitFor({ state: 'visible' });
-  assert.equal(await toggle.isVisible(), true);
-  assert.equal(await page.locator('#setting-name').inputValue(), 'Preserved draft');
-  await page.setViewportSize({ width: 760, height: 1000 });
-  await panel.waitFor({ state: 'hidden' });
-  for (const width of [761, 760, 900, 600, 761, 390]) {
-    await page.setViewportSize({ width, height: 1000 });
-    await page.locator('html[data-compact="' + (width <= 760) + '"]').waitFor();
-    assert.equal(await toggle.locator('svg').count(), 1, 'Resizing never accumulates icons');
-    assert.equal(await toggle.locator('path[d="m2 2 20 20"]').count(), width <= 760 ? 1 : 0);
-  }
-  await selectPortalTab(page, 'actions');
-  await panel.waitFor({ state: 'visible' });
-  assert.equal(await toggle.getAttribute('aria-expanded'), 'true');
-  await page.goBack();
+  assert.ok(page.url().endsWith('#calendar'));
+  await page.keyboard.press('End');
   await page.locator('#settings-panel').waitFor({ state: 'visible' });
-  assert.equal(await panel.isVisible(), false);
-  assert.equal(await page.locator('#setting-name').inputValue(), 'Preserved draft');
-  await page.goForward();
-  await panel.waitFor({ state: 'visible' });
-  assert.equal(await toggle.locator('svg').count(), 1, 'Tab changes retain one icon');
-  assert.equal(await toggle.locator('path[d="m2 2 20 20"]').count(), 0);
-  await toggle.click();
-  assert.equal(await preference(), 'false');
-  await selectPortalTab(page, 'settings');
+  await page.locator('#setting-name').fill('Preserved draft');
   await selectPortalTab(page, 'tools');
-  assert.equal(await panel.isVisible(), false);
-  assert.equal(await toggle.isVisible(), true);
-  assert.equal(await toggle.getAttribute('aria-expanded'), 'false');
+  await page.goBack();
+  await page.locator('#setting-name').waitFor();
+  assert.equal(await page.locator('#setting-name').inputValue(), 'Preserved draft');
+  for (const width of [1280, 760, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    await page.screenshot({ path: '/tmp/calendar-header-' + width + '.png' });
+  }
+});
+
+
+test('Calendar direct links open a single unpinned panel and preserve the route on reload', async t => {
+  const page = await pageFor(t);
+  await page.goto(base + '/#calendar');
+  await page.locator('#calendar-panel').waitFor();
+  assert.equal(await page.locator('#calendar-panel').count(), 1);
+  assert.equal(await page.locator('#directory').isVisible(), false);
+  assert.equal(await page.locator('.calendar-panel-pin').getAttribute('aria-pressed'), 'false');
+  await page.reload();
+  await page.locator('#calendar-panel').waitFor();
+  assert.equal(await page.locator('#tab-calendar').getAttribute('aria-selected'), 'true');
+});
+
+
+test('Pinned calendar stays above the selected content at all widths without overflow', async t => {
+  const page = await calendarPage(t, 'overlap', { reducedMotion: 'reduce' });
+  for (const tab of ['tools', 'actions', 'settings']) {
+    await selectPortalTab(page, tab);
+    for (const width of [1280, 761, 760, 390, 320]) {
+      await page.setViewportSize({ width, height: 1000 });
+      const panel = await page.locator('#calendar-panel').boundingBox();
+      const content = await page.locator(tab === 'tools' ? '#directory' : '#' + tab + '-panel').boundingBox();
+      assert.ok(panel.y + panel.height <= content.y + 1);
+      assert.ok(panel.height <= 450);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    }
+  }
+});
+
+
+test('Pinning is independent of tab selection and survives reload without duplicating the calendar', async t => {
+  const page = await calendarPage(t, 'overlap', { viewport: { width: 390, height: 900 }, reducedMotion: 'reduce' });
+  await selectPortalTab(page, 'settings');
+  await page.locator('#setting-name').fill('Draft');
+  assert.equal(await page.locator('#calendar-panel').isVisible(), true);
+  assert.equal(await page.locator('#calendar-panel').getAttribute('role'), 'region');
+  assert.equal(await page.locator('.calendar-pinned-mark').count(), 1);
+  await page.locator('.calendar-panel-pin').click();
+  assert.equal(await page.locator('#calendar-panel').isVisible(), false);
+  assert.equal(await page.locator('#tab-settings').evaluate(el => el === document.activeElement), true);
+  assert.equal(await page.locator('#setting-name').inputValue(), 'Draft');
+  await selectPortalTab(page, 'calendar');
+  assert.equal(await page.locator('#calendar-panel').getAttribute('role'), 'tabpanel');
+  await page.locator('.calendar-panel-pin').click();
+  assert.ok(page.url().endsWith('#calendar'));
+  assert.equal(await page.locator('#calendar-panel').count(), 1);
+  await selectPortalTab(page, 'tools');
+  await page.reload();
+  await page.locator('#calendar-panel').waitFor();
+  assert.equal(await page.locator('.calendar-panel-pin').getAttribute('aria-pressed'), 'true');
+  assert.equal(await page.locator('#tab-tools').getAttribute('aria-selected'), 'true');
 });
 
 
@@ -1543,10 +1461,10 @@ test('Compact header icons remain small, centered and aligned across sections an
   const page = await pageFor(t, { reducedMotion: 'reduce' });
   for (const width of [600, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.locator('#compact-navigation').waitFor({ state: 'visible' });
+    await page.locator('#portal-navigation').waitFor({ state: 'visible' });
     for (const section of ['tools', 'actions', 'settings']) {
       await selectPortalTab(page, section);
-      const icons = await page.locator('.compact-nav-item, #toggle-calendar').evaluateAll(buttons => buttons.map(button => {
+      const icons = await page.locator('.header-tab').evaluateAll(buttons => buttons.map(button => {
         const box = button.getBoundingClientRect(), icon = button.querySelector('svg').getBoundingClientRect();
         return { buttonWidth: box.width, buttonHeight: box.height, width: icon.width, height: icon.height, centerY: icon.y + icon.height / 2, dx: box.x + box.width / 2 - icon.x - icon.width / 2, dy: box.y + box.height / 2 - icon.y - icon.height / 2 };
       }));
@@ -1557,12 +1475,7 @@ test('Compact header icons remain small, centered and aligned across sections an
         assert.ok(Math.abs(icon.dx) < 1 && Math.abs(icon.dy) < 1);
         assert.ok(Math.abs(icons[0].centerY - icon.centerY) < 1);
       }
-      assert.equal(await page.locator('.compact-nav-item[data-state="checked"]').getAttribute('data-portal-tab'), section);
-      await page.waitForFunction(() => {
-        const selected = document.querySelector('.compact-nav-item[data-state="checked"]').getBoundingClientRect();
-        const indicator = document.querySelector('.compact-nav [data-part="indicator"]').getBoundingClientRect();
-        return Math.abs(selected.x - indicator.x) < 1 && Math.abs(selected.width - indicator.width) < 1;
-      });
+      assert.equal(await page.locator('.header-tab[aria-selected="true"]').getAttribute('id'), 'tab-' + section);
     }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     assert.ok((await page.locator('.site-header').boundingBox()).height <= 44);
@@ -1570,37 +1483,22 @@ test('Compact header icons remain small, centered and aligned across sections an
 });
 
 
-test('Open calendar matches navigation styling while the closed state stays quiet', async t => {
+test('Calendar tab shares selected, idle and hover styles with the other tabs', async t => {
   const page = await pageFor(t, { reducedMotion: 'reduce' });
-  const toggle = page.locator('#toggle-calendar');
-  const navigation = page.locator('#compact-nav-tools');
-  const appearance = locator => locator.evaluate(el => ({ color: getComputedStyle(el).color, stroke: Number.parseFloat(getComputedStyle(el.querySelector('svg')).strokeWidth) }));
-  for (const scheme of ['light', 'dark']) {
-    await page.evaluate(scheme => { document.documentElement.dataset.colorScheme = scheme; }, scheme);
-    for (const width of [1280, 390]) {
-      await page.setViewportSize({ width, height: 900 });
-      await page.mouse.move(0, 0);
-      const idle = await appearance(toggle);
-      assert.equal(idle.stroke, 1.5);
-      await toggle.hover();
-      assert.equal((await appearance(toggle)).stroke, 1.8);
-      await toggle.click();
-      assert.equal(await toggle.getAttribute('aria-expanded'), 'true');
-      const hovered = await appearance(toggle);
-      assert.equal(hovered.stroke, 2.1);
-      await page.mouse.move(0, 0);
-      const open = await appearance(toggle);
-      assert.equal(open.stroke, 1.9);
-      assert.notEqual(open.color, idle.color);
-      assert.deepEqual(open, await appearance(navigation));
-      if (width === 390) {
-        await navigation.hover();
-        assert.deepEqual(hovered, await appearance(navigation));
-      }
-      await toggle.click();
-      await page.mouse.move(0, 0);
-      assert.deepEqual(await appearance(toggle), idle);
-    }
+  const appearance = locator => locator.evaluate(el => ({ filter: getComputedStyle(el).filter, color: getComputedStyle(el).color, background: getComputedStyle(el).backgroundColor, stroke: getComputedStyle(el.querySelector('svg')).strokeWidth }));
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await selectPortalTab(page, 'tools'); await page.mouse.move(0, 0);
+    const selected = await appearance(page.locator('#tab-tools'));
+    const idle = await appearance(page.locator('#tab-calendar'));
+    assert.notDeepEqual(selected, idle);
+    await page.locator('#tab-tools').hover();
+    assert.deepEqual(await appearance(page.locator('#tab-tools')), selected, 'Selected tabs do not change on hover');
+    await page.locator('#tab-calendar').hover();
+    assert.notDeepEqual(await appearance(page.locator('#tab-calendar')), idle, 'Idle tabs respond to hover');
+    await selectPortalTab(page, 'calendar'); await page.mouse.move(0, 0);
+    assert.deepEqual(await appearance(page.locator('#tab-calendar')), selected);
+    assert.deepEqual(await appearance(page.locator('#tab-tools')), idle);
   }
 });
 
@@ -1926,73 +1824,22 @@ test('Calendar header controls fit one row in both languages at sidebar and comp
     }
     await page.setViewportSize({ width: 900, height: 900 });
     await page.screenshot({ path: `/tmp/portal-calendar-header-${locale}.png` });
-    await page.locator('.calendar-panel-close').click();
+    await page.locator('.calendar-panel-pin').click();
     await page.locator('#calendar-panel').waitFor({ state: 'hidden' });
   }
 });
 
 
-test('Calendar opens from its icon, returns on close, and settles safely after interruptions', async t => {
-  const page = await calendarPage(t, 'overlap');
-  await page.waitForFunction(() => !document.getElementById('calendar-panel').dataset.calendarMotion);
-  for (const width of [1280, 390]) {
-    await page.setViewportSize({ width, height: 900 });
-    // Resize/scroll handlers intentionally settle motion; let layout finish first.
-    await page.evaluate(() => { window.scrollTo(0, 0); });
-    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-    const closing = await page.evaluate(() => {
-      document.querySelector('.calendar-panel-close').click();
-      const panel = document.getElementById('calendar-panel');
-      const animation = panel.getAnimations()[0];
-      animation.pause();
-      const frames = animation.effect.getKeyframes();
-      const snapshot = { hidden: panel.hidden, inert: panel.inert, state: panel.dataset.calendarMotion,
-        duration: animation.effect.getTiming().duration, destination: frames.at(-1).transform,
-        focus: document.activeElement.id };
-      // Inspect and finish the same animation without a cross-process timing gap.
-      animation.finish();
-      return snapshot;
-    });
-    assert.equal(closing.hidden, false, 'Keep the panel visible until it reaches the icon');
-    assert.equal(closing.inert, true);
-    assert.equal(closing.state, 'closing');
-    assert.equal(closing.duration, 240);
-    assert.match(closing.destination, /translate\(.+\) scale\(0\./);
-    assert.equal(closing.focus, 'toggle-calendar');
-    await page.locator('#calendar-panel').waitFor({ state: 'hidden' });
-    const opening = await page.evaluate(() => {
-      document.getElementById('toggle-calendar').click();
-      const panel = document.getElementById('calendar-panel');
-      const animation = panel.getAnimations()[0];
-      animation.pause();
-      animation.currentTime = 100;
-      const frame = animation.effect.getKeyframes()[0];
-      const box = panel.getBoundingClientRect();
-      return { state: panel.dataset.calendarMotion, duration: animation.effect.getTiming().duration,
-        origin: frame.transform, visible: box.width > 24 && box.height > 24 };
-    });
-    assert.equal(opening.state, 'opening');
-    assert.equal(opening.duration, 340);
-    assert.match(opening.origin, /translate\(.+\) scale\(0\./);
-    assert.equal(opening.visible, true);
-    await page.screenshot({ path: `/tmp/portal-calendar-opening-${width}.png` });
-    // Reverse an unfinished opening, then reopen before closing finishes.
-    await page.evaluate(() => {
-      document.getElementById('toggle-calendar').click();
-      document.getElementById('toggle-calendar').click();
-    });
-    await page.waitForFunction(() => !document.getElementById('calendar-panel').dataset.calendarMotion);
-    assert.equal(await page.locator('#calendar-panel').evaluate(el => el.hidden || el.inert), false);
-  }
-  await page.evaluate(() => document.getElementById('toggle-calendar').click());
-  await page.setViewportSize({ width: 1000, height: 900 });
-  await page.locator('#calendar-panel').waitFor({ state: 'hidden' });
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.locator('#toggle-calendar').click();
-  assert.equal(await page.locator('#calendar-panel').evaluate(el => el.getAnimations().length), 0);
+test('Calendar state and node identity survive pinning, rapid tab switches and resizing', async t => {
+  const page = await calendarPage(t, 'pulse', { reducedMotion: 'reduce' });
+  await page.getByRole('radiogroup', { name: 'Schedule display' }).locator('label').filter({ hasText: 'All' }).click();
+  await page.evaluate(() => { window.savedCalendarNode = document.querySelector('.calendar-schedule'); });
+  await page.locator('.calendar-panel-pin').click();
+  for (const tab of ['calendar', 'settings', 'calendar', 'tools', 'calendar']) await selectPortalTab(page, tab);
+  await page.setViewportSize({ width: 390, height: 900 });
+  assert.equal(await page.getByRole('radio', { name: 'All', exact: true }).isChecked(), true);
+  assert.equal(await page.evaluate(() => window.savedCalendarNode !== null && window.savedCalendarNode === document.querySelector('.calendar-schedule')), true);
   assert.equal(await page.locator('#calendar-panel').evaluate(el => el.hidden || el.inert), false);
-  await page.locator('.calendar-panel-close').click();
-  assert.equal(await page.locator('#calendar-panel').evaluate(el => el.hidden), true);
 });
 
 for (const locale of ['en-US', 'ja-JP']) {
@@ -2028,3 +1875,41 @@ for (const locale of ['en-US', 'ja-JP']) {
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   });
 }
+
+
+test('Calendar filter icons provide localized hover and keyboard hints without losing radio behavior', async t => {
+  for (const locale of ['en-US', 'ja-JP']) {
+    const page = await calendarPage(t, '', { locale, reducedMotion: 'reduce', viewport: { width: 390, height: 900 } });
+    const hints = locale === 'ja-JP' ? ['直近の予定を強調', '空き時間のみ', 'すべての予定'] : ['Highlight current and next events', 'Free time only', 'All events'];
+    for (const [index, value] of ['nearby', 'free', 'all'].entries()) {
+      const label = page.locator('#calendar-filter-' + value);
+      assert.equal(await label.locator('svg').count(), 1);
+      assert.deepEqual(await label.evaluate(el => {
+        const icon = el.querySelector('svg').getBoundingClientRect(), box = el.getBoundingClientRect();
+        return [Math.round(icon.width), Math.round(icon.height), Math.round(box.width), Math.round(box.height)];
+      }), [18, 18, 28, 28]);
+      assert.equal(await label.evaluate(el => {
+        const icon = el.querySelector('svg').getBoundingClientRect(), box = el.getBoundingClientRect();
+        return Math.abs(icon.x + icon.width / 2 - box.x - box.width / 2) < 1 &&
+          Math.abs(icon.y + icon.height / 2 - box.y - box.height / 2) < 1;
+      }), true, 'Every filter icon is centered');
+      await label.hover();
+      const hint = page.getByRole('tooltip', { name: hints[index], exact: true });
+      await hint.waitFor();
+      await label.click();
+      assert.equal(await label.getByRole('radio').isChecked(), true);
+      assert.equal(await page.locator('.calendar-schedule').getAttribute('data-filter'), value);
+      await page.mouse.move(0, 0); await label.getByRole('radio').blur();
+      await hint.waitFor({ state: 'hidden' });
+    }
+    const first = page.locator('#calendar-filter-nearby').getByRole('radio');
+    await first.focus();
+    await page.getByRole('tooltip', { name: hints[0], exact: true }).waitFor();
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await page.locator('#calendar-filter-free').getByRole('radio').isChecked(), true);
+    assert.equal(await page.locator('.preview-label').textContent(), 'localhost');
+    assert.equal(await page.locator('.calendar-pinned-mark svg').evaluate(el => getComputedStyle(el).width), '12px');
+    await page.mouse.move(0, 0); await page.locator('#calendar-filter-free').getByRole('radio').blur();
+    await page.screenshot({ path: '/tmp/calendar-icon-controls-' + locale + '.png' });
+  }
+});

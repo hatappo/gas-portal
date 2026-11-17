@@ -1,6 +1,7 @@
 <script lang="ts">
   import { SegmentedControl } from '@skeletonlabs/skeleton-svelte';
   import { onDestroy } from 'svelte';
+  import type { HTMLAttributes } from 'svelte/elements';
   import CalendarEvent from './CalendarEvent.svelte';
   import AllDayGroup from './AllDayGroup.svelte';
   import Hint from './Hint.svelte';
@@ -63,10 +64,14 @@
   };
   let filter = $state<'nearby' | 'free' | 'all'>('nearby');
   const filters = [
-    { id: 'nearby', label: 'Nearby' },
-    { id: 'free', label: 'Free' },
-    { id: 'all', label: 'All' },
+    { id: 'nearby', label: 'Nearby', hint: 'Highlight current and next events', icon: 'calendar-nearby-icon' },
+    { id: 'free', label: 'Free', hint: 'Free time only', icon: 'calendar-coffee-icon' },
+    { id: 'all', label: 'All', hint: 'All events', icon: 'calendar-expand-icon' },
   ];
+  // Preserve the radio anatomy when composing Skeleton's tooltip trigger.
+  const tooltipAttributes = (attributes: HTMLAttributes<HTMLElement>) =>
+    Object.fromEntries(Object.entries(attributes).filter(([name]) =>
+      !['data-scope', 'data-part', 'data-state', 'data-ownedby'].includes(name)));
   let slots = $derived(
     view.snapshot
       ? PortalCalendar.slots(
@@ -105,6 +110,7 @@
   <SegmentedControl
     class="calendar-display-filters segmented-control"
     name="calendar-display"
+    ids={{ item: value => 'calendar-filter-' + value }}
     orientation="horizontal"
     aria-label={t('Schedule display')}
     value={filter}
@@ -119,12 +125,15 @@
   >
     <SegmentedControl.Control>
       <SegmentedControl.Indicator />
-      {#each filters as option}<SegmentedControl.Item
-          value={option.id}
-        >
+      {#each filters as option}<Hint text={t(option.hint)} triggerId={'calendar-filter-' + option.id}>
+        {#snippet children(attributes)}<SegmentedControl.Item {...tooltipAttributes(attributes)} value={option.id}>
           <SegmentedControl.ItemHiddenInput aria-label={t(option.label)} />
-          <SegmentedControl.ItemText>{t(option.label)}</SegmentedControl.ItemText>
-        </SegmentedControl.Item>{/each}
+          <SegmentedControl.ItemText>
+            <Icon id={option.icon} />
+            <span class="sr-only">{t(option.label)}</span>
+          </SegmentedControl.ItemText>
+        </SegmentedControl.Item>{/snippet}
+      </Hint>{/each}
     </SegmentedControl.Control>
   </SegmentedControl>
   <Hint text={t('Fetch latest')}>
@@ -148,25 +157,14 @@
           </span>{/if}
       </button>{/snippet}
   </Hint>
-  <button
-    type="button"
-    class="calendar-panel-close btn button-quiet button-square btn-sm"
-    aria-label={t('Close calendar')}
-    onclick={() => commands.toggle(false)}
-  >
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      aria-hidden="true"
-    >
-      <path d="m6 6 12 12M18 6 6 18" />
-    </svg>
-  </button>
+  <Hint text={t(view.pinned ? 'Unpin calendar' : 'Pin calendar above other tabs')}>
+    {#snippet children(attributes)}<button {...attributes}
+      type="button" class="calendar-panel-pin btn button-quiet button-square btn-sm"
+      aria-label={t(view.pinned ? 'Unpin calendar' : 'Pin calendar above other tabs')}
+      aria-pressed={view.pinned} onclick={() => commands.pin(!view.pinned)}>
+      <Icon id={view.pinned ? 'calendar-pin-off-icon' : 'calendar-pin-icon'} />
+    </button>{/snippet}
+  </Hint>
 </div>
 {#if view.error}<p class="calendar-notice alert portal-alert-error portal-alert-soft" role="alert">
     <SettingsGuidance message={view.error} language={view.language} />

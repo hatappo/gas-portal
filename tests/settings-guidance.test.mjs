@@ -34,7 +34,7 @@ for (const gas of [false, true]) test(`Setup guidance opens the matching setting
     if (gas) assert.equal(app.pushes.at(-1)[2], 'settings/' + route);
     else assert.equal(app.dom.window.location.hash, '#settings/' + route);
   }
-  app.get('toggle-calendar').click();
+  app.get('tab-calendar').click();
   app.calendarRequests[0].success({ ok: true, settings: { calendarIds: ['primary'], cacheSeconds: 300, alertMinutes: 0 } }); await flush();
   app.calendarRequests.at(-1).success({ ok: false, error: 'INVALID_INPUT' }); await flush();
   const calendarLink = app.get('calendar-panel').querySelector('a.settings-guidance-link');
