@@ -61,39 +61,18 @@ test('Do not run the finder on the portal when the link is clicked', (t) => {
   assert.match(document.getElementById('favicon-finder-status').textContent, /ドラッグ/);
 });
 
-test('Copy the code, or select it for manual copying when the clipboard is unavailable', async (t) => {
-  const copied = [];
-  const ok = browser((window) => {
-    Object.defineProperty(window.navigator, 'clipboard', { value: { writeText: async (text) => { copied.push(text); } } });
+test('Select the bookmarklet on click or focus without a copy button or clipboard access', (t) => {
+  const { dom, document } = browser(window => {
+    Object.defineProperty(window.navigator, 'clipboard', { get() { return assert.fail('No clipboard access'); } });
   });
-  t.after(() => ok.dom.window.close());
-  ok.document.getElementById('favicon-finder-copy').click();
-  await new Promise((resolve) => setImmediate(resolve));
-  assert.deepEqual(copied, [ok.document.getElementById('favicon-finder-code').value]);
-  assert.equal(ok.document.getElementById('favicon-finder-status').textContent, 'コピーしました');
-
-  for (const clipboard of [undefined, { writeText: () => Promise.reject(new Error('denied')) }]) {
-    const app = browser((window) => {
-      if (clipboard) Object.defineProperty(window.navigator, 'clipboard', { value: clipboard });
-    });
-    t.after(() => app.dom.window.close());
-    // The button is only reachable with Settings → Links open.
-    for (const id of ['settings-panel', 'settings-sources-panel']) app.document.getElementById(id).hidden = false;
-    const code = app.document.getElementById('favicon-finder-code');
-    assert.equal(code.closest('.portal-disclosure-content').getAttribute('aria-hidden'), 'true');
-    app.document.getElementById('favicon-finder-copy').click();
-    await new Promise((resolve) => setImmediate(resolve));
-    assert.equal(code.closest('.portal-disclosure-content').getAttribute('aria-hidden'), 'false', 'Open the collapsed section to show the selection');
-    assert.equal(app.document.activeElement, code);
-    assert.deepEqual([code.selectionStart, code.selectionEnd], [0, code.value.length]);
-    assert.match(app.document.getElementById('favicon-finder-status').textContent, /⌘C/);
-  }
-});
-
-test('Style the copy button like the other secondary settings buttons', (t) => {
-  const { dom, document } = browser();
   t.after(() => dom.window.close());
-  const copy = document.getElementById('favicon-finder-copy');
-  assert.equal(copy.className, document.getElementById('cancel-github').className);
-  assert.ok(copy.parentElement.classList.contains('settings-form-actions'), 'Button sizing and borders apply only inside .settings-form-actions');
+  for (const id of ['settings-panel', 'settings-sources-panel']) document.getElementById(id).hidden = false;
+  const code = document.getElementById('favicon-finder-code');
+  code.dispatchEvent(new dom.window.Event('portal:disclosure-open', { bubbles: true }));
+  code.focus();
+  assert.deepEqual([code.selectionStart, code.selectionEnd], [0, code.value.length]);
+  code.setSelectionRange(2, 2);
+  code.click();
+  assert.deepEqual([code.selectionStart, code.selectionEnd], [0, code.value.length]);
+  assert.equal(document.getElementById('favicon-finder-copy'), null);
 });

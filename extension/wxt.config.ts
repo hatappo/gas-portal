@@ -13,15 +13,15 @@ export default defineConfig({
   imports: false,
   zip: { artifactTemplate: `gas-portal-side-panel-${version}-{{browser}}.zip` },
   manifest: {
-    name: 'GAS Portal Side Panel',
+    name: 'Alcove',
     version,
-    description: 'Keep your personal GAS portal beside your browser tabs.',
+    description: 'Keep your favorite web apps beside your browser tabs.',
     minimum_chrome_version: '116',
     permissions: ['storage'],
     host_permissions: ['https://script.google.com/*', 'https://*.googleusercontent.com/*'],
     icons,
-    action: { default_title: 'Open GAS Portal', default_icon: icons },
-    content_security_policy: { extension_pages: "script-src 'self'; object-src 'none'; frame-src https://script.google.com https://*.googleusercontent.com; base-uri 'none'" },
+    action: { default_title: 'Open Alcove', default_icon: icons },
+    content_security_policy: { extension_pages: "script-src 'self'; object-src 'none'; frame-src https:; base-uri 'none'" },
   },
   hooks: {
     'build:publicAssets'(wxt, files) {

@@ -4,7 +4,6 @@ export function initializeFaviconFinder() {
   if (!document.getElementById('favicon-finder-link')) return;
   const link = /** @type {HTMLAnchorElement} */ (document.getElementById('favicon-finder-link'));
   const code = /** @type {HTMLTextAreaElement} */ (document.getElementById('favicon-finder-code'));
-  const copy = /** @type {HTMLButtonElement} */ (document.getElementById('favicon-finder-copy'));
   const status = /** @type {HTMLElement} */ (document.getElementById('favicon-finder-status'));
   /** @param {string} key */
   const t = (key) => PortalI18n.t(key, document.documentElement.lang);
@@ -50,16 +49,6 @@ export function initializeFaviconFinder() {
     status.textContent = t('Drag this link to your bookmarks bar instead of clicking it.');
   });
 
-  copy.addEventListener('click', () => {
-    const manual = () => {
-      // The code sits in a collapsed section; open it so the selection is visible and focusable.
-      code.dispatchEvent(new Event('portal:disclosure-open', { bubbles: true }));
-      code.focus();
-      code.select();
-      status.textContent = t('Copying is not available here. The code is selected; press Ctrl+C or ⌘C.');
-    };
-    try {
-      navigator.clipboard.writeText(code.value).then(() => { status.textContent = t('Copied'); }, manual);
-    } catch { manual(); }
-  });
+  code.addEventListener('focus', () => { code.select(); });
+  code.addEventListener('click', () => { code.select(); });
 }

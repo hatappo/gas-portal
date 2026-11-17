@@ -200,9 +200,8 @@
                   <div data-disclosure class="settings-help">
                     <span data-disclosure-title data-i18n="If dragging does not work">If dragging does not work</span>
                     <div data-disclosure-content>
-                      <p data-i18n="Create a bookmark manually and paste this code as its URL.">Create a bookmark manually and paste this code as its URL.</p>
+                      <p data-i18n="Click to select the code and copy with Ctrl+C or ⌘C. Create a bookmark manually and paste it as the URL.">Click to select the code and copy with Ctrl+C or ⌘C. Create a bookmark manually and paste it as the URL.</p>
                       <textarea id="favicon-finder-code" class="bookmarklet-code textarea textarea-sm w-full" rows="3" readonly spellcheck="false" aria-label="Bookmarklet code" data-i18n-aria-label="Bookmarklet code"></textarea>
-                      <div class="settings-form-actions"><button type="button" id="favicon-finder-copy" class="settings-reset btn" data-i18n="Copy code">Copy code</button></div>
                     </div>
                   </div>
                   <p id="favicon-finder-status" class="settings-form-status" role="status" aria-live="polite"></p>
@@ -294,20 +293,18 @@
         <div id="settings-calendar-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-calendar" tabindex="0" hidden><div id="calendar-settings-host"></div></div>
         <div id="settings-extension-panel" class="settings-subpanel" role="tabpanel" aria-labelledby="settings-tab-extension" tabindex="0" hidden>
           <section class="side-panel-settings" aria-labelledby="side-panel-settings-title">
-            <div class="settings-heading"><h2 id="side-panel-settings-title" data-i18n="Chrome extension">Chrome extension</h2></div>
+            <div class="settings-heading"><h2 id="side-panel-settings-title" data-i18n="Alcove Chrome extension">Alcove Chrome extension</h2></div>
             <div class="side-panel-connection">
-              <label class="settings-field" for="side-panel-url"><span data-i18n="Connection URL">Connection URL</span></label>
+              <label class="settings-field" for="side-panel-url"><span data-i18n="Alcove connection URL">Alcove connection URL</span></label>
               <div class="side-panel-url-row">
-                <input id="side-panel-url" class="input w-full" type="text" readonly value="<?= webAppUrl ?>" spellcheck="false" aria-describedby="side-panel-url-help side-panel-copy-status">
-                <button id="side-panel-copy-url" type="button" class="btn button-quiet btn-sm" disabled data-i18n="Copy URL">Copy URL</button>
+                <textarea id="side-panel-url" class="textarea w-full" rows="3" readonly spellcheck="false" aria-describedby="side-panel-url-help"><?= webAppUrl ?></textarea>
               </div>
-              <p id="side-panel-url-help" class="settings-help" data-i18n="Paste this URL into the extension’s connection settings.">Paste this URL into the extension’s connection settings.</p>
-              <p id="side-panel-copy-status" class="settings-form-status" role="status" aria-live="polite"></p>
+              <p id="side-panel-url-help" class="settings-help" hidden></p>
             </div>
             <form id="side-panel-settings-form" class="portal-settings-form">
               <fieldset id="side-panel-settings-fields">
-                <label class="settings-field"><span data-i18n="Additional allowed extension IDs">Additional allowed extension IDs</span><textarea id="side-panel-extension-ids" class="textarea w-full" rows="3" maxlength="4096" spellcheck="false" autocomplete="off" aria-describedby="side-panel-settings-help side-panel-settings-status"><?= portal.sidePanelExtensionIds ?></textarea></label>
-                <p id="side-panel-settings-help" class="settings-help" data-i18n="Allow local builds to open this portal in a side panel. Enter one ID per line, up to 10. Official extension IDs are allowed automatically. Save, then reload the side panel; no redeployment is needed.">Allow local builds to open this portal in a side panel. Enter one ID per line, up to 10. Official extension IDs are allowed automatically. Save, then reload the side panel; no redeployment is needed.</p>
+                <label class="settings-field"><span data-i18n="Additional allowed extension ID">Additional allowed extension ID</span><input id="side-panel-extension-ids" class="input w-full" type="text" maxlength="32" spellcheck="false" autocomplete="off" aria-describedby="side-panel-settings-help side-panel-settings-status" value="<?= portal.sidePanelExtensionIds ?>"></label>
+                <p id="side-panel-settings-help" class="settings-help" data-i18n="Allow a local Alcove extension to connect. Save its extension ID, then reload the side panel.">Allow a local Alcove extension to connect. Save its extension ID, then reload the side panel.</p>
                 <div class="settings-form-actions"><button type="submit" class="settings-save btn preset-filled-primary-500"><span data-i18n="Save changes">Save changes</span></button></div>
               </fieldset>
               <p id="side-panel-settings-status" class="settings-form-status" role="status" aria-live="polite"></p>

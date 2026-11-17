@@ -15,7 +15,7 @@ h2 { font-size: 14px; margin: 18px 0 8px; }
 h1 { font-size: 18px; margin: 0 0 12px; }
 p { line-height: 1.65; margin: 12px 0; }
 label { display: block; margin: 16px 0 6px; font-weight: 600; }
-.input, .select { width: 100%; font-size: 14px; border: 1px solid var(--color-surface-300-700); }
+.input, .select, .textarea { width: 100%; font-size: 14px; border: 1px solid var(--color-surface-300-700); }
 .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 code { display: block; white-space: pre-wrap; overflow-wrap: anywhere; user-select: all; padding: 8px; background: var(--color-surface-100-900); border-radius: 4px; font-size: 11px; }
 .status { padding: 10px 12px; margin: 0; background: var(--color-surface-100-900); font-size: 12px; }
@@ -28,7 +28,7 @@ iframe { flex: 1; width: 100%; min-height: 0; border: 0; background: var(--color
 .icon-button:hover:not(:disabled) { color: var(--color-surface-950-50); background: var(--color-surface-200-800); }
 .icon-button:disabled { opacity: 0.4; cursor: default; }
 .icon-button svg { width: 18px; height: 18px; flex: none; }
-.language-settings { margin-top: 24px; padding-top: 8px; border-top: 1px solid var(--color-surface-200-800); }
+.extension-id-settings, .language-settings { margin-top: 24px; padding-top: 8px; border-top: 1px solid var(--color-surface-200-800); }
 .language-settings p { font-size: 12px; }
 #extension-language-status { min-height: 20px; }
 
@@ -46,3 +46,38 @@ footer.concealed .icon-button:disabled { opacity: 0.25; }
 #privacy-toggle .privacy-action { visibility: hidden; }
 #privacy-toggle:is(:hover, :focus-visible):not(:disabled) .privacy-current { visibility: hidden; }
 #privacy-toggle:is(:hover, :focus-visible):not(:disabled) .privacy-action { visibility: visible; }
+
+/* Keep the chooser and controls on a single, low-profile footer row. */
+footer { flex-wrap: nowrap; gap: 6px; }
+footer nav { flex: none; gap: 2px; }
+.page-switcher { flex: 1; width: 0; min-width: 0; height: 28px; min-height: 28px; font-size: 12px; padding-block: 2px; padding-inline-start: 6px; text-overflow: ellipsis; }
+footer.concealed .page-switcher { color: #737373; background: #000; border-color: #262626; }
+footer:has(.privacy-error) { flex-wrap: wrap; }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 18px 0 8px; }
+.section-heading h2 { margin: 0; }
+.help { color: var(--color-surface-600-400); font-size: 12px; }
+.settings-card { border: 1px solid var(--color-surface-200-800); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.settings-card label { margin-top: 10px; font-size: 12px; }
+.settings-card .input, .settings-card .select, .settings-card .textarea { font-size: 13px; }
+.settings-card .textarea { width: 100%; font-family: ui-monospace, monospace; resize: vertical; }
+.entry-heading { display: flex; justify-content: space-between; align-items: center; color: var(--color-surface-500); font-size: 11px; }
+.remove { color: var(--color-surface-600-400); }
+.remove:hover:not(:disabled) { color: var(--color-error-700-300); }
+summary { cursor: pointer; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.save-actions { padding: 8px 0; }
+.btn:disabled { opacity: .4; cursor: default; }
+
+.settings-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.settings-title-row h1 { margin: 0; }
+#extension-id { font-family: ui-monospace, monospace; font-size: 12px; }
+.empty-panel { margin-block: auto; text-align: center; color: var(--color-surface-600-400); }
+
+#extension-id { width: 36ch; max-width: 100%; }
+#extension-language { width: auto; min-width: 12rem; max-width: 100%; }
+.settings-card .page-url { field-sizing: content; min-height: 3lh; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-all; font-family: inherit; }
+.entry-order { display: flex; align-items: center; gap: 6px; }
+.drag-handle { width: 28px; height: 28px; min-height: 28px; padding: 4px; cursor: grab; color: var(--color-surface-500); }
+.drag-handle:active { cursor: grabbing; }
+.drag-handle svg { width: 18px; height: 18px; }
+.settings-card.drop-target { border-color: var(--color-primary-500); box-shadow: 0 -2px 0 var(--color-primary-500); }

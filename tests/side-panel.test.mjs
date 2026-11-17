@@ -95,20 +95,21 @@ test('The browser guard rejects unauthorized frames before startup and removes h
   }
 });
 
-test('Additional IDs are validated, deduplicated and saved only in User Properties', () => {
+test('A single additional ID is validated and saved only in User Properties', () => {
   const userProperties = { PORTAL_NAME: 'Keep me', SIDE_PANEL_EXTENSION_IDS: id };
   const { context } = server({ userProperties });
   const second = 'b'.repeat(32);
-  const result = context.saveSidePanelExtensionIds(` ${id}\r\n${second}\n${id}\n`);
+  const result = context.saveSidePanelExtensionIds(` ${id} `);
   assert.equal(result.ok, true);
-  assert.deepEqual(Array.from(result.ids), [id, second]);
-  assert.equal(userProperties.SIDE_PANEL_EXTENSION_IDS, id + '\n' + second);
+  assert.deepEqual(Array.from(result.ids), [id]);
+  assert.equal(userProperties.SIDE_PANEL_EXTENSION_IDS, id);
   assert.equal(userProperties.PORTAL_NAME, 'Keep me');
-  assert.equal(context.getPortalContent_(userProperties).sidePanelExtensionIds, id + '\n' + second);
-  for (const input of [null, [id], { officialIds: [id] }, '<script>', 'z'.repeat(32), id + ',' + second, id.toUpperCase(), 'a'.repeat(4097), Array.from('abcdefghijk', c => c.repeat(32)).join('\n')]) {
+  assert.equal(context.getPortalContent_(userProperties).sidePanelExtensionIds, id);
+  for (const input of [null, [id], { officialIds: [id] }, '<script>', 'z'.repeat(32), id + ',' + second, id + '\n' + second, id + '\n' + id, id.toUpperCase(), 'a'.repeat(4097), Array.from('abcdefghijk', c => c.repeat(32)).join('\n')]) {
     assert.equal(context.saveSidePanelExtensionIds(input).ok, false);
-    assert.equal(userProperties.SIDE_PANEL_EXTENSION_IDS, id + '\n' + second, 'invalid writes preserve existing access');
+    assert.equal(userProperties.SIDE_PANEL_EXTENSION_IDS, id, 'invalid writes preserve existing access');
   }
+  assert.deepEqual(Array.from(context.PortalSidePanel.allowedIds(id + '\n' + second)), [], 'Old multi-ID values fail closed until replaced with one ID');
   assert.equal(context.saveSidePanelExtensionIds('').ok, true);
   assert.equal(userProperties.SIDE_PANEL_EXTENSION_IDS, '');
   assert.deepEqual(Array.from(context.PortalSidePanel.allowedIds('<script>')), []);
@@ -121,7 +122,7 @@ test('Official IDs are merged with user IDs and cannot be removed by saving an e
   assert.deepEqual(Array.from(context.PortalSidePanel.officialIds), [], 'no fictional store ID');
   // Simulate a future verified store release without adding an actual production ID.
   vm.runInContext(shared.replace('Object.freeze([])', `Object.freeze(["${id}"])`), context);
-  assert.deepEqual(Array.from(context.PortalSidePanel.allowedIds(id + '\n' + 'b'.repeat(32))), [id, 'b'.repeat(32)]);
+  assert.deepEqual(Array.from(context.PortalSidePanel.allowedIds('b'.repeat(32))), [id, 'b'.repeat(32)]);
   assert.equal(context.saveSidePanelExtensionIds('').ok, true);
   assert.deepEqual(Array.from(context.PortalSidePanel.allowedIds('')), [id]);
   assert.deepEqual(Array.from(context.PortalSidePanel.allowedIds('bad')), [id]);
@@ -174,48 +175,37 @@ test('The connection URL is supplied by GAS, including Workspace deployments and
   }
 });
 
-test('Connection URL copying supports both languages, manual fallback and unavailable deployments', async () => {
+test('Alcove connection URLs include the template and select on click without a clipboard API', async () => {
   const code = await bundleModule(`import '../src/shared/i18n.js'; import { initializeSidePanelSettings } from '../src/browser/side-panel-settings.js'; initializeSidePanelSettings();`);
   const markup = readFileSync('src/Index.html', 'utf8').match(/<div class="side-panel-connection">[\s\S]*?(?=\s*<form id="side-panel-settings-form")/)[0];
-  const validUrl = 'https://script.google.com/a/example.org/macros/s/test/exec';
+  const validUrl = 'https://script.google.com/a/example.org/macros/s/test/exec?authuser=1#links';
   for (const language of ['en', 'ja']) {
-    for (const mode of ['success', 'rejected', 'unsupported', 'preview', 'dev']) {
-      const url = mode === 'preview' ? '' : mode === 'dev' ? validUrl.replace('/exec', '/dev') : validUrl;
+    for (const url of [validUrl, '', validUrl.replace('/exec', '/dev')]) {
       const dom = new JSDOM(`<html lang="${language}"><body>${markup.replace('<?= webAppUrl ?>', url)}</body></html>`, { runScripts: 'outside-only' });
       try {
-        const writes = [];
-        if (mode !== 'unsupported') Object.defineProperty(dom.window.navigator, 'clipboard', { value: { writeText: async value => {
-          writes.push(value);
-          if (mode === 'rejected') throw new Error('NotAllowedError');
-        } } });
+        Object.defineProperty(dom.window.navigator, 'clipboard', { get() { return assert.fail('No clipboard access'); } });
         dom.window.eval(code);
         const input = dom.window.document.getElementById('side-panel-url');
-        const copy = dom.window.document.getElementById('side-panel-copy-url');
-        const status = dom.window.document.getElementById('side-panel-copy-status');
-        if (mode === 'preview' || mode === 'dev') {
-          assert.equal(copy.disabled, true);
+        assert.equal(dom.window.document.getElementById('side-panel-copy-url'), null);
+        assert.equal(dom.window.document.getElementById('side-panel-url-help').hidden, url === validUrl);
+        if (url !== validUrl) {
           assert.equal(input.value, '');
           assert.match(dom.window.document.getElementById('side-panel-url-help').textContent, language === 'ja' ? /デプロイ済み/ : /deployed web app/);
           continue;
         }
-        assert.equal(copy.disabled, false);
+        const parsed = new URL(input.value);
+        assert.equal(parsed.searchParams.get('sidePanel'), '1');
+        assert.equal(parsed.searchParams.get('panelNonce'), '{nonce}');
+        assert.equal(parsed.searchParams.get('authuser'), '1');
+        assert.equal(parsed.hash, '#links');
+        assert.ok(input.value.includes('{nonce}'));
         assert.equal(input.readOnly, true);
-        copy.click();
-        await new Promise(resolve => setImmediate(resolve));
-        assert.deepEqual(writes, mode === 'unsupported' ? [] : [validUrl]);
-        if (mode === 'success') {
-          assert.equal(status.textContent, dom.window.PortalI18n.t('Copied', language));
-        } else {
-          assert.equal(dom.window.document.activeElement, input);
-          assert.equal(input.selectionStart, 0);
-          assert.equal(input.selectionEnd, validUrl.length);
-          assert.match(status.textContent, /Ctrl\+C/);
-        }
+        input.focus(); input.click();
+        assert.deepEqual([input.selectionStart, input.selectionEnd], [0, input.value.length]);
       } finally { dom.window.close(); }
     }
   }
 });
-
 
 test('Workspace URLs returned by GAS use the same domain validation in either path order', () => {
   for (const domain of ['example.org', 'work.example.co.jp', 'clap-s.com']) {

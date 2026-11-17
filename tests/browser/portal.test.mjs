@@ -1996,31 +1996,30 @@ test('Calendar opens from its icon, returns on close, and settles safely after i
 });
 
 for (const locale of ['en-US', 'ja-JP']) {
-  test(`Additional extension IDs validate and persist in settings (${locale})`, async t => {
+  test(`Additional extension ID validates and persist in settings (${locale})`, async t => {
     const page = await pageFor(t, { locale, viewport: { width: 390, height: 844 } });
     await page.evaluate(() => { location.hash = '#settings/extension'; });
     await page.locator('#side-panel-url').waitFor({ state: 'visible' });
     assert.equal(await page.locator('#side-panel-url').inputValue(), '');
-    assert.equal(await page.locator('#side-panel-copy-url').isDisabled(), true);
-    assert.equal(await page.locator('#side-panel-copy-url').textContent(), locale === 'ja-JP' ? 'URLをコピー' : 'Copy URL');
     assert.match(await page.locator('#side-panel-url-help').textContent(), locale === 'ja-JP' ? /ローカルプレビュー/ : /local preview/);
     const input = page.locator('#side-panel-extension-ids');
     const save = page.locator('#side-panel-settings-form button[type="submit"]');
     const status = page.locator('#side-panel-settings-status');
-    const first = 'a'.repeat(32), second = 'b'.repeat(32);
-    await input.fill(first + '\n' + second + '\n' + first);
+    const first = 'a'.repeat(32);
+    assert.equal(await input.evaluate(el => el.tagName), 'INPUT');
+    await input.fill(first);
     await save.click();
     await page.waitForFunction(() => document.getElementById('side-panel-settings-status').getAttribute('aria-busy') === 'false');
-    assert.equal(await input.inputValue(), first + '\n' + second);
+    assert.equal(await input.inputValue(), first);
     assert.match(await status.textContent(), locale === 'ja-JP' ? /保存しました/ : /Saved/);
     await page.reload();
-    assert.equal(await input.inputValue(), first + '\n' + second);
+    assert.equal(await input.inputValue(), first);
     await input.fill('not-an-extension-id');
     await save.click();
     assert.equal(await input.getAttribute('aria-invalid'), 'true');
     assert.match(await status.textContent(), /32/);
     await page.reload();
-    assert.equal(await input.inputValue(), first + '\n' + second, 'invalid input does not replace saved IDs');
+    assert.equal(await input.inputValue(), first, 'invalid input does not replace saved IDs');
     await input.fill('');
     await save.click();
     await page.waitForFunction(() => document.getElementById('side-panel-settings-status').getAttribute('aria-busy') === 'false');
