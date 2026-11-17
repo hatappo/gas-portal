@@ -12,8 +12,8 @@ Generated favicon images use Libre Baskerville, copyright 2012 The Libre
 Baskerville Project Authors (https://github.com/impallari/Libre-Baskerville),
 licensed under SIL Open Font License 1.1. The font is a development-only
 npm dependency. Its full license is copied to the published favicon site
-as FONT-LICENSE.txt. The Chrome extension reuses this P artwork and includes
-the same license. Font binaries are not included in the GAS or extension output.
+as FONT-LICENSE.txt. Font binaries are not included in the GAS output.
+The separately maintained Alcove extension retains its own artwork notices.
 
 Generated kana favicons use Shippori Mincho, copyright 2021 The Shippori
 Mincho Project Authors (https://github.com/fontdasu/ShipporiMincho), licensed

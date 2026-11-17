@@ -11,9 +11,7 @@
   "ignorePatterns": [
     "dist/**",
     "assets/**",
-    "node_modules/**",
-    "extension/.wxt/**",
-    "extension/.output/**"
+    "node_modules/**"
   ],
   "env": {
     "builtin": true,
@@ -147,22 +145,10 @@
     },
     {
       "files": [
-        "src/browser/*.svelte",
-        "extension/**/*.svelte"
+        "src/browser/*.svelte"
       ],
       "rules": {
         "no-undef": "off"
-      }
-    },
-    {
-      "files": [
-        "extension/**/*.ts",
-        "extension/**/*.svelte",
-        "tests/extension/*.mjs"
-      ],
-      "env": {
-        "browser": true,
-        "node": true
       }
     }
   ]
