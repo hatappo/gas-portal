@@ -705,5 +705,4 @@ h2 .service-logo { width: 24px; height: 24px; }
 
 .side-panel-connection { margin-bottom: 1.25rem; }
 .side-panel-url-row { display: flex; align-items: center; gap: .5rem; margin-block: .4rem; }
-.side-panel-url-row .input { flex: 1; min-width: 0; }
-.side-panel-url-row .btn { flex-shrink: 0; }
+.side-panel-url-row .textarea { flex: 1; min-width: 0; field-sizing: content; min-height: 3lh; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-all; resize: vertical; }

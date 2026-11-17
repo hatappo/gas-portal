@@ -6,7 +6,8 @@
   import settingsIcon from '../src/assets/settings.svg?raw';
   import eyeIcon from '../src/assets/eye.svg?raw';
   import eyeOffIcon from '../src/assets/eye-off.svg?raw';
-  import { embeddedPortalUrl, isReadyMessage, normalizePortalUrl } from '../src/browser/side-panel-protocol';
+  import ConnectionSettings from './ConnectionSettings.svelte';
+  import { emptyConfig, restoreConfig, pageRequest, pageLabel, type PanelConfig } from './config';
   let languagePreference = $state<'auto' | 'ja' | 'en'>('auto');
   let browserLanguages = $state(Array.from(navigator.languages));
   let languageBusy = $state(false);
@@ -44,34 +45,54 @@
       privacyError = 'Could not save visibility. Content remains hidden. Double-click to try again.';
     } finally { privacyBusy = false; }
   }
-  let url = $state(''), draft = $state(''), frameUrl = $state(''), nonce = '';
-  let editing = $state(true), error = $state(''), busy = $state(true);
-  let status = $state<'waiting' | 'ready' | 'unconfirmed'>('waiting');
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  function connect() {
+  let config = $state<PanelConfig>(emptyConfig());
+  const activePage = $derived(config.pages.find(page => page.id === config.activePageId));
+  let frames = $state<{ id: string; sourceUrl: string; url: string; version: number }[]>([]);
+  let frameVersion = 0;
+  const frameUrl = $derived(frames.find(frame => frame.id === config.activePageId)?.url || '');
+  let editing = $state(true), error = $state(''), busy = $state(true), loaded = $state(false);
+  function connect(force = false) {
+    // Retain visited pages. Removed pages or edited URLs discard only their own frame.
+    frames = frames.filter(frame => config.pages.some(page => page.id === frame.id && page.url === frame.sourceUrl));
+    if (!activePage || (!force && frames.some(frame => frame.id === activePage.id))) return;
+    const nonce = Array.from(crypto.getRandomValues(new Uint8Array(16)), value => value.toString(16).padStart(2, '0')).join('');
+    const url = pageRequest(config, nonce);
     if (!url) return;
-    clearTimeout(timer);
-    nonce = Array.from(crypto.getRandomValues(new Uint8Array(16)), value => value.toString(16).padStart(2, '0')).join('');
-    frameUrl = embeddedPortalUrl(url, nonce);
-    status = 'waiting';
-    timer = setTimeout(() => { status = 'unconfirmed'; }, 15000);
+    const next = { id: activePage.id, sourceUrl: activePage.url, url, version: ++frameVersion };
+    const existing = frames.findIndex(frame => frame.id === next.id);
+    if (existing >= 0) frames[existing] = next;
+    else frames.push(next);
   }
-  async function save(event: SubmitEvent) {
-    event.preventDefault();
-    const normalized = normalizePortalUrl(draft);
-    if (!normalized) { error = 'Enter a deployed GAS web app URL ending in /exec.'; return; }
+  function closeSettings() { editing = false; }
+  async function saveConfig(next: PanelConfig) {
     busy = true;
-    error = '';
     try {
-      await browser.storage.local.set({ portalUrl: normalized });
-      url = draft = normalized;
-      editing = false;
+      await browser.storage.local.set({ panelConfig: next });
+      config = next;
+      error = '';
+      editing = next.pages.length === 0;
       connect();
-    } catch { error = 'Could not save the connection. Try again.'; }
+    } catch { throw new Error('Could not save the connection. Try again.'); }
     finally { busy = false; }
   }
+  async function switchPage(event: Event) {
+    const select = event.currentTarget as HTMLSelectElement;
+    const id = select.value;
+    if (busy || !config.pages.some(page => page.id === id)) { select.value = config.activePageId; return; }
+    busy = true;
+    try {
+      const next = { ...$state.snapshot(config), activePageId: id };
+      await browser.storage.local.set({ panelConfig: next });
+      config = next;
+      error = '';
+      connect();
+    } catch {
+      select.value = config.activePageId;
+      error = 'Could not save the connection. Try again.';
+    } finally { busy = false; }
+  }
   function openTab() {
-    if (url) void browser.tabs.create({ url }).catch(() => { error = 'Could not open the portal.'; });
+    if (frameUrl) void browser.tabs.create({ url: frameUrl }).catch(() => { error = 'Could not open the page.'; });
   }
   async function saveLanguage(event: Event) {
     const input = event.currentTarget as HTMLSelectElement;
@@ -92,12 +113,6 @@
   onMount(() => {
     const updateBrowserLanguage = () => { browserLanguages = Array.from(navigator.languages); };
     window.addEventListener('languagechange', updateBrowserLanguage);
-    const receive = (event: MessageEvent) => {
-      if (!isReadyMessage(event.origin, event.data, nonce)) return;
-      clearTimeout(timer);
-      status = 'ready';
-    };
-    window.addEventListener('message', receive);
     let disposed = false;
     let privacyChanged = false;
     const syncPrivacy = (changes: Record<string, { newValue?: unknown }>, area: string) => {
@@ -112,16 +127,16 @@
     }).catch(() => {
       if (!disposed) privacyError = 'Could not restore visibility. Content remains hidden. Double-click to show it.';
     }).finally(() => { if (!disposed) privacyReady = true; });
-    void browser.storage.local.get(['portalUrl', 'languagePreference']).then(saved => {
+    void browser.storage.local.get(['panelConfig', 'portalUrl', 'languagePreference']).then(saved => {
       if (disposed) return;
       languagePreference = PortalI18n.preference(saved.languagePreference);
-      const restored = typeof saved.portalUrl === 'string' ? normalizePortalUrl(saved.portalUrl) : null;
-      if (restored) { url = draft = restored; editing = false; connect(); }
-    }).catch(() => { if (!disposed) error = 'Could not read the connection. Enter the URL again.'; })
+      config = restoreConfig(saved);
+      loaded = true;
+      if (config.pages.length) { editing = false; connect(); }
+    }).catch(() => { if (!disposed) error = 'Could not read the saved settings. Reload the panel to try again.'; })
       .finally(() => { if (!disposed) busy = false; });
     return () => {
-      disposed = true; clearTimeout(timer);
-      window.removeEventListener('message', receive);
+      disposed = true;
       window.removeEventListener('languagechange', updateBrowserLanguage);
       browser.storage.onChanged.removeListener(syncPrivacy);
     };
@@ -132,51 +147,48 @@
 <div class="panel-body" inert={concealed} aria-hidden={concealed}>
 {#if editing}
   <main id="extension-settings">
-    <h1>{t('Settings')}</h1>
-    <h2>{t('Portal connection')}</h2>
-    <p>{t('Use your existing GAS deployment. Your portal settings and service tokens stay in GAS.')}</p>
-    <form onsubmit={save}>
-      <label for="portal-url">{t('GAS web app URL')}</label>
-      <input class="input" id="portal-url" type="url" bind:value={draft} placeholder="https://script.google.com/macros/s/…/exec" required disabled={busy} autocomplete="off" spellcheck="false" />
-      <div class="actions"><button class="btn preset-filled-primary-500" disabled={busy}>{t('Save and connect')}</button></div>
-    </form>
-    <p>{t('Open the portal in a browser tab. In Settings → Extension, add this ID and save, then reload this panel.')}</p>
-    <code>{extensionId}</code>
-    <p>{t('Keep the web app private. Open it in a normal tab to sign in and authorize access, then reload this panel.')}</p>
+    <div class="settings-title-row"><h1>{t('Alcove settings')}</h1><button class="btn icon-button" type="button" disabled={busy} onclick={closeSettings} aria-label={t('Close settings')} title={t('Close settings')}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg></button></div>
+    {#if loaded}
+      <ConnectionSettings {config} {t} onsave={saveConfig} oncancel={closeSettings} />
+    {/if}
+    <section class="extension-id-settings">
+    <label for="extension-id">{t('Extension ID')}</label>
+    <input id="extension-id" class="input" readonly value={extensionId} onclick={(event) => event.currentTarget.select()} onfocus={(event) => event.currentTarget.select()} />
+    </section>
     <section class="language-settings" aria-labelledby="extension-language-label">
       <label id="extension-language-label" for="extension-language">{t('Language')}</label>
-      <select id="extension-language" class="select" value={languagePreference} disabled={busy || languageBusy} onchange={saveLanguage} aria-describedby="extension-language-help extension-language-status">
+      <select id="extension-language" class="select" value={languagePreference} disabled={busy || languageBusy} onchange={saveLanguage} aria-describedby="extension-language-status">
         <option value="auto">{t('Automatic (browser)')}</option>
         <option value="ja" lang="ja">日本語</option>
         <option value="en" lang="en">English</option>
       </select>
-      <p id="extension-language-help">{t('Applies to extension controls only. The portal keeps its own language setting. Changes are saved automatically.')}</p>
       <p id="extension-language-status" class:error={languageStatus !== '' && languageStatus !== 'Saved'} role="status" aria-live="polite">{t(languageStatus)}</p>
     </section>
   </main>
 {/if}
 {#if error}<p class="status error" role="alert">{t(error)}</p>{/if}
-{#if frameUrl}
-  {#if !editing && status !== 'ready'}
-    <p class="status" role="status">{status === 'waiting'
-      ? t('Waiting for portal confirmation…')
-      : t('Could not confirm the connection. Check the extension ID and deployment, then open the portal in a tab to sign in. Google may block embedding.')}</p>
-  {/if}
-  {#key frameUrl}<iframe src={frameUrl} title={t('Your portal')} hidden={editing} sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads" referrerpolicy="no-referrer"></iframe>{/key}
-{/if}
+{#each frames as frame (frame.id)}
+  {#key frame.version}<iframe src={frame.url} title={pageLabel(config.pages.find(page => page.id === frame.id)!)} hidden={editing || frame.id !== config.activePageId} inert={editing || frame.id !== config.activePageId} sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads" referrerpolicy="no-referrer"></iframe>{/key}
+{/each}
+{#if !editing && !frameUrl}<main class="empty-panel"><p>{t('No pages yet.')}</p><button class="btn preset-tonal" onclick={() => { editing = true; }}>{t('Open settings')}</button></main>{/if}
 
 </div>
 </div>
 <footer class:concealed>
   <span class="extension-name">{extensionName}</span>
+  {#if config.pages.length}
+    <select class="select page-switcher" aria-label={t('Switch page')} value={config.activePageId} disabled={concealed || editing || busy} onchange={switchPage}>
+      {#each config.pages as page (page.id)}<option value={page.id}>{concealed ? '•••' : pageLabel(page)}</option>{/each}
+    </select>
+  {/if}
   <nav aria-label={t('Side panel controls')}>
     <button id="privacy-toggle" class="btn icon-button" disabled={!privacyReady || privacyBusy} aria-pressed={privacyMode} aria-label={privacyLabel} title={privacyLabel} aria-describedby="privacy-keyboard-help" onclick={togglePrivacy} onblur={() => { lastPrivacyClick = undefined; }} onkeydown={(event) => { if (event.repeat && (event.key === 'Enter' || event.key === ' ')) event.preventDefault(); }}>
       <span class="privacy-current" aria-hidden="true">{@html privacyMode ? eyeOffIcon : eyeIcon}</span>
       <span class="privacy-action" aria-hidden="true">{@html privacyMode ? eyeIcon : eyeOffIcon}</span>
     </button>
-    <button class="btn icon-button" disabled={!url || concealed} onclick={openTab} aria-label={t('Open tab')} title={t('Open tab')}>{@html externalLinkIcon}</button>
-    <button class="btn icon-button" disabled={!url || editing || concealed} onclick={connect} aria-label={t('Reload')} title={t('Reload')}>{@html refreshIcon}</button>
-    <button class="btn icon-button" disabled={concealed} aria-expanded={editing} aria-controls="extension-settings" onclick={() => { editing = !editing || !url; }} aria-label={t('Settings')} title={t('Settings')}>{@html settingsIcon}</button>
+    <button class="btn icon-button" disabled={!activePage || concealed} onclick={openTab} aria-label={t('Open tab')} title={t('Open tab')}>{@html externalLinkIcon}</button>
+    <button class="btn icon-button" disabled={!activePage || editing || concealed} onclick={() => connect(true)} aria-label={t('Reload')} title={t('Reload')}>{@html refreshIcon}</button>
+    <button class="btn icon-button" disabled={concealed || busy} aria-expanded={editing} aria-controls="extension-settings" onclick={() => { editing = !editing; }} aria-label={t('Settings')} title={t('Settings')}>{@html settingsIcon}</button>
 
   </nav>
   <span id="privacy-keyboard-help" class="sr-only">{t('Press Enter or Space once to hide content, twice to show it.')}</span>

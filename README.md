@@ -8,7 +8,7 @@ Display links from a spreadsheet as cards or a list. Connect an existing spreads
 
 Google Calendar adds a collapsible **Today** sidebar across all tabs, with compact past/future events, expanding hover/focus details, and free-time blocks between appointments. Select calendars, cache duration and optional in-page notices in Settings. Calendar access is read-only and uses the executing Google account. See [Calendar setup](docs/usage.md#google-calendar).
 
-An experimental [Chrome Side Panel extension](docs/side-panel.md) embeds the same deployed portal beside your browser tabs. It uses WXT + Svelte and keeps service tokens and settings in GAS.
+An experimental [Alcove side panel extension](docs/side-panel.md) keeps multiple HTTPS web apps beside your browser tabs, with a footer page selector and optional URL templates. It uses WXT + Svelte; portal service tokens and settings stay in GAS.
 
 ## Installation
 

@@ -24,7 +24,7 @@ export function initializeLanguage() {
     }
     // These nodes contain application messages, never catalog names or descriptions.
     for (const id of ['status-title', 'theme-status', 'portal-settings-status', 'language-status', 'cache-settings-status',
-      'side-panel-copy-status', 'side-panel-settings-status', 'actions-cache-settings-status', 'spreadsheet-settings-status', 'url-scheme-settings-status', 'github-settings-status', 'favicon-finder-status']) {
+      'side-panel-settings-status', 'actions-cache-settings-status', 'spreadsheet-settings-status', 'url-scheme-settings-status', 'github-settings-status', 'favicon-finder-status']) {
       const element = document.getElementById(id);
       if (element) element.textContent = PortalI18n.translate(element.textContent || '', root.lang);
     }
