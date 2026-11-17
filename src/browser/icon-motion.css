@@ -11,6 +11,9 @@ svg[data-animated-icon="tag"] { overflow: visible; }
 .icon-scatter-right { --icon-exit-x: 24px; --icon-exit-angle: 18deg; }
 .icon-right-drop { --icon-animation: portal-icon-right-drop; }
 .icon-slide { --icon-animation: portal-icon-slide; }
+.icon-sun-rays { --icon-animation: portal-icon-sun-rays; }
+.icon-moon-rock { --icon-animation: portal-icon-moon-rock; }
+.icon-sun-glow { --icon-animation: portal-icon-sun-glow; }
 .icon-spin { --icon-animation: portal-icon-spin; }
 .icon-expand { --icon-animation: portal-icon-expand; }
 .icon-expand-ne { --icon-x: 2px; --icon-y: -2px; }
@@ -54,6 +57,19 @@ svg[data-animated-icon="tag"] { overflow: visible; }
   44% { transform: translateX(24px); }
   44.01% { transform: translateX(-24px); }
 }
+@keyframes portal-icon-sun-rays {
+  0%, 10% { transform: rotate(0deg); }
+  90%, 100% { transform: rotate(90deg); }
+}
+@keyframes portal-icon-moon-rock {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-12deg); }
+  65% { transform: rotate(8deg); }
+}
+@keyframes portal-icon-sun-glow {
+  0%, 100% { opacity: 1; }
+  45% { opacity: .3; }
+}
 @keyframes portal-icon-spin {
   0%, 12% { transform: rotate(0deg); }
   88%, 100% { transform: rotate(360deg); }
@@ -70,11 +86,11 @@ svg[data-animated-icon="tag"] { overflow: visible; }
 @keyframes portal-icon-dot-5 { 0%, 60% { opacity: 0; } 68%, 100% { opacity: 1; } }
 
 @media (prefers-reduced-motion: no-preference) {
-  :is(.header-tab:focus-visible, .view-switch [data-part="item"][data-focus-visible], .calendar-display-filters [data-part="item"][data-focus-visible]) .icon-motion-part {
+  :is(.header-tab:focus-visible, .view-switch [data-part="item"][data-focus-visible], .theme-mode-switch [data-part="item"][data-focus-visible], .calendar-display-filters [data-part="item"][data-focus-visible]) .icon-motion-part {
     animation: var(--icon-animation) var(--portal-icon-cycle) ease-in-out var(--icon-delay, 0s) infinite;
   }
   @media (hover: hover) {
-    :is(.tag-heading:hover, .header-tab:hover, .view-switch [data-part="item"]:hover, .calendar-display-filters [data-part="item"]:hover) .icon-motion-part {
+    :is(.tag-heading:hover, .header-tab:hover, .view-switch [data-part="item"]:hover, .theme-mode-switch [data-part="item"]:hover, .calendar-display-filters [data-part="item"]:hover) .icon-motion-part {
       animation: var(--icon-animation) var(--portal-icon-cycle) ease-in-out var(--icon-delay, 0s) infinite;
     }
   }

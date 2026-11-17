@@ -1,5 +1,8 @@
 <script lang="ts">
   import { SegmentedControl } from '@skeletonlabs/skeleton-svelte';
+  import type { HTMLAttributes } from 'svelte/elements';
+  import Hint from './Hint.svelte';
+  import Icon from './Icon.svelte';
   import { language } from './language-store';
   import type { Cell } from './view';
 
@@ -15,16 +18,21 @@
   const t = (key: string) => PortalI18n.t(key, $language);
   const selection = $derived(PortalThemes.resolve($theme));
   const modes = [
-    { value: 'auto', label: 'Automatic' },
-    { value: 'light', label: 'Light' },
-    { value: 'dark', label: 'Dark' },
+    { value: 'auto', label: 'Automatic', icon: 'sun-moon' },
+    { value: 'light', label: 'Light', icon: 'sun' },
+    { value: 'dark', label: 'Dark', icon: 'moon' },
   ];
+  // Keep Skeleton's radio attributes when composing the tooltip trigger.
+  const tooltipAttributes = (attributes: HTMLAttributes<HTMLElement>) =>
+    Object.fromEntries(Object.entries(attributes).filter(([name]) =>
+      !['data-scope', 'data-part', 'data-state', 'data-ownedby'].includes(name)));
 </script>
 
 <div class="theme-mode">
   <span id="theme-mode-label">{t('Color scheme')}</span>
   <SegmentedControl
-    class="segmented-control"
+    class="segmented-control theme-mode-switch"
+    ids={{ item: value => 'theme-mode-' + value }}
     name="portal-color-scheme"
     aria-labelledby="theme-mode-label"
     value={selection.scheme}
@@ -36,10 +44,15 @@
     <SegmentedControl.Control>
       <SegmentedControl.Indicator />
       {#each modes as mode}
-        <SegmentedControl.Item value={mode.value}>
-          <SegmentedControl.ItemHiddenInput aria-label={t(mode.label)} />
-          <SegmentedControl.ItemText>{t(mode.label)}</SegmentedControl.ItemText>
-        </SegmentedControl.Item>
+        <Hint text={t(mode.label)} triggerId={'theme-mode-' + mode.value}>
+          {#snippet children(attributes)}<SegmentedControl.Item {...tooltipAttributes(attributes)} value={mode.value}>
+            <SegmentedControl.ItemHiddenInput aria-label={t(mode.label)} />
+            <SegmentedControl.ItemText>
+              <Icon id={'theme-' + mode.icon + '-icon'} />
+              <span class="sr-only">{t(mode.label)}</span>
+            </SegmentedControl.ItemText>
+          </SegmentedControl.Item>{/snippet}
+        </Hint>
       {/each}
     </SegmentedControl.Control>
   </SegmentedControl>

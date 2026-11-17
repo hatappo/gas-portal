@@ -2011,3 +2011,71 @@ test('Calendar and all-day pin icons show state at rest and the next state on ho
   await allDayPin.click();
   assert.equal(await page.locator('.calendar-all-day').getAttribute('data-expanded'), 'false');
 });
+
+test('Appearance mode icons have localized tooltips, preserve selection and respect reduced motion', async t => {
+  for (const locale of ['en-US', 'ja-JP']) {
+    const page = await pageFor(t, { locale, viewport: { width: 390, height: 844 } });
+    await selectPortalTab(page, 'settings');
+    const labels = locale === 'ja-JP' ? ['自動', 'ライト', 'ダーク'] : ['Automatic', 'Light', 'Dark'];
+    const modes = ['auto', 'light', 'dark'];
+    for (const [index, mode] of modes.entries()) {
+      const control = page.locator('#theme-mode-' + mode);
+      const parts = control.locator('.icon-motion-part');
+      const animations = () => parts.evaluateAll(elements => elements.flatMap(el => el.getAnimations()).map(a => a.effect.getTiming().duration));
+      // Tooltips intentionally close on scroll. Finish bringing these below-fold
+      // controls into view before testing a pointer that rests over the icon.
+      await page.locator('#settings-panel').evaluate(el => Promise.all(el.getAnimations().map(animation => animation.finished)));
+      await control.evaluate(el => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      await page.mouse.move(0, 0);
+      const box = await control.boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.getByRole('tooltip', { name: labels[index], exact: true }).waitFor();
+      assert.equal(await control.locator('svg').count(), 1);
+      assert.ok((await animations()).length > 0);
+      assert.ok((await animations()).every(duration => duration === 1800));
+      assert.equal(await control.getByRole('radio', { name: labels[index], exact: true }).count(), 1);
+      await page.mouse.move(0, 0);
+      assert.deepEqual(await animations(), [], 'Motion stops when the pointer leaves');
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await control.hover();
+      assert.deepEqual(await animations(), []);
+      await control.click();
+      await page.waitForFunction(mode => document.documentElement.dataset.colorScheme === mode, mode);
+      assert.equal(await control.getByRole('radio').isChecked(), true);
+      await page.waitForFunction(() => !document.querySelector('.theme-mode input').disabled);
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
+      await control.getByRole('radio').blur();
+    }
+    await page.mouse.move(0, 0);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    await page.screenshot({ path: '/tmp/appearance-mode-icons-' + locale + '.png', fullPage: true });
+  }
+});
+
+
+test('Header stays visible while scrolling at desktop and compact widths, with usable navigation', async t => {
+  for (const width of [1280, 390]) {
+    const page = await pageFor(t, { viewport: { width, height: 720 }, reducedMotion: 'reduce' });
+    await selectPortalTab(page, 'settings');
+    const header = page.locator('.site-header');
+    const before = await header.boundingBox();
+    await page.evaluate(() => window.scrollTo(0, 600));
+    await page.waitForFunction(() => window.scrollY > 300);
+    const after = await header.boundingBox();
+    assert.ok(Math.abs(after.y) < 1, 'Header stays at the top');
+    assert.equal(after.height, before.height);
+    assert.equal(await header.evaluate(el => getComputedStyle(el).backgroundColor), await page.locator('body').evaluate(el => getComputedStyle(el).backgroundColor));
+    assert.equal(await page.locator('#tab-tools').evaluate(el => {
+      const r = el.getBoundingClientRect();
+      return el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+    }), true, 'Scrolled content does not cover navigation');
+    await page.locator('#setting-description').evaluate(el => el.scrollIntoView({ block: 'start' }));
+    assert.ok((await page.locator('#setting-description').boundingBox()).y >= after.height, 'Scroll targets remain below the header');
+    await page.screenshot({ path: '/tmp/portal-sticky-header-' + width + '.png' });
+    await selectPortalTab(page, 'tools');
+    await page.locator('#directory').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('#tab-tools').getAttribute('aria-selected'), 'true');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  }
+});
